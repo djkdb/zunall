@@ -55,14 +55,41 @@ AI_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-ant-... npm run start
 
 ### 배포 절차 (Cloudflare 계정 필요 — 5개 명령)
 
+> ⚠️ 아래 명령은 한 줄씩 그대로 복사해서 실행하세요 (주석 없이 명령만).
+
 ```bash
-npx wrangler login                                   # 1. 계정 연결
-npx wrangler d1 create zunall                        # 2. → 출력된 database_id를 wrangler.jsonc에 붙여넣기
-npx wrangler r2 bucket create zunall-uploads         # 3. R2 버킷 생성
-npx wrangler d1 execute zunall --remote --file=schema.sql   # 4. 스키마 적용 (24개 테이블)
-npx wrangler secret put ANTHROPIC_API_KEY            # 5. AI 키 등록 후:
-npm run deploy:cf                                    #    빌드 + 배포
+npm install
 ```
+0\. 저장소를 pull 받은 뒤 **반드시 먼저 실행** — 배포 도구(@opennextjs/cloudflare, wrangler)가 설치됩니다.
+
+```bash
+npx wrangler login
+```
+1\. 브라우저가 열리며 Cloudflare 계정을 연결합니다.
+
+```bash
+npx wrangler d1 create zunall
+```
+2\. 출력에 나오는 `database_id` 값(UUID)을 복사해 **`wrangler.jsonc`의 `REPLACE_WITH_D1_DATABASE_ID` 자리에 붙여넣고 저장**합니다. 이걸 빼먹으면 배포가 실패합니다.
+
+```bash
+npx wrangler r2 bucket create zunall-uploads
+```
+
+```bash
+npx wrangler d1 execute zunall --remote --file=schema.sql
+```
+4\. 24개 테이블 스키마를 D1에 적용합니다.
+
+```bash
+npx wrangler secret put ANTHROPIC_API_KEY
+```
+5\. 실행하면 **값을 입력하라는 프롬프트가 뜹니다** — 그때 `sk-ant-...` 키를 붙여넣고 Enter. "Worker가 없는데 draft를 만들까요?"라고 물으면 `y`.
+
+```bash
+npm run deploy:cf
+```
+6\. 빌드 후 배포. 완료되면 `https://zunall.<서브도메인>.workers.dev` 주소가 출력됩니다.
 
 ### 로컬에서 Workers 런타임 그대로 테스트
 
