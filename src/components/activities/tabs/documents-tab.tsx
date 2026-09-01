@@ -19,8 +19,8 @@ function FileTypeIcon({ name }: { name: string }) {
   return <FileIcon className={cls} />;
 }
 
-export function DocumentsTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
-  const docs = db
+export async function DocumentsTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
+  const docs = await db
     .select()
     .from(documents)
     .where(and(eq(documents.activityId, activity.id), eq(documents.userId, userId)))

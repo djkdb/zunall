@@ -38,12 +38,12 @@ export interface CareerContext {
 }
 
 /** Career 화면·대시보드가 공유하는 컨텍스트를 한 번에 조립한다. */
-export function getCareerContext(userId: string): CareerContext {
+export async function getCareerContext(userId: string): Promise<CareerContext> {
   const profile =
-    db.select().from(careerProfiles).where(eq(careerProfiles.userId, userId)).get() ?? null;
+    await db.select().from(careerProfiles).where(eq(careerProfiles.userId, userId)).get() ?? null;
 
   const goal =
-    db
+    await db
       .select()
       .from(careerGoals)
       .where(and(eq(careerGoals.userId, userId), eq(careerGoals.isActive, 1)))
@@ -60,8 +60,8 @@ export function getCareerContext(userId: string): CareerContext {
       : null,
   );
 
-  const skills = db.select().from(userSkills).where(eq(userSkills.userId, userId)).all();
-  const evidence = db
+  const skills = await db.select().from(userSkills).where(eq(userSkills.userId, userId)).all();
+  const evidence = await db
     .select()
     .from(careerEvidence)
     .where(eq(careerEvidence.userId, userId))
@@ -78,7 +78,7 @@ export function getCareerContext(userId: string): CareerContext {
     })),
   );
 
-  const acts = db
+  const acts = await db
     .select({ status: activities.status })
     .from(activities)
     .where(eq(activities.userId, userId))
@@ -103,7 +103,7 @@ export function getCareerContext(userId: string): CareerContext {
 
   const gaps = computeGaps(template, skillScores);
 
-  const actions = db
+  const actions = await db
     .select()
     .from(careerActions)
     .where(eq(careerActions.userId, userId))
@@ -135,8 +135,8 @@ export function getCareerContext(userId: string): CareerContext {
  * Career Score 스냅샷 기록 (하루 1개 이상이면 최신값으로 갱신).
  * 성장 그래프("72 → 81")의 데이터가 된다.
  */
-export function recordScoreSnapshot(userId: string, score: number, breakdown: unknown): void {
-  const latest = db
+export async function recordScoreSnapshot(userId: string, score: number, breakdown: unknown): Promise<void> {
+  const latest = await db
     .select()
     .from(scoreSnapshots)
     .where(eq(scoreSnapshots.userId, userId))
@@ -147,19 +147,19 @@ export function recordScoreSnapshot(userId: string, score: number, breakdown: un
   const latestDay = latest ? toDateStr(new Date(latest.createdAt)) : null;
   if (latest && latestDay === todayStr()) {
     // 같은 날에는 최신값으로 갱신만 한다
-    db.update(scoreSnapshots)
+    await db.update(scoreSnapshots)
       .set({ score, breakdown: breakdownJson, createdAt: Date.now() })
       .where(eq(scoreSnapshots.id, latest.id))
       .run();
     return;
   }
-  db.insert(scoreSnapshots)
+  await db.insert(scoreSnapshots)
     .values({ id: newId(), userId, score, breakdown: breakdownJson, createdAt: Date.now() })
     .run();
 }
 
-export function getScoreTrend(userId: string): { first: number | null; latest: number | null; monthAgo: number | null } {
-  const rows = db
+export async function getScoreTrend(userId: string): Promise<{ first: number | null; latest: number | null; monthAgo: number | null }> {
+  const rows = await db
     .select()
     .from(scoreSnapshots)
     .where(eq(scoreSnapshots.userId, userId))
@@ -180,14 +180,14 @@ export function getScoreTrend(userId: string): { first: number | null; latest: n
  * 연결된 미션 액션/로드맵 항목을 완료로 바꾸고 Career Score 스냅샷을 갱신한다.
  * 반환: 커리어 미션이 완료되었는지 여부.
  */
-export function handleTaskCompletionForCareer(userId: string, taskId: string): boolean {
-  const linkedAction = db
+export async function handleTaskCompletionForCareer(userId: string, taskId: string): Promise<boolean> {
+  const linkedAction = await db
     .select()
     .from(careerActions)
     .where(and(eq(careerActions.userId, userId), eq(careerActions.taskId, taskId)))
     .get();
 
-  const linkedRoadmap = db
+  const linkedRoadmap = await db
     .select()
     .from(roadmapItems)
     .where(and(eq(roadmapItems.userId, userId), eq(roadmapItems.taskId, taskId)))
@@ -195,29 +195,29 @@ export function handleTaskCompletionForCareer(userId: string, taskId: string): b
 
   let missionDone = false;
   if (linkedAction && linkedAction.status !== "done") {
-    db.update(careerActions)
+    await db.update(careerActions)
       .set({ status: "done", updatedAt: Date.now() })
       .where(eq(careerActions.id, linkedAction.id))
       .run();
     missionDone = true;
   }
   if (linkedRoadmap && linkedRoadmap.status !== "done") {
-    db.update(roadmapItems).set({ status: "done" }).where(eq(roadmapItems.id, linkedRoadmap.id)).run();
+    await db.update(roadmapItems).set({ status: "done" }).where(eq(roadmapItems.id, linkedRoadmap.id)).run();
   }
 
   if (missionDone || linkedRoadmap) {
-    const ctx = getCareerContext(userId);
-    recordScoreSnapshot(userId, ctx.readiness.score, ctx.readiness.items);
+    const ctx = await getCareerContext(userId);
+    await recordScoreSnapshot(userId, ctx.readiness.score, ctx.readiness.items);
   }
   return missionDone;
 }
 
 /** 진행 중 활동 수 (대시보드 헤더용 재사용) */
-export function countOngoingActivities(userId: string): number {
-  return db
+export async function countOngoingActivities(userId: string): Promise<number> {
+  const rows = await db
     .select({ status: activities.status })
     .from(activities)
     .where(eq(activities.userId, userId))
-    .all()
-    .filter((a) => (ONGOING_STATUSES as string[]).includes(a.status)).length;
+    .all();
+  return rows.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status)).length;
 }

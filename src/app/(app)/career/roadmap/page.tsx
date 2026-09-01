@@ -23,8 +23,8 @@ function monthLabel(month: string): string {
 
 export default async function RoadmapPage() {
   const user = await requireUser();
-  const ctx = getCareerContext(user.id);
-  const items = db
+  const ctx = await getCareerContext(user.id);
+  const items = await db
     .select()
     .from(roadmapItems)
     .where(eq(roadmapItems.userId, user.id))

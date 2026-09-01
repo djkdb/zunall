@@ -51,7 +51,7 @@ npm run seed           # 데모 데이터 (demo@zunall.app / demo1234!)
 ```
 
 실제 Claude 사용: `.env.local`에 `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY=...`
-배포: **[DEPLOY.md](./DEPLOY.md)** (Docker 즉시 배포 + Cloudflare D1/R2 마이그레이션 가이드)
+배포: **[DEPLOY.md](./DEPLOY.md)** — Docker 즉시 배포, 또는 **Cloudflare Workers(D1+R2, 마이그레이션 완료)** 5개 명령으로 배포
 
 ## 검증
 

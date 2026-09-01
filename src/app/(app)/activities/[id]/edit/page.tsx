@@ -13,10 +13,10 @@ export default async function EditActivityPage({
 }) {
   const user = await requireUser();
   const { id } = await params;
-  const activity = getActivity(user.id, id);
+  const activity = await getActivity(user.id, id);
   if (!activity) notFound();
 
-  const tagNames = getActivityTagNames(activity.id);
+  const tagNames = await getActivityTagNames(activity.id);
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">

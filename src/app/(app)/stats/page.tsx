@@ -32,13 +32,13 @@ export const metadata: Metadata = { title: "통계" };
 export default async function StatsPage() {
   const user = await requireUser();
 
-  const acts = db.select().from(activities).where(eq(activities.userId, user.id)).all();
-  const allTasks = db
+  const acts = await db.select().from(activities).where(eq(activities.userId, user.id)).all();
+  const allTasks = await db
     .select({ status: tasks.status })
     .from(tasks)
     .where(eq(tasks.userId, user.id))
     .all();
-  const evalReviews = db
+  const evalReviews = (await db
     .select()
     .from(aiReviews)
     .where(
@@ -48,7 +48,7 @@ export default async function StatsPage() {
         eq(aiReviews.status, "done"),
       ),
     )
-    .all()
+    .all())
     .filter((r) => r.overallScore != null && r.maxScore);
 
   const total = acts.length;
@@ -220,28 +220,28 @@ export default async function StatsPage() {
   );
 }
 
-function CareerStatsSection({ userId }: { userId: string }) {
-  const ctx = getCareerContext(userId);
+async function CareerStatsSection({ userId }: { userId: string }) {
+  const ctx = await getCareerContext(userId);
   if (!ctx.onboarded) return null;
 
-  const trend = getScoreTrend(userId);
+  const trend = await getScoreTrend(userId);
   const monthAgo = trend.monthAgo != null ? Math.round(trend.monthAgo) : null;
   const latest = Math.round(trend.latest ?? ctx.readiness.score);
 
-  const actions = db
+  const actions = (await db
     .select({ status: careerActions.status })
     .from(careerActions)
     .where(eq(careerActions.userId, userId))
-    .all()
+    .all())
     .filter((a) => a.status === "accepted" || a.status === "done");
   const doneActions = actions.filter((a) => a.status === "done").length;
   const actionRate = actions.length > 0 ? Math.round((doneActions / actions.length) * 100) : null;
 
-  const fits = db
+  const fits = (await db
     .select({ fitScore: opportunityAnalyses.fitScore })
     .from(opportunityAnalyses)
     .where(eq(opportunityAnalyses.userId, userId))
-    .all()
+    .all())
     .filter((f) => f.fitScore != null);
   const avgFit =
     fits.length > 0

@@ -30,17 +30,17 @@ const REC_BADGES: Record<string, { label: string; className: string }> = {
 
 export default async function OpportunitiesPage() {
   const user = await requireUser();
-  const ctx = getCareerContext(user.id);
+  const ctx = await getCareerContext(user.id);
 
-  const acts = db
+  const acts = (await db
     .select()
     .from(activities)
     .where(eq(activities.userId, user.id))
     .orderBy(desc(activities.updatedAt))
-    .all()
+    .all())
     .filter((a) => !(FINISHED_STATUSES as string[]).includes(a.status));
 
-  const analyses = db
+  const analyses = await db
     .select()
     .from(opportunityAnalyses)
     .where(eq(opportunityAnalyses.userId, user.id))

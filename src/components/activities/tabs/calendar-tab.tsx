@@ -8,8 +8,8 @@ import { DeleteEventButton } from "@/components/calendar/delete-event-button";
 import { cn, daysUntil, ddayColorClass, ddayLabel, formatDate, todayStr } from "@/lib/utils";
 import { EVENT_TYPES, type EventType } from "@/lib/constants";
 
-export function CalendarTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
-  const allEvents = db
+export async function CalendarTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
+  const allEvents = await db
     .select()
     .from(events)
     .where(and(eq(events.activityId, activity.id), eq(events.userId, userId)))

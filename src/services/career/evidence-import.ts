@@ -29,14 +29,14 @@ function evidenceKindFor(activityType: string, status: string): EvidenceKind {
  * - 활동의 사용 기술/태그/메모에서 스킬을 감지해 연결
  * 이미 임포트된 활동(sourceId 일치)은 건너뛴다. 반환: 새로 만든 근거 수.
  */
-export function importEvidenceFromActivities(userId: string): number {
-  const acts = db.select().from(activities).where(eq(activities.userId, userId)).all();
+export async function importEvidenceFromActivities(userId: string): Promise<number> {
+  const acts = await db.select().from(activities).where(eq(activities.userId, userId)).all();
   let created = 0;
 
   for (const act of acts) {
     if (act.status === "interested" || act.status === "planned") continue;
 
-    const existing = db
+    const existing = await db
       .select({ id: careerEvidence.id })
       .from(careerEvidence)
       .where(
@@ -63,7 +63,7 @@ export function importEvidenceFromActivities(userId: string): number {
       act.achievement ? `성과: ${act.achievement}` : null,
     ].filter(Boolean);
 
-    db.insert(careerEvidence)
+    await db.insert(careerEvidence)
       .values({
         id: newId(),
         userId,

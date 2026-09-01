@@ -15,7 +15,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const doc = db
+  const doc = await db
     .select()
     .from(documents)
     .where(and(eq(documents.id, id), eq(documents.userId, user.id)))
@@ -24,7 +24,7 @@ export async function GET(
     return NextResponse.json({ error: "파일을 찾을 수 없습니다." }, { status: 404 });
   }
 
-  const buffer = readFileBuffer(doc.storagePath);
+  const buffer = await readFileBuffer(doc.storagePath);
   if (!buffer) {
     return NextResponse.json({ error: "파일이 저장소에 없습니다." }, { status: 404 });
   }

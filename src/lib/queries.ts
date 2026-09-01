@@ -25,8 +25,8 @@ export interface ActivityMeta extends ActivityRow {
 }
 
 /** 활동 목록 + 메타(태그, 작업 진행률, AI 점수, 임박 마감) 조회 */
-export function getActivitiesWithMeta(userId: string): ActivityMeta[] {
-  const acts = db
+export async function getActivitiesWithMeta(userId: string): Promise<ActivityMeta[]> {
+  const acts = await db
     .select()
     .from(activities)
     .where(eq(activities.userId, userId))
@@ -36,20 +36,20 @@ export function getActivitiesWithMeta(userId: string): ActivityMeta[] {
 
   const actIds = acts.map((a) => a.id);
 
-  const tagRows = db
+  const tagRows = await db
     .select({ activityId: activityTags.activityId, name: tags.name })
     .from(activityTags)
     .innerJoin(tags, eq(activityTags.tagId, tags.id))
     .where(inArray(activityTags.activityId, actIds))
     .all();
 
-  const taskRows = db
+  const taskRows = await db
     .select({ activityId: tasks.activityId, status: tasks.status })
     .from(tasks)
     .where(and(eq(tasks.userId, userId), inArray(tasks.activityId, actIds)))
     .all();
 
-  const reviewRows = db
+  const reviewRows = await db
     .select()
     .from(aiReviews)
     .where(
@@ -106,34 +106,34 @@ export function nearestDeadlineOf(
 }
 
 /** 소유권 검증 포함 단일 활동 조회 */
-export function getActivity(userId: string, activityId: string): ActivityRow | undefined {
-  return db
+export async function getActivity(userId: string, activityId: string): Promise<ActivityRow | undefined> {
+  return await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, userId)))
     .get();
 }
 
-export function getActivityTagNames(activityId: string): string[] {
-  return db
+export async function getActivityTagNames(activityId: string): Promise<string[]> {
+  const rows = await db
     .select({ name: tags.name })
     .from(activityTags)
     .innerJoin(tags, eq(activityTags.tagId, tags.id))
     .where(eq(activityTags.activityId, activityId))
-    .all()
-    .map((t) => t.name);
+    .all();
+  return rows.map((t) => t.name);
 }
 
 /** 제출물의 최신 버전 + 문서 조회 (AI 평가에서 사용) */
-export function getLatestVersionDocument(submissionId: string, userId: string) {
-  const version = db
+export async function getLatestVersionDocument(submissionId: string, userId: string) {
+  const version = await db
     .select()
     .from(submissionVersions)
     .where(eq(submissionVersions.submissionId, submissionId))
     .orderBy(desc(submissionVersions.createdAt))
     .get();
   if (!version) return null;
-  const doc = db
+  const doc = await db
     .select()
     .from(documents)
     .where(and(eq(documents.id, version.documentId), eq(documents.userId, userId)))
@@ -141,12 +141,11 @@ export function getLatestVersionDocument(submissionId: string, userId: string) {
   return doc ? { version, doc } : null;
 }
 
-export function getUserTags(userId: string): string[] {
-  return db
+export async function getUserTags(userId: string): Promise<string[]> {
+  const rows = await db
     .select({ name: tags.name })
     .from(tags)
     .where(eq(tags.userId, userId))
-    .all()
-    .map((t) => t.name)
-    .sort((a, b) => a.localeCompare(b, "ko"));
+    .all();
+  return rows.map((t) => t.name).sort((a, b) => a.localeCompare(b, "ko"));
 }

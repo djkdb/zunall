@@ -6,8 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { TaskBoard } from "@/components/tasks/task-board";
 import { TaskFormDialog } from "@/components/tasks/task-form-dialog";
 
-export function TasksTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
-  const activityTasks = db
+export async function TasksTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
+  const activityTasks = await db
     .select()
     .from(tasks)
     .where(and(eq(tasks.activityId, activity.id), eq(tasks.userId, userId)))

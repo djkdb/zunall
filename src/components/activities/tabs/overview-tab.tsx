@@ -19,8 +19,8 @@ import {
 import { EVENT_TYPES, CRITERIA_SOURCES, type EventType, type CriteriaSource } from "@/lib/constants";
 import { announcementSummarySchema, type AnnouncementSummary } from "@/services/ai/schemas";
 
-export function OverviewTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
-  const activityTasks = db
+export async function OverviewTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
+  const activityTasks = await db
     .select()
     .from(tasks)
     .where(and(eq(tasks.activityId, activity.id), eq(tasks.userId, userId)))
@@ -31,15 +31,15 @@ export function OverviewTab({ activity, userId }: { activity: ActivityRow; userI
   const progress =
     activityTasks.length > 0 ? Math.round((doneCount / activityTasks.length) * 100) : null;
 
-  const upcomingEvents = db
+  const upcomingEvents = (await db
     .select()
     .from(events)
     .where(and(eq(events.activityId, activity.id), gte(events.date, todayStr())))
     .orderBy(events.date)
-    .all()
+    .all())
     .slice(0, 5);
 
-  const latestEval = db
+  const latestEval = await db
     .select()
     .from(aiReviews)
     .where(
@@ -52,7 +52,7 @@ export function OverviewTab({ activity, userId }: { activity: ActivityRow; userI
     .orderBy(desc(aiReviews.createdAt))
     .get();
 
-  const criteria = db
+  const criteria = await db
     .select()
     .from(evaluationCriteria)
     .where(eq(evaluationCriteria.activityId, activity.id))

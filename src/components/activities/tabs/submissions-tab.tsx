@@ -19,8 +19,8 @@ import { DocumentActions } from "@/components/files/document-actions";
 import { RunAIButton } from "@/components/ai/run-ai-button";
 import { cn, daysUntil, ddayColorClass, ddayLabel, formatBytes, formatDate } from "@/lib/utils";
 
-export function SubmissionsTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
-  const subs = db
+export async function SubmissionsTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
+  const subs = await db
     .select()
     .from(submissions)
     .where(and(eq(submissions.activityId, activity.id), eq(submissions.userId, userId)))
@@ -30,7 +30,7 @@ export function SubmissionsTab({ activity, userId }: { activity: ActivityRow; us
   const subIds = subs.map((s) => s.id);
   const versions =
     subIds.length > 0
-      ? db
+      ? await db
           .select()
           .from(submissionVersions)
           .where(inArray(submissionVersions.submissionId, subIds))
@@ -40,14 +40,14 @@ export function SubmissionsTab({ activity, userId }: { activity: ActivityRow; us
   const docIds = versions.map((v) => v.documentId);
   const versionDocs =
     docIds.length > 0
-      ? db.select().from(documents).where(inArray(documents.id, docIds)).all()
+      ? await db.select().from(documents).where(inArray(documents.id, docIds)).all()
       : [];
   const docById = new Map(versionDocs.map((d) => [d.id, d]));
 
   // 제출물별 최근 AI 평가 점수
   const reviews =
     subIds.length > 0
-      ? db
+      ? await db
           .select()
           .from(aiReviews)
           .where(

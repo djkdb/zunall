@@ -23,13 +23,13 @@ export const metadata: Metadata = { title: "Career Profile" };
 
 export default async function CareerPage() {
   const user = await requireUser();
-  const ctx = getCareerContext(user.id);
+  const ctx = await getCareerContext(user.id);
 
   if (!ctx.onboarded) {
     return <OnboardingWizard userName={user.name} />;
   }
 
-  const trend = getScoreTrend(user.id);
+  const trend = await getScoreTrend(user.id);
   const goalRoles = safeJsonParse<string[]>(ctx.goal?.targetRoles, []);
   const goalCompanies = safeJsonParse<string[]>(ctx.goal?.targetCompanies, []);
   const desiredRoles = safeJsonParse<string[]>(ctx.profile?.desiredRoles, []);

@@ -1,0 +1,36 @@
+// Cloudflare Workers 배포 설정 (OpenNext)
+// 배포 전 준비:
+//   1. npx wrangler login
+//   2. npx wrangler d1 create zunall  →  아래 database_id 채우기
+//   3. npx wrangler r2 bucket create zunall-uploads
+//   4. npx tsx scripts/export-schema.ts && npx wrangler d1 execute zunall --remote --file=schema.sql
+//   5. npx wrangler secret put ANTHROPIC_API_KEY
+//   6. npm run deploy:cf
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zunall",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "zunall",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "zunall-uploads"
+    }
+  ],
+  "vars": {
+    "AI_PROVIDER": "anthropic",
+    "ANTHROPIC_MODEL": "claude-opus-5"
+  }
+}

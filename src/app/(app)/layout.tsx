@@ -11,13 +11,13 @@ import { ensureDeadlineNotifications } from "@/services/notification/generator";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   // 접속 시점에 D-day 알림 생성 (중복 방지 내장)
-  ensureDeadlineNotifications(user.id);
+  await ensureDeadlineNotifications(user.id);
 
-  const unread = db
+  const unread = (await db
     .select({ id: notifications.id })
     .from(notifications)
     .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0)))
-    .all().length;
+    .all()).length;
 
   return (
     <div className="flex min-h-screen">

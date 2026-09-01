@@ -17,8 +17,8 @@ import {
  * - 마감 성격의 일정 (모집 마감, 지원 마감, 중간/최종 제출)
  * dedupeKey로 같은 알림이 두 번 생기지 않도록 보장한다.
  */
-export function ensureDeadlineNotifications(userId: string): void {
-  const acts = db
+export async function ensureDeadlineNotifications(userId: string): Promise<void> {
+  const acts = await db
     .select()
     .from(activities)
     .where(and(eq(activities.userId, userId), inArray(activities.status, [...ONGOING_STATUSES, "interested"])))
@@ -31,7 +31,7 @@ export function ensureDeadlineNotifications(userId: string): void {
   }
 
   const activityNames = new Map(acts.map((a) => [a.id, a.name]));
-  const evts = db
+  const evts = await db
     .select()
     .from(events)
     .where(and(eq(events.userId, userId), inArray(events.type, DEADLINE_EVENT_TYPES)))
@@ -52,14 +52,14 @@ export function ensureDeadlineNotifications(userId: string): void {
   }
 }
 
-function checkDeadline(
+async function checkDeadline(
   userId: string,
   activityId: string | null,
   subject: string,
   what: string,
   dateStr: string | null | undefined,
   keyPrefix: string,
-): void {
+): Promise<void> {
   const days = daysUntil(dateStr);
   if (days === null || days < 0) return;
   if (!(NOTIFY_THRESHOLDS as readonly number[]).includes(days)) return;
@@ -69,7 +69,7 @@ function checkDeadline(
       ? `${subject} — ${what}이(가) 오늘 마감됩니다.`
       : `${subject} — ${what}까지 ${days}일 남았습니다.`;
 
-  pushNotification({
+  await pushNotification({
     userId,
     activityId,
     type: "schedule",

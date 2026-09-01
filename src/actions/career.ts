@@ -34,9 +34,9 @@ function revalidateCareer() {
 }
 
 /** 컨텍스트 재계산 후 Career Score 스냅샷 기록 */
-function snapshot(userId: string) {
-  const ctx = getCareerContext(userId);
-  recordScoreSnapshot(userId, ctx.readiness.score, ctx.readiness.items);
+async function snapshot(userId: string) {
+  const ctx = await getCareerContext(userId);
+  await recordScoreSnapshot(userId, ctx.readiness.score, ctx.readiness.items);
 }
 
 // ─── 목표 ────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ export async function saveGoal(input: GoalInput): Promise<ActionResult> {
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  const existing = db
+  const existing = await db
     .select()
     .from(careerGoals)
     .where(and(eq(careerGoals.userId, user.id), eq(careerGoals.isActive, 1)))
@@ -87,15 +87,15 @@ export async function saveGoal(input: GoalInput): Promise<ActionResult> {
   let id: string;
   if (existing) {
     id = existing.id;
-    db.update(careerGoals).set(values).where(eq(careerGoals.id, existing.id)).run();
+    await db.update(careerGoals).set(values).where(eq(careerGoals.id, existing.id)).run();
   } else {
     id = newId();
-    db.insert(careerGoals)
+    await db.insert(careerGoals)
       .values({ id, userId: user.id, isActive: 1, createdAt: Date.now(), ...values })
       .run();
   }
 
-  snapshot(user.id);
+  await snapshot(user.id);
   revalidateCareer();
   return { ok: true, id };
 }
@@ -117,7 +117,7 @@ export async function saveProfileBasics(input: ProfileInput): Promise<ActionResu
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  const existing = db
+  const existing = await db
     .select()
     .from(careerProfiles)
     .where(eq(careerProfiles.userId, user.id))
@@ -133,12 +133,12 @@ export async function saveProfileBasics(input: ProfileInput): Promise<ActionResu
   };
 
   if (existing) {
-    db.update(careerProfiles).set(values).where(eq(careerProfiles.id, existing.id)).run();
+    await db.update(careerProfiles).set(values).where(eq(careerProfiles.id, existing.id)).run();
   } else {
-    db.insert(careerProfiles).values({ id: newId(), userId: user.id, ...values }).run();
+    await db.insert(careerProfiles).values({ id: newId(), userId: user.id, ...values }).run();
   }
 
-  snapshot(user.id);
+  await snapshot(user.id);
   revalidateCareer();
   return { ok: true };
 }
@@ -146,27 +146,27 @@ export async function saveProfileBasics(input: ProfileInput): Promise<ActionResu
 /** 온보딩 완료: 활동→근거 임포트 + 프로필 onboarded 표시 + 첫 스냅샷 */
 export async function completeOnboarding(): Promise<ActionResult> {
   const user = await requireUser();
-  const imported = importEvidenceFromActivities(user.id);
+  const imported = await importEvidenceFromActivities(user.id);
 
-  const existing = db
+  const existing = await db
     .select()
     .from(careerProfiles)
     .where(eq(careerProfiles.userId, user.id))
     .get();
   if (existing) {
-    db.update(careerProfiles)
+    await db.update(careerProfiles)
       .set({ onboardedAt: existing.onboardedAt ?? Date.now(), updatedAt: Date.now() })
       .where(eq(careerProfiles.id, existing.id))
       .run();
   } else {
-    db.insert(careerProfiles)
+    await db.insert(careerProfiles)
       .values({ id: newId(), userId: user.id, onboardedAt: Date.now(), updatedAt: Date.now() })
       .run();
   }
 
-  snapshot(user.id);
+  await snapshot(user.id);
   if (imported > 0) {
-    pushNotification({
+    await pushNotification({
       userId: user.id,
       type: "system",
       title: "커리어 프로필 준비 완료",
@@ -180,8 +180,8 @@ export async function completeOnboarding(): Promise<ActionResult> {
 /** 활동 데이터에서 근거 다시 가져오기 */
 export async function importActivityEvidence(): Promise<ActionResult> {
   const user = await requireUser();
-  const imported = importEvidenceFromActivities(user.id);
-  snapshot(user.id);
+  const imported = await importEvidenceFromActivities(user.id);
+  await snapshot(user.id);
   revalidateCareer();
   return imported > 0
     ? { ok: true }
@@ -196,7 +196,7 @@ export async function addSkill(name: string, selfScore?: number | null): Promise
   if (!trimmed) return { ok: false, error: "스킬 이름을 입력해주세요." };
 
   const [normalized] = normalizeSkillNames([trimmed]);
-  const existing = db
+  const existing = await db
     .select()
     .from(userSkills)
     .where(and(eq(userSkills.userId, user.id), eq(userSkills.name, normalized)))
@@ -209,7 +209,7 @@ export async function addSkill(name: string, selfScore?: number | null): Promise
       ? Math.max(0, Math.min(100, Math.round(selfScore)))
       : null;
 
-  db.insert(userSkills)
+  await db.insert(userSkills)
     .values({
       id: newId(),
       userId: user.id,
@@ -220,17 +220,17 @@ export async function addSkill(name: string, selfScore?: number | null): Promise
     })
     .run();
 
-  snapshot(user.id);
+  await snapshot(user.id);
   revalidateCareer();
   return { ok: true };
 }
 
 export async function removeSkill(skillId: string): Promise<ActionResult> {
   const user = await requireUser();
-  db.delete(userSkills)
+  await db.delete(userSkills)
     .where(and(eq(userSkills.id, skillId), eq(userSkills.userId, user.id)))
     .run();
-  snapshot(user.id);
+  await snapshot(user.id);
   revalidateCareer();
   return { ok: true };
 }
@@ -257,7 +257,7 @@ export async function addEvidence(input: EvidenceInput): Promise<ActionResult> {
     return { ok: false, error: "이 근거가 뒷받침하는 스킬을 1개 이상 입력해주세요." };
   }
 
-  db.insert(careerEvidence)
+  await db.insert(careerEvidence)
     .values({
       id: newId(),
       userId: user.id,
@@ -272,17 +272,17 @@ export async function addEvidence(input: EvidenceInput): Promise<ActionResult> {
     })
     .run();
 
-  snapshot(user.id);
+  await snapshot(user.id);
   revalidateCareer();
   return { ok: true };
 }
 
 export async function deleteEvidence(evidenceId: string): Promise<ActionResult> {
   const user = await requireUser();
-  db.delete(careerEvidence)
+  await db.delete(careerEvidence)
     .where(and(eq(careerEvidence.id, evidenceId), eq(careerEvidence.userId, user.id)))
     .run();
-  snapshot(user.id);
+  await snapshot(user.id);
   revalidateCareer();
   return { ok: true };
 }
@@ -305,16 +305,16 @@ export async function acceptMission(input: MissionInput): Promise<ActionResult> 
   if (!parsed.success) return { ok: false, error: "추천 행동 정보가 올바르지 않습니다." };
   const data = parsed.data;
 
-  const dup = db
+  const dup = await db
     .select({ id: careerActions.id })
     .from(careerActions)
     .where(and(eq(careerActions.userId, user.id), eq(careerActions.title, data.title)))
     .get();
   if (dup) return { ok: false, error: "이미 등록된 행동입니다." };
 
-  const ctx = getCareerContext(user.id);
+  const ctx = await getCareerContext(user.id);
 
-  const maxPos = db
+  const maxPos = await db
     .select({ position: tasks.position })
     .from(tasks)
     .where(eq(tasks.userId, user.id))
@@ -326,7 +326,7 @@ export async function acceptMission(input: MissionInput): Promise<ActionResult> 
   // 미션 Task는 대시보드 '해야 할 일'에 보이도록 3일 뒤 마감을 기본 부여
   const due = new Date(now + 3 * 86400000);
   const dueDate = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}-${String(due.getDate()).padStart(2, "0")}`;
-  db.insert(tasks)
+  await db.insert(tasks)
     .values({
       id: taskId,
       userId: user.id,
@@ -343,7 +343,7 @@ export async function acceptMission(input: MissionInput): Promise<ActionResult> 
     })
     .run();
 
-  db.insert(careerActions)
+  await db.insert(careerActions)
     .values({
       id: newId(),
       userId: user.id,
@@ -372,7 +372,7 @@ export async function dismissMission(input: MissionInput): Promise<ActionResult>
   const data = parsed.data;
   const now = Date.now();
 
-  db.insert(careerActions)
+  await db.insert(careerActions)
     .values({
       id: newId(),
       userId: user.id,
@@ -407,14 +407,16 @@ export async function addRoadmapItem(input: RoadmapItemInput): Promise<ActionRes
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  const ctx = getCareerContext(user.id);
-  const count = db
-    .select({ id: roadmapItems.id })
-    .from(roadmapItems)
-    .where(eq(roadmapItems.userId, user.id))
-    .all().length;
+  const ctx = await getCareerContext(user.id);
+  const count = (
+    await db
+      .select({ id: roadmapItems.id })
+      .from(roadmapItems)
+      .where(eq(roadmapItems.userId, user.id))
+      .all()
+  ).length;
 
-  db.insert(roadmapItems)
+  await db.insert(roadmapItems)
     .values({
       id: newId(),
       userId: user.id,
@@ -435,18 +437,19 @@ export async function addRoadmapItem(input: RoadmapItemInput): Promise<ActionRes
 /** Gap 추천 행동으로 3개월 로드맵 자동 생성 */
 export async function generateRoadmap(): Promise<ActionResult> {
   const user = await requireUser();
-  const ctx = getCareerContext(user.id);
+  const ctx = await getCareerContext(user.id);
   if (ctx.gaps.length === 0) {
     return { ok: false, error: "Gap이 없습니다. 목표를 먼저 설정해주세요." };
   }
 
   const existingTitles = new Set(
-    db
-      .select({ title: roadmapItems.title })
-      .from(roadmapItems)
-      .where(eq(roadmapItems.userId, user.id))
-      .all()
-      .map((r) => r.title),
+    (
+      await db
+        .select({ title: roadmapItems.title })
+        .from(roadmapItems)
+        .where(eq(roadmapItems.userId, user.id))
+        .all()
+    ).map((r) => r.title),
   );
   const candidates = rankActions(ctx.gaps, existingTitles, 9);
   if (candidates.length === 0) {
@@ -455,11 +458,11 @@ export async function generateRoadmap(): Promise<ActionResult> {
 
   const now = new Date();
   let created = 0;
-  candidates.forEach((candidate, index) => {
+  for (const [index, candidate] of candidates.entries()) {
     const monthOffset = Math.floor(index / 3); // 월당 3개
     const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
     const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    db.insert(roadmapItems)
+    await db.insert(roadmapItems)
       .values({
         id: newId(),
         userId: user.id,
@@ -473,7 +476,7 @@ export async function generateRoadmap(): Promise<ActionResult> {
       })
       .run();
     created++;
-  });
+  }
 
   revalidatePath("/career/roadmap");
   return { ok: true, id: String(created) };
@@ -484,7 +487,7 @@ export async function setRoadmapStatus(itemId: string, status: string): Promise<
   if (!["planned", "in_progress", "done"].includes(status)) {
     return { ok: false, error: "잘못된 상태입니다." };
   }
-  db.update(roadmapItems)
+  await db.update(roadmapItems)
     .set({ status })
     .where(and(eq(roadmapItems.id, itemId), eq(roadmapItems.userId, user.id)))
     .run();
@@ -494,7 +497,7 @@ export async function setRoadmapStatus(itemId: string, status: string): Promise<
 
 export async function deleteRoadmapItem(itemId: string): Promise<ActionResult> {
   const user = await requireUser();
-  db.delete(roadmapItems)
+  await db.delete(roadmapItems)
     .where(and(eq(roadmapItems.id, itemId), eq(roadmapItems.userId, user.id)))
     .run();
   revalidatePath("/career/roadmap");
@@ -504,7 +507,7 @@ export async function deleteRoadmapItem(itemId: string): Promise<ActionResult> {
 /** 로드맵 항목을 Task로 등록 */
 export async function roadmapItemToTask(itemId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const item = db
+  const item = await db
     .select()
     .from(roadmapItems)
     .where(and(eq(roadmapItems.id, itemId), eq(roadmapItems.userId, user.id)))
@@ -512,7 +515,7 @@ export async function roadmapItemToTask(itemId: string): Promise<ActionResult> {
   if (!item) return { ok: false, error: "로드맵 항목을 찾을 수 없습니다." };
   if (item.taskId) return { ok: false, error: "이미 작업으로 등록되어 있습니다." };
 
-  const maxPos = db
+  const maxPos = await db
     .select({ position: tasks.position })
     .from(tasks)
     .where(eq(tasks.userId, user.id))
@@ -523,7 +526,7 @@ export async function roadmapItemToTask(itemId: string): Promise<ActionResult> {
   const now = Date.now();
   const due = new Date(now + 7 * 86400000);
   const dueDate = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}-${String(due.getDate()).padStart(2, "0")}`;
-  db.insert(tasks)
+  await db.insert(tasks)
     .values({
       id: taskId,
       userId: user.id,
@@ -537,7 +540,7 @@ export async function roadmapItemToTask(itemId: string): Promise<ActionResult> {
       updatedAt: now,
     })
     .run();
-  db.update(roadmapItems)
+  await db.update(roadmapItems)
     .set({ taskId, status: "in_progress" })
     .where(eq(roadmapItems.id, itemId))
     .run();

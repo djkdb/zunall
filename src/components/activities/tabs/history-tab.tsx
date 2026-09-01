@@ -28,8 +28,8 @@ const KIND_ICONS: Record<HistoryKind, React.ComponentType<{ className?: string }
   note: StickyNote,
 };
 
-export function HistoryTab({ activity }: { activity: ActivityRow }) {
-  const history = db
+export async function HistoryTab({ activity }: { activity: ActivityRow }) {
+  const history = await db
     .select()
     .from(activityHistory)
     .where(eq(activityHistory.activityId, activity.id))

@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Career Gaps" };
 
 export default async function GapsPage() {
   const user = await requireUser();
-  const ctx = getCareerContext(user.id);
+  const ctx = await getCareerContext(user.id);
 
   return (
     <div className="space-y-5">

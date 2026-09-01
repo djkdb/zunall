@@ -10,7 +10,7 @@ import type { ActionResult } from "@/actions/activities";
 /** 활동별 개인 메모 저장 (upsert) */
 export async function saveNote(activityId: string, content: string): Promise<ActionResult> {
   const user = await requireUser();
-  const act = db
+  const act = await db
     .select({ id: activities.id })
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, user.id)))
@@ -18,19 +18,19 @@ export async function saveNote(activityId: string, content: string): Promise<Act
   if (!act) return { ok: false, error: "활동을 찾을 수 없습니다." };
   if (content.length > 20000) return { ok: false, error: "메모가 너무 깁니다." };
 
-  const existing = db
+  const existing = await db
     .select({ id: notes.id })
     .from(notes)
     .where(and(eq(notes.activityId, activityId), eq(notes.userId, user.id)))
     .get();
 
   if (existing) {
-    db.update(notes)
+    await db.update(notes)
       .set({ content, updatedAt: Date.now() })
       .where(eq(notes.id, existing.id))
       .run();
   } else {
-    db.insert(notes)
+    await db.insert(notes)
       .values({ id: newId(), userId: user.id, activityId, content, updatedAt: Date.now() })
       .run();
   }

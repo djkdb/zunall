@@ -20,7 +20,7 @@ import type { ActionResult } from "@/actions/activities";
  */
 export async function analyzeOpportunityFit(activityId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const activity = db
+  const activity = await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, user.id)))
@@ -37,7 +37,7 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
     return { ok: false, error: aiResult.error ?? "요구 역량 분석에 실패했습니다." };
   }
 
-  const review = db
+  const review = await db
     .select()
     .from(aiReviews)
     .where(and(eq(aiReviews.id, aiResult.reviewId), eq(aiReviews.userId, user.id)))
@@ -53,7 +53,7 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
   };
 
   // 2) 규칙 기반 Fit 계산
-  const ctx = getCareerContext(user.id);
+  const ctx = await getCareerContext(user.id);
   const fit = computeOpportunityFit({
     requirements,
     skillScores: ctx.skillScores,
@@ -62,12 +62,12 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
   });
 
   // 3) 저장 (활동당 최신 1건 유지)
-  db.delete(opportunityAnalyses)
+  await db.delete(opportunityAnalyses)
     .where(
       and(eq(opportunityAnalyses.activityId, activityId), eq(opportunityAnalyses.userId, user.id)),
     )
     .run();
-  db.insert(opportunityAnalyses)
+  await db.insert(opportunityAnalyses)
     .values({
       id: newId(),
       userId: user.id,
@@ -88,7 +88,7 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
     })
     .run();
 
-  logHistory(user.id, activityId, "ai", `지원 적합도 분석 완료 — ${fit.score}점 (${fit.recommendation === "apply" ? "지원 추천" : fit.recommendation === "hold" ? "보강 후 지원" : "지원 비추천"})`);
+  await logHistory(user.id, activityId, "ai", `지원 적합도 분석 완료 — ${fit.score}점 (${fit.recommendation === "apply" ? "지원 추천" : fit.recommendation === "hold" ? "보강 후 지원" : "지원 비추천"})`);
 
   revalidatePath(`/activities/${activityId}`);
   revalidatePath("/opportunities");

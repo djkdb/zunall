@@ -63,14 +63,14 @@ export default async function DashboardPage() {
   const today = todayStr();
   const weekEnd = toDateStr(new Date(Date.now() + 7 * 86400000));
 
-  const careerCtx = getCareerContext(user.id);
-  const scoreTrend = getScoreTrend(user.id);
+  const careerCtx = await getCareerContext(user.id);
+  const scoreTrend = await getScoreTrend(user.id);
 
-  const allActivities = getActivitiesWithMeta(user.id);
+  const allActivities = await getActivitiesWithMeta(user.id);
   const ongoing = allActivities.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status));
 
   // 이번 주 일정
-  const weekEvents = db
+  const weekEvents = await db
     .select()
     .from(events)
     .where(and(eq(events.userId, user.id), gte(events.date, today), lte(events.date, weekEnd)))
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
   const todayEvents = weekEvents.filter((e) => e.date === today);
 
   // 오늘/지난 마감 작업
-  const openTasks = db
+  const openTasks = await db
     .select()
     .from(tasks)
     .where(and(eq(tasks.userId, user.id), inArray(tasks.status, ["todo", "in_progress", "review"])))
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
     .sort((a, b) => (a.dueDate! < b.dueDate! ? -1 : 1));
 
   // AI 평가가 필요한 제출물: 버전은 있는데 완료 전 상태
-  const subs = db
+  const subs = await db
     .select()
     .from(submissions)
     .where(
@@ -103,42 +103,42 @@ export default async function DashboardPage() {
   const subIds = subs.map((s) => s.id);
   const versionedSubIds = new Set(
     subIds.length > 0
-      ? db
+      ? (await db
           .select({ submissionId: submissionVersions.submissionId })
           .from(submissionVersions)
           .where(inArray(submissionVersions.submissionId, subIds))
-          .all()
+          .all())
           .map((v) => v.submissionId)
       : [],
   );
   const needsReview = subs.filter((s) => versionedSubIds.has(s.id)).slice(0, 4);
 
   // 제출 예정 (마감일 있는 미제출 제출물)
-  const upcomingSubs = db
+  const upcomingSubs = (await db
     .select()
     .from(submissions)
     .where(and(eq(submissions.userId, user.id), gte(submissions.dueDate, today)))
     .orderBy(submissions.dueDate)
-    .all()
+    .all())
     .filter((s) => s.status !== "submitted")
     .slice(0, 4);
 
   // 최근 알림
-  const recentNotifications = db
+  const recentNotifications = (await db
     .select()
     .from(notifications)
     .where(eq(notifications.userId, user.id))
     .orderBy(desc(notifications.createdAt))
-    .all()
+    .all())
     .slice(0, 5);
-  const unreadCount = db
+  const unreadCount = (await db
     .select({ id: notifications.id })
     .from(notifications)
     .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0)))
-    .all().length;
+    .all()).length;
 
   // 전체 진행률
-  const allTaskRows = db
+  const allTaskRows = await db
     .select({ status: tasks.status })
     .from(tasks)
     .where(eq(tasks.userId, user.id))
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
       : null;
 
   // AI 평균 점수
-  const evalReviews = db
+  const evalReviews = (await db
     .select()
     .from(aiReviews)
     .where(
@@ -159,7 +159,7 @@ export default async function DashboardPage() {
         eq(aiReviews.status, "done"),
       ),
     )
-    .all()
+    .all())
     .filter((r) => r.overallScore != null && r.maxScore);
 
   // 마감 임박(7일 이내) + 최근 추가
@@ -173,11 +173,11 @@ export default async function DashboardPage() {
   const activityNameById = new Map(allActivities.map((a) => [a.id, a.name]));
 
   // 추천 기회: 분석 완료 + 지원 추천/보강 상위 3개
-  const oppAnalyses = db
+  const oppAnalyses = (await db
     .select()
     .from(opportunityAnalyses)
     .where(eq(opportunityAnalyses.userId, user.id))
-    .all()
+    .all())
     .filter((a) => a.recommendation === "apply" || a.recommendation === "hold")
     .sort((a, b) => (b.fitScore ?? 0) - (a.fitScore ?? 0));
   const recommendedOpps = oppAnalyses

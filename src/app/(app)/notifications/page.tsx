@@ -40,7 +40,7 @@ export default async function NotificationsPage({
   const rawFilter = typeof params.filter === "string" ? params.filter : "unread";
   const filter = FILTERS.some((f) => f.key === rawFilter) ? rawFilter : "unread";
 
-  const all = db
+  const all = await db
     .select()
     .from(notifications)
     .where(eq(notifications.userId, user.id))
@@ -56,7 +56,7 @@ export default async function NotificationsPage({
         ? all.filter((n) => n.read === 0)
         : all.filter((n) => n.type === filter);
 
-  const activityRows = db
+  const activityRows = await db
     .select({ id: activities.id, name: activities.name })
     .from(activities)
     .where(eq(activities.userId, user.id))

@@ -35,15 +35,15 @@ export type ActionResult = { ok: true; id?: string } | { ok: false; error: strin
 
 /** 소유권 확인 후 활동 반환 (없으면 null) */
 async function getOwnedActivity(activityId: string, userId: string) {
-  return db
+  return await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, userId)))
     .get();
 }
 
-function syncTags(userId: string, activityId: string, tagsText: string | null) {
-  db.delete(activityTags).where(eq(activityTags.activityId, activityId)).run();
+async function syncTags(userId: string, activityId: string, tagsText: string | null) {
+  await db.delete(activityTags).where(eq(activityTags.activityId, activityId)).run();
   if (!tagsText) return;
 
   const names = Array.from(
@@ -56,16 +56,16 @@ function syncTags(userId: string, activityId: string, tagsText: string | null) {
     ),
   );
   for (const name of names) {
-    let tag = db
+    let tag = await db
       .select()
       .from(tags)
       .where(and(eq(tags.userId, userId), eq(tags.name, name)))
       .get();
     if (!tag) {
       tag = { id: newId(), userId, name };
-      db.insert(tags).values(tag).run();
+      await db.insert(tags).values(tag).run();
     }
-    db.insert(activityTags).values({ activityId, tagId: tag.id }).run();
+    await db.insert(activityTags).values({ activityId, tagId: tag.id }).run();
   }
 }
 
@@ -75,15 +75,17 @@ export async function createActivity(input: ActivityInput): Promise<ActionResult
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  const count = db
-    .select({ id: activities.id })
-    .from(activities)
-    .where(eq(activities.userId, user.id))
-    .all().length;
+  const count = (
+    await db
+      .select({ id: activities.id })
+      .from(activities)
+      .where(eq(activities.userId, user.id))
+      .all()
+  ).length;
 
   const id = newId();
   const now = Date.now();
-  db.insert(activities)
+  await db.insert(activities)
     .values({
       id,
       userId: user.id,
@@ -106,9 +108,9 @@ export async function createActivity(input: ActivityInput): Promise<ActionResult
     })
     .run();
 
-  syncTags(user.id, id, data.tagsText);
-  autoCreateDeadlineEvents(user.id, id, data);
-  logHistory(user.id, id, "created", `활동 "${data.name}" 생성`);
+  await syncTags(user.id, id, data.tagsText);
+  await autoCreateDeadlineEvents(user.id, id, data);
+  await logHistory(user.id, id, "created", `활동 "${data.name}" 생성`);
 
   revalidatePath("/activities");
   revalidatePath("/");
@@ -116,7 +118,7 @@ export async function createActivity(input: ActivityInput): Promise<ActionResult
 }
 
 /** 활동의 마감일 필드들로 캘린더 일정 자동 생성 */
-function autoCreateDeadlineEvents(
+async function autoCreateDeadlineEvents(
   userId: string,
   activityId: string,
   data: { name: string; applyDeadline: string | null; submitDeadline: string | null; announceDate: string | null },
@@ -128,7 +130,7 @@ function autoCreateDeadlineEvents(
   ];
   for (const [date, type, label] of pairs) {
     if (!date) continue;
-    const exists = db
+    const exists = await db
       .select({ id: events.id })
       .from(events)
       .where(
@@ -136,7 +138,7 @@ function autoCreateDeadlineEvents(
       )
       .get();
     if (exists) continue;
-    db.insert(events)
+    await db.insert(events)
       .values({
         id: newId(),
         userId,
@@ -159,7 +161,7 @@ export async function updateActivity(activityId: string, input: ActivityInput): 
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  db.update(activities)
+  await db.update(activities)
     .set({
       name: data.name,
       organizer: data.organizer,
@@ -180,18 +182,18 @@ export async function updateActivity(activityId: string, input: ActivityInput): 
     .where(eq(activities.id, activityId))
     .run();
 
-  syncTags(user.id, activityId, data.tagsText);
-  autoCreateDeadlineEvents(user.id, activityId, data);
+  await syncTags(user.id, activityId, data.tagsText);
+  await autoCreateDeadlineEvents(user.id, activityId, data);
 
   if (activity.status !== data.status) {
-    logHistory(
+    await logHistory(
       user.id,
       activityId,
       "status",
       `상태 변경: ${ACTIVITY_STATUSES[activity.status as ActivityStatus] ?? activity.status} → ${ACTIVITY_STATUSES[data.status as ActivityStatus] ?? data.status}`,
     );
   } else {
-    logHistory(user.id, activityId, "updated", "활동 정보 수정");
+    await logHistory(user.id, activityId, "updated", "활동 정보 수정");
   }
 
   revalidatePath("/activities");
@@ -207,12 +209,12 @@ export async function updateActivityStatus(activityId: string, status: string): 
   if (!(status in ACTIVITY_STATUSES)) return { ok: false, error: "잘못된 상태입니다." };
   if (activity.status === status) return { ok: true };
 
-  db.update(activities)
+  await db.update(activities)
     .set({ status, updatedAt: Date.now() })
     .where(eq(activities.id, activityId))
     .run();
 
-  logHistory(
+  await logHistory(
     user.id,
     activityId,
     "status",
@@ -234,7 +236,7 @@ export async function updatePortfolio(activityId: string, input: PortfolioInput)
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  db.update(activities)
+  await db.update(activities)
     .set({
       role: data.role,
       achievement: data.achievement,
@@ -245,7 +247,7 @@ export async function updatePortfolio(activityId: string, input: PortfolioInput)
     .where(eq(activities.id, activityId))
     .run();
 
-  logHistory(user.id, activityId, "updated", "활동 기록(포트폴리오) 수정");
+  await logHistory(user.id, activityId, "updated", "활동 기록(포트폴리오) 수정");
   revalidatePath(`/activities/${activityId}`);
   return { ok: true };
 }
@@ -256,43 +258,45 @@ export async function deleteActivity(activityId: string): Promise<void> {
   if (!activity) redirect("/activities");
 
   // 저장된 파일 실제 삭제
-  const docs = db
+  const docs = await db
     .select()
     .from(documents)
     .where(and(eq(documents.activityId, activityId), eq(documents.userId, user.id)))
     .all();
-  for (const doc of docs) deleteStoredFile(doc.storagePath);
+  for (const doc of docs) await deleteStoredFile(doc.storagePath);
 
-  const subIds = db
-    .select({ id: submissions.id })
-    .from(submissions)
-    .where(eq(submissions.activityId, activityId))
-    .all()
-    .map((s) => s.id);
-  const reviewIds = db
-    .select({ id: aiReviews.id })
-    .from(aiReviews)
-    .where(eq(aiReviews.activityId, activityId))
-    .all()
-    .map((r) => r.id);
+  const subIds = (
+    await db
+      .select({ id: submissions.id })
+      .from(submissions)
+      .where(eq(submissions.activityId, activityId))
+      .all()
+  ).map((s) => s.id);
+  const reviewIds = (
+    await db
+      .select({ id: aiReviews.id })
+      .from(aiReviews)
+      .where(eq(aiReviews.activityId, activityId))
+      .all()
+  ).map((r) => r.id);
 
-  db.delete(activityTags).where(eq(activityTags.activityId, activityId)).run();
-  db.delete(events).where(eq(events.activityId, activityId)).run();
-  db.delete(tasks).where(eq(tasks.activityId, activityId)).run();
-  db.delete(documents).where(eq(documents.activityId, activityId)).run();
+  await db.delete(activityTags).where(eq(activityTags.activityId, activityId)).run();
+  await db.delete(events).where(eq(events.activityId, activityId)).run();
+  await db.delete(tasks).where(eq(tasks.activityId, activityId)).run();
+  await db.delete(documents).where(eq(documents.activityId, activityId)).run();
   if (subIds.length > 0) {
-    db.delete(submissionVersions).where(inArray(submissionVersions.submissionId, subIds)).run();
+    await db.delete(submissionVersions).where(inArray(submissionVersions.submissionId, subIds)).run();
   }
-  db.delete(submissions).where(eq(submissions.activityId, activityId)).run();
-  db.delete(evaluationCriteria).where(eq(evaluationCriteria.activityId, activityId)).run();
+  await db.delete(submissions).where(eq(submissions.activityId, activityId)).run();
+  await db.delete(evaluationCriteria).where(eq(evaluationCriteria.activityId, activityId)).run();
   if (reviewIds.length > 0) {
-    db.delete(aiReviewItems).where(inArray(aiReviewItems.reviewId, reviewIds)).run();
+    await db.delete(aiReviewItems).where(inArray(aiReviewItems.reviewId, reviewIds)).run();
   }
-  db.delete(aiReviews).where(eq(aiReviews.activityId, activityId)).run();
-  db.delete(notes).where(eq(notes.activityId, activityId)).run();
-  db.delete(notifications).where(eq(notifications.activityId, activityId)).run();
-  db.delete(activityHistory).where(eq(activityHistory.activityId, activityId)).run();
-  db.delete(activities).where(eq(activities.id, activityId)).run();
+  await db.delete(aiReviews).where(eq(aiReviews.activityId, activityId)).run();
+  await db.delete(notes).where(eq(notes.activityId, activityId)).run();
+  await db.delete(notifications).where(eq(notifications.activityId, activityId)).run();
+  await db.delete(activityHistory).where(eq(activityHistory.activityId, activityId)).run();
+  await db.delete(activities).where(eq(activities.id, activityId)).run();
 
   revalidatePath("/activities");
   revalidatePath("/");

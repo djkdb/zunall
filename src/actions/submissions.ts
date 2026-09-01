@@ -13,7 +13,7 @@ import { SUBMISSION_STATUSES, type SubmissionStatus } from "@/lib/constants";
 import type { ActionResult } from "@/actions/activities";
 
 async function getOwnedSubmission(submissionId: string, userId: string) {
-  return db
+  return await db
     .select()
     .from(submissions)
     .where(and(eq(submissions.id, submissionId), eq(submissions.userId, userId)))
@@ -25,7 +25,7 @@ export async function createSubmission(
   input: SubmissionInput,
 ): Promise<ActionResult> {
   const user = await requireUser();
-  const activity = db
+  const activity = await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, user.id)))
@@ -38,7 +38,7 @@ export async function createSubmission(
 
   const id = newId();
   const now = Date.now();
-  db.insert(submissions)
+  await db.insert(submissions)
     .values({
       id,
       userId: user.id,
@@ -52,7 +52,7 @@ export async function createSubmission(
     })
     .run();
 
-  logHistory(user.id, activityId, "submission", `제출물 추가: ${data.title}`);
+  await logHistory(user.id, activityId, "submission", `제출물 추가: ${data.title}`);
   revalidatePath(`/activities/${activityId}`);
   return { ok: true, id };
 }
@@ -69,7 +69,7 @@ export async function updateSubmission(
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  db.update(submissions)
+  await db.update(submissions)
     .set({
       title: data.title,
       description: data.description,
@@ -81,7 +81,7 @@ export async function updateSubmission(
     .run();
 
   if (existing.status !== data.status) {
-    logHistory(
+    await logHistory(
       user.id,
       existing.activityId,
       "submission",
@@ -101,12 +101,12 @@ export async function updateSubmissionStatus(
   if (!existing) return { ok: false, error: "제출물을 찾을 수 없습니다." };
   if (!(status in SUBMISSION_STATUSES)) return { ok: false, error: "잘못된 상태입니다." };
 
-  db.update(submissions)
+  await db.update(submissions)
     .set({ status, updatedAt: Date.now() })
     .where(eq(submissions.id, submissionId))
     .run();
 
-  logHistory(
+  await logHistory(
     user.id,
     existing.activityId,
     "submission",
@@ -122,26 +122,26 @@ export async function deleteSubmission(submissionId: string): Promise<ActionResu
   if (!existing) return { ok: false, error: "제출물을 찾을 수 없습니다." };
 
   // 연결된 버전 및 파일 정리
-  const versions = db
+  const versions = await db
     .select()
     .from(submissionVersions)
     .where(eq(submissionVersions.submissionId, submissionId))
     .all();
   for (const v of versions) {
-    const doc = db
+    const doc = await db
       .select()
       .from(documents)
       .where(and(eq(documents.id, v.documentId), eq(documents.userId, user.id)))
       .get();
     if (doc) {
-      deleteStoredFile(doc.storagePath);
-      db.delete(documents).where(eq(documents.id, doc.id)).run();
+      await deleteStoredFile(doc.storagePath);
+      await db.delete(documents).where(eq(documents.id, doc.id)).run();
     }
   }
-  db.delete(submissionVersions).where(eq(submissionVersions.submissionId, submissionId)).run();
-  db.delete(submissions).where(eq(submissions.id, submissionId)).run();
+  await db.delete(submissionVersions).where(eq(submissionVersions.submissionId, submissionId)).run();
+  await db.delete(submissions).where(eq(submissions.id, submissionId)).run();
 
-  logHistory(user.id, existing.activityId, "submission", `제출물 삭제: ${existing.title}`);
+  await logHistory(user.id, existing.activityId, "submission", `제출물 삭제: ${existing.title}`);
   revalidatePath(`/activities/${existing.activityId}`);
   return { ok: true };
 }
@@ -179,15 +179,17 @@ export async function uploadSubmissionVersion(formData: FormData): Promise<Actio
     if (result.ok && result.text) extractedText = result.text.slice(0, 200_000);
   }
 
-  const versionCount = db
-    .select({ id: submissionVersions.id })
-    .from(submissionVersions)
-    .where(eq(submissionVersions.submissionId, submissionId))
-    .all().length;
+  const versionCount = (
+    await db
+      .select({ id: submissionVersions.id })
+      .from(submissionVersions)
+      .where(eq(submissionVersions.submissionId, submissionId))
+      .all()
+  ).length;
   const versionLabel = isFinal ? "Final" : `v${versionCount + 1}`;
 
   const docId = newId();
-  db.insert(documents)
+  await db.insert(documents)
     .values({
       id: docId,
       userId: user.id,
@@ -208,14 +210,14 @@ export async function uploadSubmissionVersion(formData: FormData): Promise<Actio
 
   if (isFinal) {
     // 기존 Final 표시 해제
-    db.update(submissionVersions)
+    await db.update(submissionVersions)
       .set({ isFinal: 0 })
       .where(eq(submissionVersions.submissionId, submissionId))
       .run();
   }
 
   const versionId = newId();
-  db.insert(submissionVersions)
+  await db.insert(submissionVersions)
     .values({
       id: versionId,
       submissionId,
@@ -228,25 +230,25 @@ export async function uploadSubmissionVersion(formData: FormData): Promise<Actio
     .run();
 
   if (isFinal) {
-    db.update(submissions)
+    await db.update(submissions)
       .set({ status: "final", updatedAt: Date.now() })
       .where(eq(submissions.id, submissionId))
       .run();
   } else if (submission.status === "submitted" || submission.status === "final") {
     // 새 버전이 올라오면 다시 작성 중 상태로
-    db.update(submissions)
+    await db.update(submissions)
       .set({ status: "draft", updatedAt: Date.now() })
       .where(eq(submissions.id, submissionId))
       .run();
   }
 
-  logHistory(
+  await logHistory(
     user.id,
     submission.activityId,
     "submission",
     `제출물 "${submission.title}" ${versionLabel} 업로드 (${file.name})`,
   );
-  pushNotification({
+  await pushNotification({
     userId: user.id,
     activityId: submission.activityId,
     type: "file",

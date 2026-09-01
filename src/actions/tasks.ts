@@ -23,7 +23,7 @@ export async function createTask(input: TaskInput): Promise<ActionResult> {
   const data = parsed.data;
 
   if (data.activityId) {
-    const act = db
+    const act = await db
       .select({ id: activities.id })
       .from(activities)
       .where(and(eq(activities.id, data.activityId), eq(activities.userId, user.id)))
@@ -31,7 +31,7 @@ export async function createTask(input: TaskInput): Promise<ActionResult> {
     if (!act) return { ok: false, error: "활동을 찾을 수 없습니다." };
   }
 
-  const maxPos = db
+  const maxPos = await db
     .select({ position: tasks.position })
     .from(tasks)
     .where(eq(tasks.userId, user.id))
@@ -40,7 +40,7 @@ export async function createTask(input: TaskInput): Promise<ActionResult> {
 
   const id = newId();
   const now = Date.now();
-  db.insert(tasks)
+  await db.insert(tasks)
     .values({
       id,
       userId: user.id,
@@ -58,7 +58,7 @@ export async function createTask(input: TaskInput): Promise<ActionResult> {
     .run();
 
   if (data.activityId) {
-    logHistory(user.id, data.activityId, "task", `작업 추가: ${data.title}`);
+    await logHistory(user.id, data.activityId, "task", `작업 추가: ${data.title}`);
   }
   revalidateTaskPaths(data.activityId);
   return { ok: true, id };
@@ -66,7 +66,7 @@ export async function createTask(input: TaskInput): Promise<ActionResult> {
 
 export async function updateTask(taskId: string, input: TaskInput): Promise<ActionResult> {
   const user = await requireUser();
-  const existing = db
+  const existing = await db
     .select()
     .from(tasks)
     .where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
@@ -77,7 +77,7 @@ export async function updateTask(taskId: string, input: TaskInput): Promise<Acti
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  db.update(tasks)
+  await db.update(tasks)
     .set({
       title: data.title,
       description: data.description,
@@ -100,14 +100,14 @@ export async function updateTaskStatus(taskId: string, status: string): Promise<
   const user = await requireUser();
   if (!(status in TASK_STATUSES)) return { ok: false, error: "잘못된 상태입니다." };
 
-  const existing = db
+  const existing = await db
     .select()
     .from(tasks)
     .where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
     .get();
   if (!existing) return { ok: false, error: "작업을 찾을 수 없습니다." };
 
-  db.update(tasks)
+  await db.update(tasks)
     .set({
       status,
       updatedAt: Date.now(),
@@ -117,14 +117,14 @@ export async function updateTaskStatus(taskId: string, status: string): Promise<
     .run();
 
   if (existing.activityId && status === "done" && existing.status !== "done") {
-    logHistory(user.id, existing.activityId, "task", `작업 완료: ${existing.title}`);
+    await logHistory(user.id, existing.activityId, "task", `작업 완료: ${existing.title}`);
   }
 
   // 커리어 미션/로드맵과 연결된 작업이면 완료 처리 + Career Score 갱신
   if (status === "done" && existing.status !== "done") {
-    const missionDone = handleTaskCompletionForCareer(user.id, taskId);
+    const missionDone = await handleTaskCompletionForCareer(user.id, taskId);
     if (missionDone) {
-      pushNotification({
+      await pushNotification({
         userId: user.id,
         type: "system",
         title: "커리어 미션 완료 🔥",
@@ -141,14 +141,14 @@ export async function updateTaskStatus(taskId: string, status: string): Promise<
 
 export async function deleteTask(taskId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const existing = db
+  const existing = await db
     .select()
     .from(tasks)
     .where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
     .get();
   if (!existing) return { ok: false, error: "작업을 찾을 수 없습니다." };
 
-  db.delete(tasks).where(eq(tasks.id, taskId)).run();
+  await db.delete(tasks).where(eq(tasks.id, taskId)).run();
   revalidateTaskPaths(existing.activityId);
   return { ok: true };
 }

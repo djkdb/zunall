@@ -19,7 +19,7 @@ import { getProviderName } from "@/services/ai/provider";
 import { AI_ACTIONS, type AIAction } from "@/lib/constants";
 import { cn, formatDateTime } from "@/lib/utils";
 
-export function AITab({
+export async function AITab({
   activity,
   userId,
   selectedReviewId,
@@ -28,32 +28,32 @@ export function AITab({
   userId: string;
   selectedReviewId: string | null;
 }) {
-  const criteria = db
+  const criteria = await db
     .select()
     .from(evaluationCriteria)
     .where(eq(evaluationCriteria.activityId, activity.id))
     .orderBy(evaluationCriteria.position)
     .all();
 
-  const subs = db
+  const subs = await db
     .select()
     .from(submissions)
     .where(and(eq(submissions.activityId, activity.id), eq(submissions.userId, userId)))
     .orderBy(desc(submissions.createdAt))
     .all();
 
-  const reviews = db
+  const reviews = await db
     .select()
     .from(aiReviews)
     .where(and(eq(aiReviews.activityId, activity.id), eq(aiReviews.userId, userId)))
     .orderBy(desc(aiReviews.createdAt))
     .all();
 
-  const noticeDocCount = db
+  const noticeDocCount = (await db
     .select({ id: documents.id })
     .from(documents)
     .where(and(eq(documents.activityId, activity.id), eq(documents.category, "notice")))
-    .all().length;
+    .all()).length;
 
   const selectedReview =
     (selectedReviewId ? reviews.find((r) => r.id === selectedReviewId) : null) ??

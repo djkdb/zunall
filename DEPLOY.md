@@ -47,67 +47,47 @@ AI_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-ant-... npm run start
 
 ---
 
-## 경로 B — Cloudflare Workers 마이그레이션 체크리스트
+## 경로 B — Cloudflare Workers ✅ 마이그레이션 완료
 
-Cloudflare에 정착하려면 네이티브 모듈/로컬 디스크를 Cloudflare 서비스로 교체해야 합니다.
-아키텍처가 레이어로 분리되어 있어 교체 지점은 3곳입니다.
+코드 전환이 끝났습니다: DB는 D1↔better-sqlite3 런타임 스위치, 스토리지는 R2↔로컬 디스크
+자동 전환이며, 실제 workerd 런타임에서 회원가입→온보딩→R2 업로드→적합도 분석까지 검증됐습니다.
+로컬 개발(`npm run dev`)은 이전과 완전히 동일하게 동작합니다.
 
-### 1. Next.js 어댑터
+### 배포 절차 (Cloudflare 계정 필요 — 5개 명령)
 
 ```bash
-npm i -D @opennextjs/cloudflare wrangler
-npx opennextjs-cloudflare build
-npx wrangler deploy
+npx wrangler login                                   # 1. 계정 연결
+npx wrangler d1 create zunall                        # 2. → 출력된 database_id를 wrangler.jsonc에 붙여넣기
+npx wrangler r2 bucket create zunall-uploads         # 3. R2 버킷 생성
+npx wrangler d1 execute zunall --remote --file=schema.sql   # 4. 스키마 적용 (24개 테이블)
+npx wrangler secret put ANTHROPIC_API_KEY            # 5. AI 키 등록 후:
+npm run deploy:cf                                    #    빌드 + 배포
 ```
 
-### 2. DB: better-sqlite3 → D1
+### 로컬에서 Workers 런타임 그대로 테스트
 
-- Drizzle 드라이버 교체: `drizzle-orm/better-sqlite3` → `drizzle-orm/d1`
-  (`src/lib/db/index.ts`만 수정 — 스키마·쿼리는 D1이 SQLite 호환이라 유지)
-- 스키마 적용: `src/lib/db/ddl.ts`의 DDL을 파일로 내보내
-  `npx wrangler d1 create zunall && npx wrangler d1 execute zunall --file=schema.sql`
-- **주의**: D1은 비동기 API입니다. 코드 전반의 `.get()/.all()/.run()` 동기 호출 앞에
-  `await`를 붙이는 일괄 수정이 필요합니다(기계적 변경, 로직 변화 없음).
-
-### 3. 파일 스토리지: 로컬 디스크 → R2
-
-- `src/lib/storage.ts` 하나만 교체하면 됩니다 (이미 서비스 레이어로 추상화됨).
-- `saveFile` → `env.BUCKET.put(key, buffer)`, `readFileBuffer` → `env.BUCKET.get(key)`,
-  `deleteStoredFile` → `env.BUCKET.delete(key)`
-
-### 4. AI: CLI → Anthropic API
-
-- 이미 준비되어 있습니다. `AI_PROVIDER=anthropic`으로 설정하고
-  `wrangler secret put ANTHROPIC_API_KEY`로 키를 등록하면 끝입니다.
-  (Workers에서는 CLI 실행이 불가능하므로 `claude` provider는 사용할 수 없습니다.)
-
-### wrangler.toml 예시
-
-```toml
-name = "zunall"
-compatibility_date = "2026-09-01"
-compatibility_flags = ["nodejs_compat"]
-
-[[d1_databases]]
-binding = "DB"
-database_name = "zunall"
-database_id = "<wrangler d1 create 결과>"
-
-[[r2_buckets]]
-binding = "BUCKET"
-bucket_name = "zunall-uploads"
-
-[vars]
-AI_PROVIDER = "anthropic"
+```bash
+npm run build:cf
+npx wrangler d1 execute zunall --local --file=schema.sql
+npx wrangler dev --port 8787 --var AI_PROVIDER:mock   # 로컬 D1/R2 시뮬레이션 포함
 ```
 
-### 실제 배포에 필요한 것 (사용자 작업)
+### 구조 (어떻게 전환되나)
 
-1. Cloudflare 계정 + `npx wrangler login`
-2. `wrangler d1 create` / `r2 bucket create` 실행 후 ID를 wrangler.toml에 반영
-3. `wrangler secret put ANTHROPIC_API_KEY`
+| 레이어 | 로컬/Node | Cloudflare Workers |
+| --- | --- | --- |
+| DB | better-sqlite3 (부팅 시 DDL 자동) | D1 바인딩 `DB` (schema.sql 1회 적용) |
+| 파일 | `data/uploads` | R2 바인딩 `BUCKET` |
+| AI | mock / claude CLI / anthropic | anthropic (CLI 불가) |
+| 감지 | `navigator.userAgent === "Cloudflare-Workers"` 런타임 스위치 (src/lib/db, src/lib/storage) |
 
----
+### 알려진 주의점
+
+- 스키마 변경 시: `npx tsx scripts/export-schema.ts` 재실행 후 새 테이블만 D1에 적용
+  (DDL은 CREATE TABLE IF NOT EXISTS라 전체 재실행해도 안전)
+- PDF 텍스트 추출(pdf-parse)은 Workers에서 미검증 — TXT/DOCX/PPTX는 동작 확인됨.
+  PDF 업로드 자체는 항상 동작하며, 추출 실패 시 앱은 정상 진행됩니다(실패 내성 설계)
+- Workers 요청당 CPU 시간 제한이 있어 매우 큰 문서 분석은 Docker 경로가 유리할 수 있음
 
 ## 배포 전 체크리스트 (공통)
 

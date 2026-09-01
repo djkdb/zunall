@@ -50,7 +50,7 @@ export default async function ActivityDetailPage({
   const user = await requireUser();
   const { id } = await params;
   const sp = await searchParams;
-  const activity = getActivity(user.id, id);
+  const activity = await getActivity(user.id, id);
   if (!activity) notFound();
 
   const rawTab = typeof sp.tab === "string" ? sp.tab : "overview";
@@ -58,26 +58,26 @@ export default async function ActivityDetailPage({
     ? (rawTab as TabKey)
     : "overview";
 
-  const tagNames = getActivityTagNames(activity.id);
+  const tagNames = await getActivityTagNames(activity.id);
   const deadline = nearestDeadlineOf(activity);
 
   // 탭 카운트
   const counts = {
-    calendar: db.select({ id: events.id }).from(events).where(eq(events.activityId, id)).all().length,
-    documents: db.select({ id: documents.id }).from(documents).where(eq(documents.activityId, id)).all().length,
-    tasks: db
+    calendar: (await db.select({ id: events.id }).from(events).where(eq(events.activityId, id)).all()).length,
+    documents: (await db.select({ id: documents.id }).from(documents).where(eq(documents.activityId, id)).all()).length,
+    tasks: (await db
       .select({ id: tasks.id, status: tasks.status })
       .from(tasks)
       .where(eq(tasks.activityId, id))
-      .all()
+      .all())
       .filter((t) => t.status !== "done").length,
-    submissions: db.select({ id: submissions.id }).from(submissions).where(eq(submissions.activityId, id)).all().length,
-    ai: db
+    submissions: (await db.select({ id: submissions.id }).from(submissions).where(eq(submissions.activityId, id)).all()).length,
+    ai: (await db
       .select({ id: aiReviews.id })
       .from(aiReviews)
       .where(and(eq(aiReviews.activityId, id), eq(aiReviews.status, "done")))
-      .all().length,
-    history: db.select({ id: activityHistory.id }).from(activityHistory).where(eq(activityHistory.activityId, id)).all().length,
+      .all()).length,
+    history: (await db.select({ id: activityHistory.id }).from(activityHistory).where(eq(activityHistory.activityId, id)).all()).length,
   };
 
   const tabs = [

@@ -48,19 +48,19 @@ export interface RunAIResult {
 export async function runAIAction(params: RunAIParams): Promise<RunAIResult> {
   const { userId, activityId, action } = params;
 
-  const activity = db
+  const activity = await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, userId)))
     .get();
   if (!activity) return { ok: false, reviewId: "", error: "활동을 찾을 수 없습니다." };
 
-  const context = buildContext(userId, activity, params.submissionId ?? null, action);
+  const context = await buildContext(userId, activity, params.submissionId ?? null, action);
   if ("error" in context) return { ok: false, reviewId: "", error: context.error };
 
   const provider = await getProvider();
   const reviewId = newId();
-  db.insert(aiReviews)
+  await db.insert(aiReviews)
     .values({
       id: reviewId,
       userId,
@@ -78,15 +78,15 @@ export async function runAIAction(params: RunAIParams): Promise<RunAIResult> {
     const prompt = buildPrompt(action, context.ctx);
     const request: AIRequest = { action, prompt, context: context.ctx };
     const parsed = await completeWithRetry(provider, request);
-    persistResult(reviewId, userId, activity.id, activity.name, action, parsed, params.submissionId ?? null);
+    await persistResult(reviewId, userId, activity.id, activity.name, action, parsed, params.submissionId ?? null);
     return { ok: true, reviewId };
   } catch (e) {
     const message = e instanceof Error ? e.message : "AI 실행 중 알 수 없는 오류가 발생했습니다.";
-    db.update(aiReviews)
+    await db.update(aiReviews)
       .set({ status: "error", errorMessage: message, completedAt: Date.now() })
       .where(eq(aiReviews.id, reviewId))
       .run();
-    pushNotification({
+    await pushNotification({
       userId,
       activityId,
       type: "ai",
@@ -103,28 +103,28 @@ type ContextResult =
   | { ctx: AIContext; versionId: string | null }
   | { error: string };
 
-function buildContext(
+async function buildContext(
   userId: string,
   activity: typeof activities.$inferSelect,
   submissionId: string | null,
   action: AIAction,
-): ContextResult {
+): Promise<ContextResult> {
   // 평가 기준
-  const criteria = db
+  const criteriaRows = await db
     .select()
     .from(evaluationCriteria)
     .where(eq(evaluationCriteria.activityId, activity.id))
     .orderBy(evaluationCriteria.position)
-    .all()
-    .map((c) => ({
-      name: c.name,
-      weight: c.weight,
-      source: c.source,
-      description: c.description,
-    }));
+    .all();
+  const criteria = criteriaRows.map((c) => ({
+    name: c.name,
+    weight: c.weight,
+    source: c.source,
+    description: c.description,
+  }));
 
   // 공고/안내 문서 텍스트
-  const noticeDocs = db
+  const noticeDocs = await db
     .select()
     .from(documents)
     .where(
@@ -157,7 +157,7 @@ function buildContext(
   const needsSubmission = ["evaluate_submission", "final_check", "proofread", "improvements", "expected_questions"].includes(action);
 
   if (submissionId) {
-    const submission = db
+    const submission = await db
       .select()
       .from(submissions)
       .where(and(eq(submissions.id, submissionId), eq(submissions.userId, userId)))
@@ -165,7 +165,7 @@ function buildContext(
     if (!submission) return { error: "제출물을 찾을 수 없습니다." };
     submissionTitle = submission.title;
 
-    const latest = getLatestVersionDocument(submissionId, userId);
+    const latest = await getLatestVersionDocument(submissionId, userId);
     if (!latest) {
       return { error: "제출물에 업로드된 파일이 없습니다. 먼저 버전 파일을 업로드해주세요." };
     }
@@ -192,7 +192,7 @@ function buildContext(
     return { error: "이 액션은 제출물을 선택해야 합니다." };
   } else {
     // 제출물이 없는 액션(적합도 분석 등)은 '내가 만든 자료'를 참고 자료로 활용
-    const workDocs = db
+    const workDocs = await db
       .select()
       .from(documents)
       .where(
@@ -211,19 +211,19 @@ function buildContext(
   }
 
   // 지원자 프로필: 이름 + 활동 이력 + 커리어 목표/헤드라인 (있으면)
-  const user = db.select().from(users).where(eq(users.id, userId)).get();
-  const myActivities = db
+  const user = await db.select().from(users).where(eq(users.id, userId)).get();
+  const myActivities = await db
     .select({ name: activities.name, type: activities.type, status: activities.status })
     .from(activities)
     .where(eq(activities.userId, userId))
     .all();
   const wonCount = myActivities.filter((a) => a.status === "won").length;
-  const careerGoal = db
+  const careerGoal = await db
     .select({ name: careerGoals.name })
     .from(careerGoals)
     .where(and(eq(careerGoals.userId, userId), eq(careerGoals.isActive, 1)))
     .get();
-  const careerProfile = db
+  const careerProfile = await db
     .select({ headline: careerProfiles.headline })
     .from(careerProfiles)
     .where(eq(careerProfiles.userId, userId))
@@ -305,7 +305,7 @@ async function completeWithRetry(
 
 // ─── 결과 저장 ───────────────────────────────────────────────
 
-function persistResult(
+async function persistResult(
   reviewId: string,
   userId: string,
   activityId: string,
@@ -313,7 +313,7 @@ function persistResult(
   action: AIAction,
   result: AIResultData,
   submissionId: string | null,
-): void {
+): Promise<void> {
   let overallScore: number | null = null;
   let maxScore: number | null = null;
   let confidence: number | null = null;
@@ -325,8 +325,8 @@ function persistResult(
     confidence = result.data.confidence;
     summary = result.data.summary;
 
-    result.data.criteria.forEach((item, idx) => {
-      db.insert(aiReviewItems)
+    for (const [idx, item] of result.data.criteria.entries()) {
+      await db.insert(aiReviewItems)
         .values({
           id: newId(),
           reviewId,
@@ -339,7 +339,7 @@ function persistResult(
           position: idx,
         })
         .run();
-    });
+    }
   } else if (result.kind === "final_check") {
     overallScore = result.data.score;
     maxScore = 100;
@@ -352,7 +352,7 @@ function persistResult(
     summary = result.data.summary;
   }
 
-  db.update(aiReviews)
+  await db.update(aiReviews)
     .set({
       status: "done",
       overallScore,
@@ -367,7 +367,7 @@ function persistResult(
 
   // 제출물 평가면 제출물 상태 갱신
   if (action === "evaluate_submission" && submissionId) {
-    db.update(submissions)
+    await db.update(submissions)
       .set({ status: "ai_reviewed", updatedAt: Date.now() })
       .where(eq(submissions.id, submissionId))
       .run();
@@ -377,8 +377,8 @@ function persistResult(
     overallScore !== null && maxScore !== null
       ? ` — ${Math.round(overallScore * 10) / 10}/${maxScore}점`
       : "";
-  logHistory(userId, activityId, "ai", `${AI_ACTIONS[action]} 완료${scoreText}`);
-  pushNotification({
+  await logHistory(userId, activityId, "ai", `${AI_ACTIONS[action]} 완료${scoreText}`);
+  await pushNotification({
     userId,
     activityId,
     type: "ai",

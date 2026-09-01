@@ -14,7 +14,7 @@ import type { ActionResult } from "@/actions/activities";
 const MAX_EXTRACT_CHARS = 200_000;
 
 async function assertOwnedActivity(activityId: string, userId: string) {
-  return db
+  return await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, userId)))
@@ -46,7 +46,7 @@ export async function uploadDocument(formData: FormData): Promise<ActionResult> 
   let version = 1;
   let displayName = file.name;
   if (groupId) {
-    const latest = db
+    const latest = await db
       .select()
       .from(documents)
       .where(
@@ -81,7 +81,7 @@ export async function uploadDocument(formData: FormData): Promise<ActionResult> 
   }
 
   const id = newId();
-  db.insert(documents)
+  await db.insert(documents)
     .values({
       id,
       userId: user.id,
@@ -100,7 +100,7 @@ export async function uploadDocument(formData: FormData): Promise<ActionResult> 
     })
     .run();
 
-  logHistory(
+  await logHistory(
     user.id,
     activityId,
     "file",
@@ -108,7 +108,7 @@ export async function uploadDocument(formData: FormData): Promise<ActionResult> 
       ? `파일 새 버전 업로드: ${displayName} (v${version})`
       : `파일 업로드: ${displayName} [${DOC_CATEGORIES[category as DocCategory]}]`,
   );
-  pushNotification({
+  await pushNotification({
     userId: user.id,
     activityId,
     type: "file",
@@ -125,7 +125,7 @@ export async function updateDocumentMeta(
   meta: { category?: string; description?: string; name?: string },
 ): Promise<ActionResult> {
   const user = await requireUser();
-  const doc = db
+  const doc = await db
     .select()
     .from(documents)
     .where(and(eq(documents.id, documentId), eq(documents.userId, user.id)))
@@ -138,23 +138,23 @@ export async function updateDocumentMeta(
   if (meta.name !== undefined && meta.name.trim()) updates.name = meta.name.trim().slice(0, 200);
   if (Object.keys(updates).length === 0) return { ok: true };
 
-  db.update(documents).set(updates).where(eq(documents.id, documentId)).run();
+  await db.update(documents).set(updates).where(eq(documents.id, documentId)).run();
   revalidatePath(`/activities/${doc.activityId}`);
   return { ok: true };
 }
 
 export async function deleteDocument(documentId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const doc = db
+  const doc = await db
     .select()
     .from(documents)
     .where(and(eq(documents.id, documentId), eq(documents.userId, user.id)))
     .get();
   if (!doc) return { ok: false, error: "문서를 찾을 수 없습니다." };
 
-  deleteStoredFile(doc.storagePath);
-  db.delete(documents).where(eq(documents.id, documentId)).run();
-  logHistory(user.id, doc.activityId, "file", `파일 삭제: ${doc.name} (v${doc.version})`);
+  await deleteStoredFile(doc.storagePath);
+  await db.delete(documents).where(eq(documents.id, documentId)).run();
+  await logHistory(user.id, doc.activityId, "file", `파일 삭제: ${doc.name} (v${doc.version})`);
 
   revalidatePath(`/activities/${doc.activityId}`);
   return { ok: true };

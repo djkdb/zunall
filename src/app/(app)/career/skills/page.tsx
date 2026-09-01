@@ -13,8 +13,8 @@ export const metadata: Metadata = { title: "Skills" };
 
 export default async function SkillsPage() {
   const user = await requireUser();
-  const ctx = getCareerContext(user.id);
-  const skills = db.select().from(userSkills).where(eq(userSkills.userId, user.id)).all();
+  const ctx = await getCareerContext(user.id);
+  const skills = await db.select().from(userSkills).where(eq(userSkills.userId, user.id)).all();
   const targets = new Map(ctx.template.requirements.map((r) => [r.skill, r.target]));
 
   return (
