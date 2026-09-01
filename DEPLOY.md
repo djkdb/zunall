@@ -14,6 +14,29 @@ Zunall은 **PostgreSQL 하나만 있으면** 전부 동작합니다.
 
 ---
 
+## 0단계 — 사전 준비 (Mac / Windows 공통)
+
+```bash
+node -v
+```
+**v22 이상**이어야 합니다. wrangler 4가 Node 22를 요구합니다.
+낮으면 [nodejs.org](https://nodejs.org) 에서 LTS를 설치하거나 `nvm install 22 && nvm use 22`.
+
+```bash
+git clone https://github.com/djkdb/zunall.git
+```
+```bash
+cd zunall
+```
+```bash
+npm install
+```
+`npm install` 을 건너뛰면 `opennextjs-cloudflare: command not found` 가 납니다.
+
+준비물은 두 개뿐입니다 — **Cloudflare 계정**(무료)과 **Postgres 주소**(1단계에서 발급).
+
+---
+
 ## 1단계 — 무료 Postgres 고르기
 
 Supabase 무료 한도를 다 썼다면 아래 대안 중 하나를 쓰면 됩니다. **코드는 그대로**이고 `DATABASE_URL`만 바뀝니다.
@@ -37,11 +60,13 @@ Supabase 무료 한도를 다 썼다면 아래 대안 중 하나를 쓰면 됩�
 
 ### 1-2. 테이블 만들기
 
+저장소에 이미 `schema.sql` 이 들어 있습니다. 다시 만들고 싶을 때만:
+
 ```bash
 npx tsx scripts/export-schema.ts
 ```
 
-생성된 `schema.sql` 전체를 복사해 **Neon 콘솔의 SQL Editor**(또는 쓰는 서비스의 SQL 콘솔)에
+`schema.sql` 전체를 복사해 **Neon 콘솔의 SQL Editor**(또는 쓰는 서비스의 SQL 콘솔)에
 붙여넣고 실행하세요. `CREATE TABLE IF NOT EXISTS` 라서 여러 번 실행해도 안전하며, 25개 테이블이 만들어집니다.
 
 ### 1-3. 연결 확인 (권장)
@@ -114,10 +139,69 @@ DB 저장은 20MB 제한 기준 개인 사용에 충분하지만, Neon 무료 0.
 | --- | --- |
 | `Unknown arguments: #, ...` | 명령 뒤의 `# 주석`까지 붙여넣음 → 명령만 복사 |
 | `opennextjs-cloudflare: command not found` | `npm install` 을 먼저 실행 |
+| wrangler 실행 시 Node 버전 오류 | Node 22 미만 → `nvm install 22 && nvm use 22` |
+| `Authentication error [code: 10000]` | 로그인 만료 → `npx wrangler logout` 후 다시 `npx wrangler login` |
 | `relation "users" does not exist` | 1-2 단계(schema.sql)를 DB에 적용하지 않음 |
 | `password authentication failed` | 연결 문자열의 비밀번호 자리를 실제 값으로 바꾸지 않음 |
 | 배포는 됐는데 DB 오류 | secret 미등록 → `npx wrangler secret list` 로 확인 |
 | Workers에서 DB 연결 실패 | `npx wrangler secret put DB_DRIVER` → `neon-http` 또는 `postgres-js` 로 드라이버 강제 |
+
+---
+
+## 배포 후 — 확인과 운영
+
+### 첫 접속
+출력된 `https://zunall.<서브도메인>.workers.dev` 로 들어가 **회원가입**하면 됩니다.
+로그인 후 온보딩(목표 직무 선택)까지 마치면 Career Score가 계산됩니다.
+데모 계정이 필요하면 로컬에서 `DATABASE_URL="배포용 주소" npm run seed` 를 돌리면
+`demo@zunall.app / demo1234!` 가 생깁니다.
+
+### 실시간 로그 보기
+```bash
+npx wrangler tail
+```
+브라우저에서 오류가 났을 때 이 창에 원인이 그대로 찍힙니다.
+
+### 코드 수정 후 재배포
+```bash
+npm run deploy:cf
+```
+같은 명령을 다시 실행하면 됩니다. DB와 secret은 그대로 유지됩니다.
+
+### 이전 버전으로 되돌리기
+```bash
+npx wrangler deployments list
+```
+```bash
+npx wrangler rollback
+```
+
+### secret 확인 / 변경 / 삭제
+```bash
+npx wrangler secret list
+```
+```bash
+npx wrangler secret put DATABASE_URL
+```
+```bash
+npx wrangler secret delete ANTHROPIC_API_KEY
+```
+값을 바꾸면 다음 요청부터 즉시 반영됩니다(재배포 불필요).
+
+### 내 도메인 붙이기
+도메인이 Cloudflare에 등록돼 있어야 합니다.
+Cloudflare 대시보드 → **Workers & Pages → zunall → Settings → Domains & Routes → Add → Custom domain**
+에서 `zunall.내도메인.com` 을 입력하면 인증서까지 자동으로 붙습니다.
+
+### 무료 한도 감각
+- Workers 무료: 하루 100,000 요청 (개인 사용에 충분)
+- Neon 무료: 저장 0.5GB — 업로드 파일이 DB에 쌓이므로, 파일이 많아지면 R2 전환
+- Anthropic API는 별도 종량 과금 (미설정 시 mock으로 동작하므로 요금 0)
+
+### 앱 내리기
+```bash
+npx wrangler delete
+```
 
 ---
 
