@@ -1,15 +1,42 @@
 import "server-only";
+import { and, eq } from "drizzle-orm";
+import { db, documentBlobs } from "@/lib/db";
 import { newId, getFileExtension } from "@/lib/utils";
 import { ALLOWED_UPLOAD_EXTENSIONS } from "@/lib/constants";
 
 /**
- * 이중 스토리지 레이어:
- * - Supabase Storage: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY 가 있으면 사용 (프로덕션/Workers)
- * - 로컬 파일시스템: 없으면 data/uploads 로 폴백 (설치 없이 로컬 개발)
+ * 업로드 파일 스토리지 — 4가지 백엔드를 환경에 따라 자동 선택한다.
  *
+ *   1. r2       : Cloudflare R2 바인딩(BUCKET)이 있으면 사용
+ *   2. supabase : SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY 가 있으면 사용
+ *   3. db       : (기본) PostgreSQL 에 바이너리로 저장 — 추가 서비스가 전혀 필요 없고
+ *                 Node/Workers 어디서나 동일하게 동작한다
+ *   4. local    : STORAGE_BACKEND=local 로 명시했을 때만. 로컬 파일시스템(Node 전용)
+ *
+ * STORAGE_BACKEND 환경변수로 강제 지정할 수 있다.
  * 저장 키는 항상 서버가 생성한 안전한 값만 사용한다 (path traversal 방지).
- * Supabase 경로는 REST(fetch)만 쓰므로 Workers 런타임에서도 그대로 동작한다.
  */
+export type StorageBackend = "r2" | "supabase" | "db" | "local";
+
+interface R2ObjectLike {
+  arrayBuffer(): Promise<ArrayBuffer>;
+}
+interface R2BucketLike {
+  put(key: string, value: ArrayBuffer | Uint8Array): Promise<unknown>;
+  get(key: string): Promise<R2ObjectLike | null>;
+  delete(key: string): Promise<void>;
+}
+
+function r2Bucket(): R2BucketLike | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCloudflareContext } = require("@opennextjs/cloudflare") as typeof import("@opennextjs/cloudflare");
+    const { env } = getCloudflareContext();
+    return (env as { BUCKET?: R2BucketLike }).BUCKET ?? null;
+  } catch {
+    return null;
+  }
+}
 
 interface SupabaseConfig {
   url: string;
@@ -28,9 +55,15 @@ function supabaseConfig(): SupabaseConfig | null {
   };
 }
 
-/** Supabase Storage 사용 여부 (설정 페이지 표시용) */
-export function storageBackend(): "supabase" | "local" {
-  return supabaseConfig() ? "supabase" : "local";
+/** 현재 사용 중인 스토리지 백엔드 (설정 페이지 표시용) */
+export function storageBackend(): StorageBackend {
+  const forced = process.env.STORAGE_BACKEND as StorageBackend | undefined;
+  if (forced === "r2" || forced === "supabase" || forced === "db" || forced === "local") {
+    return forced;
+  }
+  if (r2Bucket()) return "r2";
+  if (supabaseConfig()) return "supabase";
+  return "db";
 }
 
 export function maxFileSize(): number {
@@ -89,11 +122,16 @@ export async function saveFile(
 ): Promise<{ storagePath: string; size: number }> {
   const ext = getFileExtension(file.name);
   const key = `${newId()}${ext ? "." + ext : ""}`;
-  const relPath = `${userId}/${key}`; // 로컬/Supabase 공용 포맷 (forward slash)
+  const relPath = `${userId}/${key}`; // 모든 백엔드 공용 포맷 (forward slash)
   const buffer = Buffer.from(await file.arrayBuffer());
+  const backend = storageBackend();
 
-  const config = supabaseConfig();
-  if (config) {
+  if (backend === "r2") {
+    const bucket = r2Bucket();
+    if (!bucket) throw new Error("R2 바인딩 'BUCKET'을 찾을 수 없습니다.");
+    await bucket.put(relPath, new Uint8Array(buffer));
+  } else if (backend === "supabase") {
+    const config = supabaseConfig()!;
     const response = await fetch(
       `${config.url}/storage/v1/object/${config.bucket}/${relPath}`,
       {
@@ -112,6 +150,14 @@ export async function saveFile(
         `Supabase Storage 업로드 실패 (${response.status}): ${detail.slice(0, 200)}`,
       );
     }
+  } else if (backend === "db") {
+    await db.insert(documentBlobs).values({
+      key: relPath,
+      userId,
+      data: buffer,
+      size: buffer.length,
+      createdAt: Date.now(),
+    });
   } else {
     const { fs, path } = nodeFs();
     const absPath = path.join(uploadRoot(), relPath);
@@ -123,14 +169,37 @@ export async function saveFile(
 }
 
 export async function readFileBuffer(storagePath: string): Promise<Buffer | null> {
-  const config = supabaseConfig();
-  if (config) {
+  const backend = storageBackend();
+
+  if (backend === "r2") {
+    const bucket = r2Bucket();
+    if (!bucket) return null;
+    const object = await bucket.get(storagePath);
+    if (!object) return null;
+    return Buffer.from(await object.arrayBuffer());
+  }
+
+  if (backend === "supabase") {
+    const config = supabaseConfig()!;
     const response = await fetch(
       `${config.url}/storage/v1/object/${config.bucket}/${storagePath}`,
       { headers: { Authorization: `Bearer ${config.key}` } },
     );
     if (!response.ok) return null;
     return Buffer.from(await response.arrayBuffer());
+  }
+
+  if (backend === "db") {
+    const row = (
+      await db
+        .select({ data: documentBlobs.data })
+        .from(documentBlobs)
+        .where(eq(documentBlobs.key, storagePath))
+        .limit(1)
+    )[0];
+    if (!row) return null;
+    // 드라이버에 따라 Buffer 또는 Uint8Array 로 돌아온다
+    return Buffer.from(row.data as unknown as Uint8Array);
   }
 
   const { fs } = nodeFs();
@@ -140,8 +209,19 @@ export async function readFileBuffer(storagePath: string): Promise<Buffer | null
 }
 
 export async function deleteStoredFile(storagePath: string): Promise<void> {
-  const config = supabaseConfig();
-  if (config) {
+  const backend = storageBackend();
+
+  if (backend === "r2") {
+    try {
+      await r2Bucket()?.delete(storagePath);
+    } catch {
+      // 이미 삭제된 경우 등은 무시
+    }
+    return;
+  }
+
+  if (backend === "supabase") {
+    const config = supabaseConfig()!;
     try {
       await fetch(`${config.url}/storage/v1/object/${config.bucket}/${storagePath}`, {
         method: "DELETE",
@@ -150,6 +230,11 @@ export async function deleteStoredFile(storagePath: string): Promise<void> {
     } catch {
       // 이미 삭제된 경우 등은 무시
     }
+    return;
+  }
+
+  if (backend === "db") {
+    await db.delete(documentBlobs).where(eq(documentBlobs.key, storagePath));
     return;
   }
 
@@ -162,4 +247,17 @@ export async function deleteStoredFile(storagePath: string): Promise<void> {
       // 이미 삭제된 경우 등은 무시
     }
   }
+}
+
+/** 사용자 소유 확인이 필요한 곳에서 쓰는 헬퍼 (DB 백엔드 전용) */
+export async function blobExistsForUser(key: string, userId: string): Promise<boolean> {
+  if (storageBackend() !== "db") return true;
+  const row = (
+    await db
+      .select({ key: documentBlobs.key })
+      .from(documentBlobs)
+      .where(and(eq(documentBlobs.key, key), eq(documentBlobs.userId, userId)))
+      .limit(1)
+  )[0];
+  return !!row;
 }

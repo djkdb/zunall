@@ -48,7 +48,7 @@ try {
   await page.getByLabel("분류").selectOption("notice");
   await page.getByRole("button", { name: "업로드", exact: true }).click();
   await page.waitForSelector("text=wk-notice.txt", { timeout: 30000 });
-  step("workerd: 파일 업로드(Supabase Storage) + 텍스트 추출", (await page.locator("text=텍스트 추출됨").count()) > 0);
+  step("workerd: 파일 업로드(DB 저장) + 텍스트 추출", (await page.locator("text=텍스트 추출됨").count()) > 0);
 
   const dl = await page.evaluate(async () => {
     const link = document.querySelector("a[href^='/api/files/']");
@@ -56,7 +56,7 @@ try {
     const res = await fetch(link.getAttribute("href"));
     return { ok: res.ok, len: (await res.arrayBuffer()).byteLength };
   });
-  step("workerd: Supabase Storage 다운로드", !!dl?.ok && dl.len > 0, `${dl?.len} bytes`);
+  step("workerd: 파일 다운로드", !!dl?.ok && dl.len > 0, `${dl?.len} bytes`);
 
   await page.goto(`${url}?tab=fit`);
   await page.getByRole("button", { name: "지원 적합도 분석" }).click();

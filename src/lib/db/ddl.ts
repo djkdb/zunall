@@ -313,6 +313,15 @@ CREATE TABLE IF NOT EXISTS opportunity_analyses (
 CREATE INDEX IF NOT EXISTS idx_opp_user ON opportunity_analyses(user_id);
 CREATE INDEX IF NOT EXISTS idx_opp_activity ON opportunity_analyses(activity_id);
 
+CREATE TABLE IF NOT EXISTS document_blobs (
+  key TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  data BYTEA NOT NULL,
+  size INTEGER NOT NULL,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_blobs_user ON document_blobs(user_id);
+
 CREATE TABLE IF NOT EXISTS activity_history (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,

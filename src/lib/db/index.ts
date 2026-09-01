@@ -1,6 +1,8 @@
 import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { drizzle as drizzleNeonHttp } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import { cache } from "react";
 import * as schema from "./schema";
 import { BOOTSTRAP_DDL } from "./ddl";
@@ -28,6 +30,24 @@ const globalForDb = globalThis as unknown as {
 function isCloudflareWorkers(): boolean {
   const nav = (globalThis as { navigator?: { userAgent?: string } }).navigator;
   return nav?.userAgent === "Cloudflare-Workers";
+}
+
+/**
+ * Neon HTTP 드라이버 사용 여부.
+ * Neon(neon.tech) + Workers 조합에서는 TCP/TLS 대신 순수 fetch 로 동작하는
+ * HTTP 드라이버가 가장 안전하고 빠르다. DB_DRIVER 로 강제 지정할 수 있다.
+ *   DB_DRIVER=neon-http   → 항상 HTTP 드라이버
+ *   DB_DRIVER=postgres-js → 항상 TCP 드라이버 (문제 발생 시 폴백용)
+ */
+function useNeonHttp(url: string, workers: boolean): boolean {
+  const forced = process.env.DB_DRIVER;
+  if (forced === "neon-http") return true;
+  if (forced === "postgres-js") return false;
+  return workers && /(^|[@.])neon\.tech/.test(url);
+}
+
+function createNeonHttpDb(url: string): AppDb {
+  return drizzleNeonHttp(neon(url), { schema }) as unknown as AppDb;
 }
 
 function createPostgresDb(url: string, workers: boolean): AppDb {
@@ -62,7 +82,12 @@ function createPgliteDb(): AppDb {
  * React cache() 는 요청 단위로 메모이즈되므로, 한 요청 내에서는 같은 커넥션을 쓰고
  * 요청이 끝나면 인스턴스가 버려진다 = 요청 간 소켓 재사용이 발생하지 않는다.
  */
-const requestScopedDb = cache((): AppDb => createPostgresDb(process.env.DATABASE_URL!, true));
+const requestScopedDb = cache((): AppDb => {
+  const url = process.env.DATABASE_URL!;
+  // HTTP 드라이버는 상태를 갖지 않으므로 요청 간 재사용 문제가 없지만,
+  // 일관성을 위해 동일한 요청 범위 경로를 사용한다.
+  return useNeonHttp(url, true) ? createNeonHttpDb(url) : createPostgresDb(url, true);
+});
 
 function resolveDb(): AppDb {
   const url = process.env.DATABASE_URL;

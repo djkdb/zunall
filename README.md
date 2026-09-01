@@ -37,8 +37,8 @@
 | --- | --- |
 | Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
 | Backend | Server Actions + Route Handlers |
-| DB | **PostgreSQL** (Drizzle) — 배포는 Supabase, 로컬은 PGlite(설치 불필요) 자동 폴백 |
-| 스토리지 | **Supabase Storage** (배포) / 로컬 파일시스템 (개발) — 환경변수로 자동 전환 |
+| DB | **PostgreSQL** (Drizzle) — 배포는 무료 Postgres(Neon 등), 로컬은 PGlite(설치 불필요) 자동 폴백 |
+| 스토리지 | **DB 저장이 기본** — 필요 시 R2 / Supabase Storage / 로컬로 환경변수 전환 |
 | 호스팅 | **Cloudflare Workers** (OpenNext) 또는 Docker/VM |
 | 점수 엔진 | `services/score/*` + `services/career/*` — 순수 함수, 단위 테스트 13개 |
 | AI | Provider 추상화: `mock`(휴리스틱) / `claude`(CLI) / `anthropic`(API) — AI는 추출만, 점수는 규칙 레이어가 계산 |
@@ -55,7 +55,8 @@ npm run seed           # 데모 데이터 (demo@zunall.app / demo1234!)
 `DATABASE_URL` 이 없으면 내장 PGlite로 동작하므로 DB 설치가 필요 없습니다.
 실제 Claude 사용: `.env.local`에 `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY=...`
 
-배포: **[DEPLOY.md](./DEPLOY.md)** — **Supabase(DB·스토리지) + Cloudflare Workers(호스팅)**
+배포: **[DEPLOY.md](./DEPLOY.md)** — 무료 Postgres 하나(`DATABASE_URL`)만 있으면 됩니다.
+오브젝트 스토리지 없이 파일까지 DB에 저장되므로 추가 서비스가 필요 없습니다.
 
 ## 검증
 

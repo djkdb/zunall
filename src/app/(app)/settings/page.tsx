@@ -5,7 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { getProviderName } from "@/services/ai/provider";
 import { storageBackend } from "@/lib/storage";
+import { databaseKind } from "@/lib/db/info";
 import { NOTIFY_THRESHOLDS } from "@/lib/constants";
+
+const STORAGE_LABEL: Record<ReturnType<typeof storageBackend>, string> = {
+  db: "DB 저장 (document_blobs)",
+  r2: "Cloudflare R2",
+  supabase: "Supabase Storage",
+  local: "로컬 파일시스템",
+};
 
 export const metadata: Metadata = { title: "설정" };
 
@@ -13,6 +21,7 @@ export default async function SettingsPage() {
   const user = await requireUser();
   const provider = getProviderName();
   const storage = storageBackend();
+  const database = databaseKind();
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -75,15 +84,32 @@ export default async function SettingsPage() {
         <CardContent className="space-y-3 text-sm">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">파일 스토리지</span>
-            <Badge variant={storage === "supabase" ? "default" : "secondary"}>{storage}</Badge>
+            <Badge variant={storage === "local" ? "secondary" : "default"}>{STORAGE_LABEL[storage]}</Badge>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            <code className="rounded bg-secondary px-1">SUPABASE_URL</code> 과{" "}
-            <code className="rounded bg-secondary px-1">SUPABASE_SERVICE_ROLE_KEY</code> 가 설정되면
-            Supabase Storage 를, 없으면 로컬 <code className="rounded bg-secondary px-1">data/uploads</code> 를
-            사용합니다. 데이터베이스는{" "}
+            기본값은 <strong>DB 저장</strong>입니다 — 업로드한 파일이{" "}
+            <code className="rounded bg-secondary px-1">document_blobs</code> 테이블에 들어가므로
+            별도의 오브젝트 스토리지 서비스가 필요 없습니다. Cloudflare R2 바인딩(
+            <code className="rounded bg-secondary px-1">BUCKET</code>)이 있거나{" "}
+            <code className="rounded bg-secondary px-1">SUPABASE_URL</code>·
+            <code className="rounded bg-secondary px-1">SUPABASE_SERVICE_ROLE_KEY</code> 가
+            설정되면 자동으로 그쪽을 쓰고,{" "}
+            <code className="rounded bg-secondary px-1">STORAGE_BACKEND</code> 로 직접 고정할 수도
+            있습니다(<code className="rounded bg-secondary px-1">db</code> /{" "}
+            <code className="rounded bg-secondary px-1">r2</code> /{" "}
+            <code className="rounded bg-secondary px-1">supabase</code> /{" "}
+            <code className="rounded bg-secondary px-1">local</code>).
+          </p>
+          <div className="flex items-center justify-between border-t border-border pt-3">
+            <span className="text-muted-foreground">데이터베이스</span>
+            <Badge variant="secondary">{database}</Badge>
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
             <code className="rounded bg-secondary px-1">DATABASE_URL</code> 이 있으면 해당
-            PostgreSQL(Supabase), 없으면 내장 PGlite 로 동작합니다.
+            PostgreSQL(Neon 등 무료 Postgres 포함)을, 없으면 설치가 필요 없는 내장 PGlite 를
+            사용합니다. Cloudflare Workers 에서 Neon 주소를 쓰면 fetch 기반 HTTP 드라이버로 자동
+            전환되며, <code className="rounded bg-secondary px-1">DB_DRIVER</code> 로 강제할 수
+            있습니다.
           </p>
         </CardContent>
       </Card>

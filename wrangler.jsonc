@@ -1,13 +1,14 @@
-// Cloudflare Workers 배포 설정 (OpenNext + Supabase)
-// DB/스토리지/AI 키는 모두 secret 으로 주입한다 — 이 파일에 값을 적지 말 것.
+// Cloudflare Workers 배포 설정 (OpenNext)
+// DB 접속 문자열과 AI 키는 secret 으로 주입한다 — 이 파일에 값을 적지 말 것.
 //
-// 배포 전 준비 (자세한 절차는 DEPLOY.md):
+// 최소 구성 (무료 Postgres 하나만 있으면 됨):
 //   npx wrangler login
-//   npx wrangler secret put DATABASE_URL              (Supabase 트랜잭션 풀러 URL)
-//   npx wrangler secret put SUPABASE_URL
-//   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-//   npx wrangler secret put ANTHROPIC_API_KEY
+//   npx wrangler secret put DATABASE_URL      (Neon 등 무료 Postgres 연결 문자열)
+//   npx wrangler secret put ANTHROPIC_API_KEY (선택 — 없으면 AI가 mock 으로 동작)
 //   npm run deploy:cf
+//
+// 파일은 기본적으로 DB에 저장되므로 오브젝트 스토리지가 필요 없다.
+// R2 를 쓰고 싶으면 아래 r2_buckets 주석을 해제하고 버킷을 만들면 자동 전환된다.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "zunall",
@@ -18,9 +19,9 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "zunall-uploads" }],
   "vars": {
     "AI_PROVIDER": "anthropic",
-    "ANTHROPIC_MODEL": "claude-opus-5",
-    "SUPABASE_STORAGE_BUCKET": "zunall-uploads"
+    "ANTHROPIC_MODEL": "claude-opus-5"
   }
 }

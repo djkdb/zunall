@@ -6,7 +6,15 @@ import {
   doublePrecision,
   primaryKey,
   index,
+  customType,
 } from "drizzle-orm/pg-core";
+
+/** PostgreSQL bytea (바이너리) 컬럼 */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 // PostgreSQL(Supabase) 스키마.
 // - 날짜(마감일 등)는 "YYYY-MM-DD" text, 생성/수정 시각은 epoch ms.
@@ -426,6 +434,20 @@ export const opportunityAnalyses = pgTable(
   ],
 );
 
+/**
+ * 업로드 파일 본문 저장소 (기본 백엔드).
+ * R2/Supabase Storage 같은 외부 오브젝트 스토리지를 설정하지 않아도
+ * 추가 서비스 없이 파일 업로드가 동작하도록 DB에 바이너리를 보관한다.
+ * key 는 storage.ts 가 생성한 안전한 경로(`<userId>/<uuid>.<ext>`).
+ */
+export const documentBlobs = pgTable("document_blobs", {
+  key: text("key").primaryKey(),
+  userId: text("user_id").notNull(),
+  data: bytea("data").notNull(),
+  size: integer("size").notNull(),
+  createdAt: epochMs("created_at").notNull(),
+});
+
 export type UserRow = typeof users.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
 export type TagRow = typeof tags.$inferSelect;
@@ -448,3 +470,4 @@ export type CareerActionRow = typeof careerActions.$inferSelect;
 export type RoadmapItemRow = typeof roadmapItems.$inferSelect;
 export type ScoreSnapshotRow = typeof scoreSnapshots.$inferSelect;
 export type OpportunityAnalysisRow = typeof opportunityAnalyses.$inferSelect;
+export type DocumentBlobRow = typeof documentBlobs.$inferSelect;

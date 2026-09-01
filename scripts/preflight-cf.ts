@@ -31,15 +31,15 @@ if (!fs.existsSync(wranglerPath)) {
 if (!fs.existsSync(path.join(root, "schema.sql"))) {
   notices.push(
     [
-      "schema.sql 이 없습니다. Supabase에 테이블을 아직 만들지 않았다면:",
+      "schema.sql 이 없습니다. DB에 테이블을 아직 만들지 않았다면:",
       "  npx tsx scripts/export-schema.ts",
-      "  → 생성된 schema.sql 내용을 Supabase 대시보드 SQL Editor 에 붙여넣고 실행",
+      "  → 생성된 schema.sql 을 DB 콘솔(Neon SQL Editor 등)에 붙여넣고 실행",
     ].join("\n"),
   );
 }
 
 // 4) Cloudflare secret 등록 여부 (로그인 상태일 때만 확인 가능)
-const REQUIRED_SECRETS = ["DATABASE_URL", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
+const REQUIRED_SECRETS = ["DATABASE_URL"];
 try {
   const out = execFileSync("npx", ["wrangler", "secret", "list"], {
     encoding: "utf-8",
@@ -57,6 +57,12 @@ try {
         ...missing.map((name) => `  npx wrangler secret put ${name}`),
         "  (실행하면 값을 입력하라는 프롬프트가 뜹니다)",
       ].join("\n"),
+    );
+  }
+  if (!registered.has("SUPABASE_URL") && !registered.has("R2_HINT")) {
+    notices.push(
+      "파일은 DB(document_blobs 테이블)에 저장됩니다 — 추가 스토리지 설정이 필요 없습니다.\n" +
+        "  큰 파일을 많이 올릴 계획이면 R2 또는 Supabase Storage 연결을 고려하세요 (DEPLOY.md).",
     );
   }
   if (!registered.has("ANTHROPIC_API_KEY")) {
