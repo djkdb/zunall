@@ -165,6 +165,42 @@ npm run deploy:cf
 
 ---
 
+## Worker 크기 제한과 PDF (중요)
+
+Cloudflare Workers는 **무료 3MB / 유료 10MB**(gzip 기준)의 코드 크기 제한이 있습니다.
+PDF 텍스트 추출에 쓰는 `pdf-parse`(내부의 pdf.js)만 혼자 **gzip 1.4MB**를 차지해
+이것 하나로 무료 한도를 넘겨버립니다. 그래서 기본 설정은 이렇습니다.
+
+| 실행 환경 | PDF 자동 추출 | DOCX / PPTX / TXT / MD / CSV | 번들 크기 |
+| --- | --- | --- | --- |
+| Cloudflare Workers (무료) | ❌ 파일 보관만 | ✅ 추출 | 약 2.0MB |
+| 로컬 개발 / Docker / VM | ✅ 추출 | ✅ 추출 | 제한 없음 |
+
+Workers에서 PDF를 올리면 **업로드와 다운로드는 정상 동작**하고 텍스트 추출만 건너뜁니다.
+업로드 창에도 그렇게 안내됩니다. PDF 공고를 AI로 분석하려면 DOCX·TXT로 저장해 올리거나
+내용을 복사해 붙여넣으면 됩니다.
+
+배포 전에 크기를 미리 확인하려면:
+
+```bash
+npm run size:cf
+```
+
+`npm run deploy:cf` 는 이 검사를 자동으로 거치므로, 한도를 넘으면 업로드 전에 멈춥니다.
+
+### Workers에서도 PDF 추출을 켜려면 (유료 플랜)
+
+Workers 유료 플랜($5/월, 한도 10MB)이라면 `src/services/document/extract.ts` 의
+`loadPdfParse()` 를 정적 import 로 바꾸면 됩니다.
+
+```ts
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
+```
+
+번들에 다시 포함되어 Workers에서도 PDF가 추출됩니다(약 3.4MB).
+
+---
+
 ## 파일 저장 위치 바꾸기 (선택)
 
 기본값은 **DB 저장**이라 아무 설정도 필요 없습니다. 파일이 많아지면 아래로 전환하세요.
@@ -195,6 +231,8 @@ DB 저장은 20MB 제한 기준 개인 사용에 충분하지만, Neon 무료 0.
 | `npm ERR! Could not read package.json` | zunall 폴더 밖에서 실행 → `cd ~/zunall` |
 | `command not found: npm` | Node.js 미설치 → nodejs.org 에서 LTS 설치 후 터미널 재시작 |
 | `zsh: parse error` / 따옴표 오류 | 스마트 따옴표(`“ ”`) 사용 → 터미널에서 `"` 직접 입력 |
+| `exceeded the size limit of 3 MiB` | 번들이 무료 한도 초과 → 위 "Worker 크기 제한" 절 참고 (`npm run size:cf` 로 확인) |
+| `Please enable R2` | 예전 코드 사용 중 → 최신 코드를 pull 하세요 (지금은 R2 없이 동작) |
 | 배포는 됐는데 DB 오류 | secret 미등록 → `npx wrangler secret list` 로 확인 |
 | Workers에서 DB 연결 실패 | `npx wrangler secret put DB_DRIVER` → `neon-http` 또는 `postgres-js` 로 드라이버 강제 |
 

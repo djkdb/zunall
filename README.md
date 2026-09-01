@@ -38,6 +38,7 @@
 | Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
 | Backend | Server Actions + Route Handlers |
 | DB | **PostgreSQL** (Drizzle) — 배포는 무료 Postgres(Neon 등), 로컬은 PGlite(설치 불필요) 자동 폴백 |
+| 문서 파싱 | PDF·DOCX·PPTX·TXT 텍스트 추출 (Cloudflare 무료 플랜에서는 PDF 제외 — DEPLOY.md 참고) |
 | 스토리지 | **DB 저장이 기본** — 필요 시 R2 / Supabase Storage / 로컬로 환경변수 전환 |
 | 호스팅 | **Cloudflare Workers** (OpenNext) 또는 Docker/VM |
 | 점수 엔진 | `services/score/*` + `services/career/*` — 순수 함수, 단위 테스트 13개 |

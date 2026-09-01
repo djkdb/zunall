@@ -12,6 +12,12 @@ export interface ExtractResult {
 /**
  * 업로드된 문서에서 텍스트를 추출한다.
  * PDF / DOCX / PPTX / TXT / MD / CSV 지원. 실패해도 앱이 죽지 않도록 항상 결과 객체를 반환.
+ *
+ * ⚠️ PDF만 예외: pdf-parse(내부의 pdf.js)는 번들에서 gzip 1.4MB를 차지해
+ * Cloudflare Workers 무료 플랜의 Worker 크기 제한(3MB)을 혼자서 넘긴다.
+ * 그래서 번들러가 정적 분석할 수 없는 eval require 로 로드한다 —
+ * Node 환경(로컬/Docker/VM)에서는 그대로 동작하고, Workers 번들에서는 제외된다.
+ * Workers에서 PDF까지 처리하려면 DEPLOY.md 의 "PDF 추출 켜기"를 참고할 것.
  */
 export async function extractText(buffer: Buffer, filename: string): Promise<ExtractResult> {
   const ext = getFileExtension(filename);
@@ -43,10 +49,35 @@ export async function extractText(buffer: Buffer, filename: string): Promise<Ext
 }
 
 async function extractPdf(buffer: Buffer): Promise<string> {
-  // pdf-parse의 index.js는 디버그 모드 분기가 있어 lib를 직접 import한다.
-  const { default: pdfParse } = await import("pdf-parse/lib/pdf-parse.js");
+  const pdfParse = loadPdfParse();
+  if (!pdfParse) {
+    throw new Error(
+      "이 배포 환경에서는 PDF 자동 추출이 꺼져 있습니다. " +
+        "DOCX·PPTX·TXT로 올리거나, 내용을 복사해 메모/제출물에 붙여넣어 주세요.",
+    );
+  }
   const result = await pdfParse(buffer);
   return normalize(result.text);
+}
+
+type PdfParse = (data: Buffer) => Promise<{ text: string }>;
+let cachedPdfParse: PdfParse | null | undefined;
+
+/**
+ * pdf-parse 로더. 번들러가 정적 분석할 수 없도록 eval require 로 불러오므로
+ * Workers 번들에는 포함되지 않고, 그 환경에서는 여기서 실패해 null 이 된다.
+ * (pdf-parse의 index.js는 디버그 모드 분기가 있어 lib를 직접 지정한다)
+ */
+function loadPdfParse(): PdfParse | null {
+  if (cachedPdfParse !== undefined) return cachedPdfParse;
+  try {
+    const req = eval("require") as NodeRequire;
+    const mod = req("pdf-parse/lib/pdf-parse.js") as PdfParse | { default: PdfParse };
+    cachedPdfParse = typeof mod === "function" ? mod : mod.default;
+  } catch {
+    cachedPdfParse = null;
+  }
+  return cachedPdfParse;
 }
 
 async function extractDocx(buffer: Buffer): Promise<string> {
@@ -127,6 +158,11 @@ function normalize(text: string): string {
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{4,}/g, "\n\n\n")
     .trim();
+}
+
+/** 이 런타임에서 PDF 자동 추출이 가능한지 (Workers 번들에서는 pdf-parse가 제외됨) */
+export function pdfExtractionEnabled(): boolean {
+  return loadPdfParse() !== null;
 }
 
 /** 텍스트 추출 가능한 확장자인지 */

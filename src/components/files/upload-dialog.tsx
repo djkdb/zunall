@@ -17,6 +17,7 @@ export function UploadDialog({
   groupId,
   triggerLabel,
   triggerVariant = "default",
+  pdfSupported = true,
 }: {
   activityId: string;
   defaultCategory?: string;
@@ -24,6 +25,8 @@ export function UploadDialog({
   groupId?: string;
   triggerLabel?: string;
   triggerVariant?: "default" | "outline" | "ghost";
+  /** 런타임이 PDF 텍스트 추출을 지원하는지 (서버에서 전달) */
+  pdfSupported?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
@@ -69,8 +72,10 @@ export function UploadDialog({
             <Label htmlFor="up-file">파일 *</Label>
             <Input id="up-file" name="file" type="file" required />
             <p className="text-xs text-muted-foreground">
-              PDF, DOCX, PPTX, XLSX, 이미지, ZIP, TXT 등 (최대 20MB). PDF/DOCX/PPTX/TXT는
-              업로드 시 텍스트를 추출해 AI 분석에 사용합니다.
+              PDF, DOCX, PPTX, XLSX, 이미지, ZIP, TXT 등 (최대 20MB).{" "}
+              {pdfSupported
+                ? "PDF/DOCX/PPTX/TXT는 업로드 시 텍스트를 추출해 AI 분석에 사용합니다."
+                : "DOCX/PPTX/TXT는 업로드 시 텍스트를 추출해 AI 분석에 사용합니다. 이 배포 환경에서는 PDF 자동 추출이 꺼져 있어, PDF는 파일 보관만 됩니다."}
             </p>
           </div>
 
