@@ -75,6 +75,7 @@ npx wrangler d1 create zunall
 ```bash
 npx wrangler r2 bucket create zunall-uploads
 ```
+3\. `You must purchase R2` 같은 오류가 나면, Cloudflare 대시보드 → **R2** 메뉴에서 R2를 한 번 활성화한 뒤(무료 티어 존재, 카드 등록이 요구될 수 있음) 다시 실행하세요.
 
 ```bash
 npx wrangler d1 execute zunall --remote --file=schema.sql
@@ -90,6 +91,18 @@ npx wrangler secret put ANTHROPIC_API_KEY
 npm run deploy:cf
 ```
 6\. 빌드 후 배포. 완료되면 `https://zunall.<서브도메인>.workers.dev` 주소가 출력됩니다.
+   실행 전 설정을 자동 점검하며, 빠진 항목이 있으면 무엇을 해야 하는지 한국어로 알려줍니다
+   (점검만 따로 돌리려면 `npm run preflight:cf`).
+
+### 자주 나는 오류
+
+| 증상 | 원인 / 해결 |
+| --- | --- |
+| `Unknown arguments: #, ...` | 명령 뒤의 `# 주석`까지 붙여넣음 → 명령만 복사해 실행 |
+| `opennextjs-cloudflare: command not found` | `npm install` 을 먼저 실행 |
+| `database_id ... REPLACE_WITH...` | 2번 단계에서 UUID를 wrangler.jsonc에 붙여넣지 않음 |
+| `You must purchase R2` | 대시보드에서 R2 활성화 후 재시도 |
+| 배포는 됐는데 500 에러 | D1 스키마 미적용 → 4번 단계(`d1 execute --remote`) 실행 |
 
 ### 로컬에서 Workers 런타임 그대로 테스트
 
