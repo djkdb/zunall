@@ -13,8 +13,7 @@ export async function CalendarTab({ activity, userId }: { activity: ActivityRow;
     .select()
     .from(events)
     .where(and(eq(events.activityId, activity.id), eq(events.userId, userId)))
-    .orderBy(events.date)
-    .all();
+    .orderBy(events.date);
 
   const today = todayStr();
   const upcoming = allEvents.filter((e) => e.date >= today);

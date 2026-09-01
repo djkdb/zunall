@@ -33,8 +33,7 @@ export async function HistoryTab({ activity }: { activity: ActivityRow }) {
     .select()
     .from(activityHistory)
     .where(eq(activityHistory.activityId, activity.id))
-    .orderBy(desc(activityHistory.createdAt))
-    .all();
+    .orderBy(desc(activityHistory.createdAt));
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">

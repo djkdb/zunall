@@ -3,11 +3,11 @@ import { db, notes, type ActivityRow } from "@/lib/db";
 import { NoteEditor } from "@/components/activities/note-editor";
 
 export async function NotesTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
-  const note = await db
+  const note = (await db
     .select()
     .from(notes)
     .where(and(eq(notes.activityId, activity.id), eq(notes.userId, userId)))
-    .get();
+    .limit(1))[0];
 
   return (
     <NoteEditor

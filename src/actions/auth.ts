@@ -27,15 +27,14 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
   }
   const { name, email, password } = parsed.data;
 
-  const existing = await db.select().from(users).where(eq(users.email, email)).get();
+  const existing = (await db.select().from(users).where(eq(users.email, email)).limit(1))[0];
   if (existing) {
     return { error: "이미 가입된 이메일입니다." };
   }
 
   const id = newId();
   await db.insert(users)
-    .values({ id, email, name, passwordHash: hashPassword(password), createdAt: Date.now() })
-    .run();
+    .values({ id, email, name, passwordHash: hashPassword(password), createdAt: Date.now() });
   await createSession(id);
   redirect("/");
 }
@@ -55,7 +54,7 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
   }
   const { email, password } = parsed.data;
 
-  const user = await db.select().from(users).where(eq(users.email, email)).get();
+  const user = (await db.select().from(users).where(eq(users.email, email)).limit(1))[0];
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return { error: "이메일 또는 비밀번호가 올바르지 않습니다." };
   }

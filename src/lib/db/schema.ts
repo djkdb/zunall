@@ -1,30 +1,37 @@
 import {
-  sqliteTable,
+  pgTable,
   text,
   integer,
-  real,
+  bigint,
+  doublePrecision,
   primaryKey,
   index,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 
-// 모든 날짜(마감일 등)는 "YYYY-MM-DD" 텍스트, 생성/수정 시각은 epoch ms 정수로 저장.
-// PostgreSQL(Supabase) 전환 시 이 스키마 파일과 부트스트랩 DDL만 교체하면 된다.
+// PostgreSQL(Supabase) 스키마.
+// - 날짜(마감일 등)는 "YYYY-MM-DD" text, 생성/수정 시각은 epoch ms.
+//   epoch ms는 int4 범위를 넘으므로 반드시 bigint({ mode: "number" }) 를 사용한다.
+// - 불리언 성격의 컬럼(read, is_final, is_active)은 0/1 integer로 유지해
+//   기존 애플리케이션 로직을 그대로 재사용한다.
 
-export const users = sqliteTable("users", {
+/** epoch milliseconds 컬럼 (JS number로 매핑) */
+const epochMs = (name: string) => bigint(name, { mode: "number" });
+
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
-  createdAt: integer("created_at").notNull(),
+  createdAt: epochMs("created_at").notNull(),
 });
 
-export const sessions = sqliteTable("sessions", {
+export const sessions = pgTable("sessions", {
   token: text("token").primaryKey(),
   userId: text("user_id").notNull(),
-  expiresAt: integer("expires_at").notNull(),
+  expiresAt: epochMs("expires_at").notNull(),
 });
 
-export const activities = sqliteTable(
+export const activities = pgTable(
   "activities",
   {
     id: text("id").primaryKey(),
@@ -50,13 +57,13 @@ export const activities = sqliteTable(
     achievement: text("achievement"),
     learned: text("learned"),
     skills: text("skills"),
-    createdAt: integer("created_at").notNull(),
-    updatedAt: integer("updated_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
+    updatedAt: epochMs("updated_at").notNull(),
   },
   (t) => [index("idx_activities_user").on(t.userId)],
 );
 
-export const tags = sqliteTable(
+export const tags = pgTable(
   "tags",
   {
     id: text("id").primaryKey(),
@@ -66,7 +73,7 @@ export const tags = sqliteTable(
   (t) => [index("idx_tags_user").on(t.userId)],
 );
 
-export const activityTags = sqliteTable(
+export const activityTags = pgTable(
   "activity_tags",
   {
     activityId: text("activity_id").notNull(),
@@ -75,7 +82,7 @@ export const activityTags = sqliteTable(
   (t) => [primaryKey({ columns: [t.activityId, t.tagId] })],
 );
 
-export const events = sqliteTable(
+export const events = pgTable(
   "events",
   {
     id: text("id").primaryKey(),
@@ -87,7 +94,7 @@ export const events = sqliteTable(
     time: text("time"), // HH:mm (선택)
     endDate: text("end_date"),
     memo: text("memo"),
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [
     index("idx_events_user").on(t.userId),
@@ -96,7 +103,7 @@ export const events = sqliteTable(
   ],
 );
 
-export const tasks = sqliteTable(
+export const tasks = pgTable(
   "tasks",
   {
     id: text("id").primaryKey(),
@@ -110,9 +117,9 @@ export const tasks = sqliteTable(
     position: integer("position").notNull().default(0),
     // AI 리뷰에서 생성된 작업인 경우 원본 리뷰 id
     sourceReviewId: text("source_review_id"),
-    createdAt: integer("created_at").notNull(),
-    updatedAt: integer("updated_at").notNull(),
-    completedAt: integer("completed_at"),
+    createdAt: epochMs("created_at").notNull(),
+    updatedAt: epochMs("updated_at").notNull(),
+    completedAt: epochMs("completed_at"),
   },
   (t) => [
     index("idx_tasks_user").on(t.userId),
@@ -120,7 +127,7 @@ export const tasks = sqliteTable(
   ],
 );
 
-export const documents = sqliteTable(
+export const documents = pgTable(
   "documents",
   {
     id: text("id").primaryKey(),
@@ -138,7 +145,7 @@ export const documents = sqliteTable(
     groupId: text("group_id").notNull(),
     // 텍스트 추출 캐시
     extractedText: text("extracted_text"),
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [
     index("idx_documents_user").on(t.userId),
@@ -146,7 +153,7 @@ export const documents = sqliteTable(
   ],
 );
 
-export const submissions = sqliteTable(
+export const submissions = pgTable(
   "submissions",
   {
     id: text("id").primaryKey(),
@@ -156,8 +163,8 @@ export const submissions = sqliteTable(
     description: text("description"),
     status: text("status").notNull().default("draft"),
     dueDate: text("due_date"),
-    createdAt: integer("created_at").notNull(),
-    updatedAt: integer("updated_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
+    updatedAt: epochMs("updated_at").notNull(),
   },
   (t) => [
     index("idx_submissions_user").on(t.userId),
@@ -165,7 +172,7 @@ export const submissions = sqliteTable(
   ],
 );
 
-export const submissionVersions = sqliteTable(
+export const submissionVersions = pgTable(
   "submission_versions",
   {
     id: text("id").primaryKey(),
@@ -174,19 +181,19 @@ export const submissionVersions = sqliteTable(
     versionLabel: text("version_label").notNull(), // v1, v2, ..., Final
     isFinal: integer("is_final").notNull().default(0),
     note: text("note"),
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [index("idx_subver_submission").on(t.submissionId)],
 );
 
-export const evaluationCriteria = sqliteTable(
+export const evaluationCriteria = pgTable(
   "evaluation_criteria",
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     activityId: text("activity_id").notNull(),
     name: text("name").notNull(),
-    weight: real("weight").notNull().default(0), // 배점
+    weight: doublePrecision("weight").notNull().default(0), // 배점
     description: text("description"),
     source: text("source").notNull().default("manual"),
     position: integer("position").notNull().default(0),
@@ -194,7 +201,7 @@ export const evaluationCriteria = sqliteTable(
   (t) => [index("idx_criteria_activity").on(t.activityId)],
 );
 
-export const aiReviews = sqliteTable(
+export const aiReviews = pgTable(
   "ai_reviews",
   {
     id: text("id").primaryKey(),
@@ -205,15 +212,15 @@ export const aiReviews = sqliteTable(
     action: text("action").notNull(),
     provider: text("provider").notNull().default("mock"),
     status: text("status").notNull().default("done"), // pending | running | done | error
-    overallScore: real("overall_score"),
-    maxScore: real("max_score"),
-    confidence: real("confidence"),
+    overallScore: doublePrecision("overall_score"),
+    maxScore: doublePrecision("max_score"),
+    confidence: doublePrecision("confidence"),
     summary: text("summary"),
     // AI 응답 전체 (JSON)
     resultJson: text("result_json"),
     errorMessage: text("error_message"),
-    createdAt: integer("created_at").notNull(),
-    completedAt: integer("completed_at"),
+    createdAt: epochMs("created_at").notNull(),
+    completedAt: epochMs("completed_at"),
   },
   (t) => [
     index("idx_reviews_user").on(t.userId),
@@ -221,14 +228,14 @@ export const aiReviews = sqliteTable(
   ],
 );
 
-export const aiReviewItems = sqliteTable(
+export const aiReviewItems = pgTable(
   "ai_review_items",
   {
     id: text("id").primaryKey(),
     reviewId: text("review_id").notNull(),
     name: text("name").notNull(),
-    score: real("score").notNull(),
-    maxScore: real("max_score").notNull(),
+    score: doublePrecision("score").notNull(),
+    maxScore: doublePrecision("max_score").notNull(),
     strengths: text("strengths"), // JSON string[]
     weaknesses: text("weaknesses"), // JSON string[]
     recommendations: text("recommendations"), // JSON string[]
@@ -237,7 +244,7 @@ export const aiReviewItems = sqliteTable(
   (t) => [index("idx_review_items_review").on(t.reviewId)],
 );
 
-export const notifications = sqliteTable(
+export const notifications = pgTable(
   "notifications",
   {
     id: text("id").primaryKey(),
@@ -249,7 +256,7 @@ export const notifications = sqliteTable(
     // D-day 알림 중복 생성 방지용 키 (예: "event:<id>:d3")
     dedupeKey: text("dedupe_key"),
     read: integer("read").notNull().default(0),
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [
     index("idx_notifications_user").on(t.userId),
@@ -257,19 +264,19 @@ export const notifications = sqliteTable(
   ],
 );
 
-export const notes = sqliteTable(
+export const notes = pgTable(
   "notes",
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     activityId: text("activity_id").notNull(),
     content: text("content").notNull().default(""),
-    updatedAt: integer("updated_at").notNull(),
+    updatedAt: epochMs("updated_at").notNull(),
   },
   (t) => [index("idx_notes_activity").on(t.activityId)],
 );
 
-export const activityHistory = sqliteTable(
+export const activityHistory = pgTable(
   "activity_history",
   {
     id: text("id").primaryKey(),
@@ -277,7 +284,7 @@ export const activityHistory = sqliteTable(
     activityId: text("activity_id").notNull(),
     kind: text("kind").notNull().default("updated"),
     message: text("message").notNull(),
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [index("idx_history_activity").on(t.activityId)],
 );
@@ -286,7 +293,7 @@ export const activityHistory = sqliteTable(
 // 스킬 카탈로그는 코드 상수(SKILL_CATALOG)로 관리하고,
 // 사용자가 보유한 스킬만 user_skills에 저장한다.
 
-export const careerGoals = sqliteTable(
+export const careerGoals = pgTable(
   "career_goals",
   {
     id: text("id").primaryKey(),
@@ -299,13 +306,13 @@ export const careerGoals = sqliteTable(
     targetPeriod: text("target_period"),
     priority: text("priority").notNull().default("HIGH"),
     isActive: integer("is_active").notNull().default(1),
-    createdAt: integer("created_at").notNull(),
-    updatedAt: integer("updated_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
+    updatedAt: epochMs("updated_at").notNull(),
   },
   (t) => [index("idx_goals_user").on(t.userId)],
 );
 
-export const userSkills = sqliteTable(
+export const userSkills = pgTable(
   "user_skills",
   {
     id: text("id").primaryKey(),
@@ -314,12 +321,12 @@ export const userSkills = sqliteTable(
     category: text("category").notNull().default("tech"),
     // 자가 평가(0~100). 근거가 아니라 낮은 신뢰도의 참고값으로만 취급한다.
     selfScore: integer("self_score"),
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [index("idx_user_skills_user").on(t.userId)],
 );
 
-export const careerEvidence = sqliteTable(
+export const careerEvidence = pgTable(
   "career_evidence",
   {
     id: text("id").primaryKey(),
@@ -331,27 +338,24 @@ export const careerEvidence = sqliteTable(
     skills: text("skills"), // JSON string[] (스킬명)
     sourceType: text("source_type"), // activity | manual | github | task
     sourceId: text("source_id"),
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [index("idx_evidence_user").on(t.userId)],
 );
 
-export const careerProfiles = sqliteTable(
-  "career_profiles",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id").notNull().unique(),
-    headline: text("headline"), // 예: "Software × AI"
-    summary: text("summary"),
-    desiredRoles: text("desired_roles"), // JSON string[]
-    desiredCompanies: text("desired_companies"), // JSON string[]
-    githubUsername: text("github_username"),
-    onboardedAt: integer("onboarded_at"),
-    updatedAt: integer("updated_at").notNull(),
-  },
-);
+export const careerProfiles = pgTable("career_profiles", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().unique(),
+  headline: text("headline"), // 예: "Software × AI"
+  summary: text("summary"),
+  desiredRoles: text("desired_roles"), // JSON string[]
+  desiredCompanies: text("desired_companies"), // JSON string[]
+  githubUsername: text("github_username"),
+  onboardedAt: epochMs("onboarded_at"),
+  updatedAt: epochMs("updated_at").notNull(),
+});
 
-export const careerActions = sqliteTable(
+export const careerActions = pgTable(
   "career_actions",
   {
     id: text("id").primaryKey(),
@@ -360,17 +364,17 @@ export const careerActions = sqliteTable(
     skill: text("skill"),
     title: text("title").notNull(),
     reason: text("reason"),
-    expectedEffect: real("expected_effect").notNull().default(0),
+    expectedEffect: doublePrecision("expected_effect").notNull().default(0),
     expectedMinutes: integer("expected_minutes").notNull().default(60),
     status: text("status").notNull().default("suggested"), // suggested | accepted | done | dismissed
     taskId: text("task_id"),
-    createdAt: integer("created_at").notNull(),
-    updatedAt: integer("updated_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
+    updatedAt: epochMs("updated_at").notNull(),
   },
   (t) => [index("idx_actions_user").on(t.userId)],
 );
 
-export const roadmapItems = sqliteTable(
+export const roadmapItems = pgTable(
   "roadmap_items",
   {
     id: text("id").primaryKey(),
@@ -382,24 +386,24 @@ export const roadmapItems = sqliteTable(
     status: text("status").notNull().default("planned"),
     taskId: text("task_id"),
     position: integer("position").notNull().default(0),
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [index("idx_roadmap_user").on(t.userId)],
 );
 
-export const scoreSnapshots = sqliteTable(
+export const scoreSnapshots = pgTable(
   "score_snapshots",
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
-    score: real("score").notNull(),
+    score: doublePrecision("score").notNull(),
     breakdown: text("breakdown"), // JSON
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [index("idx_snapshots_user").on(t.userId)],
 );
 
-export const opportunityAnalyses = sqliteTable(
+export const opportunityAnalyses = pgTable(
   "opportunity_analyses",
   {
     id: text("id").primaryKey(),
@@ -407,14 +411,14 @@ export const opportunityAnalyses = sqliteTable(
     activityId: text("activity_id").notNull(),
     // AI가 추출한 요구사항 (OpportunityRequirements JSON)
     requirements: text("requirements"),
-    fitScore: real("fit_score"),
+    fitScore: doublePrecision("fit_score"),
     fitBreakdown: text("fit_breakdown"), // JSON: 근거 항목 배열
     recommendation: text("recommendation"), // apply | hold | skip
     recommendationReason: text("recommendation_reason"),
-    prepHours: real("prep_hours"),
-    gapEffect: real("gap_effect"),
+    prepHours: doublePrecision("prep_hours"),
+    gapEffect: doublePrecision("gap_effect"),
     alternative: text("alternative"), // JSON: 대안 행동
-    createdAt: integer("created_at").notNull(),
+    createdAt: epochMs("created_at").notNull(),
   },
   (t) => [
     index("idx_opp_user").on(t.userId),

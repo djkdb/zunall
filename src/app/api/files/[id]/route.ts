@@ -15,11 +15,11 @@ export async function GET(
   }
 
   const { id } = await params;
-  const doc = await db
+  const doc = (await db
     .select()
     .from(documents)
     .where(and(eq(documents.id, id), eq(documents.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!doc) {
     return NextResponse.json({ error: "파일을 찾을 수 없습니다." }, { status: 404 });
   }

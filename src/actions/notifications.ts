@@ -10,8 +10,7 @@ export async function markNotificationRead(notificationId: string): Promise<Acti
   const user = await requireUser();
   await db.update(notifications)
     .set({ read: 1 })
-    .where(and(eq(notifications.id, notificationId), eq(notifications.userId, user.id)))
-    .run();
+    .where(and(eq(notifications.id, notificationId), eq(notifications.userId, user.id)));
   revalidatePath("/notifications");
   return { ok: true };
 }
@@ -20,8 +19,7 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
   const user = await requireUser();
   await db.update(notifications)
     .set({ read: 1 })
-    .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0)))
-    .run();
+    .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0)));
   revalidatePath("/notifications");
   return { ok: true };
 }
@@ -29,8 +27,7 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
 export async function deleteNotification(notificationId: string): Promise<ActionResult> {
   const user = await requireUser();
   await db.delete(notifications)
-    .where(and(eq(notifications.id, notificationId), eq(notifications.userId, user.id)))
-    .run();
+    .where(and(eq(notifications.id, notificationId), eq(notifications.userId, user.id)));
   revalidatePath("/notifications");
   return { ok: true };
 }

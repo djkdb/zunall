@@ -20,11 +20,11 @@ import type { ActionResult } from "@/actions/activities";
  */
 export async function analyzeOpportunityFit(activityId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const activity = await db
+  const activity = (await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!activity) return { ok: false, error: "활동을 찾을 수 없습니다." };
 
   // 1) AI 추출
@@ -37,11 +37,11 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
     return { ok: false, error: aiResult.error ?? "요구 역량 분석에 실패했습니다." };
   }
 
-  const review = await db
+  const review = (await db
     .select()
     .from(aiReviews)
     .where(and(eq(aiReviews.id, aiResult.reviewId), eq(aiReviews.userId, user.id)))
-    .get();
+    .limit(1))[0];
   const parsed = opportunityRequirementsSchema.safeParse(
     safeJsonParse<unknown>(review?.resultJson, null),
   );
@@ -65,8 +65,7 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
   await db.delete(opportunityAnalyses)
     .where(
       and(eq(opportunityAnalyses.activityId, activityId), eq(opportunityAnalyses.userId, user.id)),
-    )
-    .run();
+    );
   await db.insert(opportunityAnalyses)
     .values({
       id: newId(),
@@ -85,8 +84,7 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
       gapEffect: fit.gapEffect,
       alternative: fit.alternative ? JSON.stringify(fit.alternative) : null,
       createdAt: Date.now(),
-    })
-    .run();
+    });
 
   await logHistory(user.id, activityId, "ai", `지원 적합도 분석 완료 — ${fit.score}점 (${fit.recommendation === "apply" ? "지원 추천" : fit.recommendation === "hold" ? "보강 후 지원" : "지원 비추천"})`);
 

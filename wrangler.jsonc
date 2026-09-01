@@ -1,11 +1,13 @@
-// Cloudflare Workers 배포 설정 (OpenNext)
-// 배포 전 준비:
-//   1. npx wrangler login
-//   2. npx wrangler d1 create zunall  →  아래 database_id 채우기
-//   3. npx wrangler r2 bucket create zunall-uploads
-//   4. npx tsx scripts/export-schema.ts && npx wrangler d1 execute zunall --remote --file=schema.sql
-//   5. npx wrangler secret put ANTHROPIC_API_KEY
-//   6. npm run deploy:cf
+// Cloudflare Workers 배포 설정 (OpenNext + Supabase)
+// DB/스토리지/AI 키는 모두 secret 으로 주입한다 — 이 파일에 값을 적지 말 것.
+//
+// 배포 전 준비 (자세한 절차는 DEPLOY.md):
+//   npx wrangler login
+//   npx wrangler secret put DATABASE_URL              (Supabase 트랜잭션 풀러 URL)
+//   npx wrangler secret put SUPABASE_URL
+//   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+//   npx wrangler secret put ANTHROPIC_API_KEY
+//   npm run deploy:cf
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "zunall",
@@ -16,21 +18,9 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "zunall",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "BUCKET",
-      "bucket_name": "zunall-uploads"
-    }
-  ],
   "vars": {
     "AI_PROVIDER": "anthropic",
-    "ANTHROPIC_MODEL": "claude-opus-5"
+    "ANTHROPIC_MODEL": "claude-opus-5",
+    "SUPABASE_STORAGE_BUCKET": "zunall-uploads"
   }
 }

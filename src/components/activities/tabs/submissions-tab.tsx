@@ -24,8 +24,7 @@ export async function SubmissionsTab({ activity, userId }: { activity: ActivityR
     .select()
     .from(submissions)
     .where(and(eq(submissions.activityId, activity.id), eq(submissions.userId, userId)))
-    .orderBy(desc(submissions.createdAt))
-    .all();
+    .orderBy(desc(submissions.createdAt));
 
   const subIds = subs.map((s) => s.id);
   const versions =
@@ -35,12 +34,12 @@ export async function SubmissionsTab({ activity, userId }: { activity: ActivityR
           .from(submissionVersions)
           .where(inArray(submissionVersions.submissionId, subIds))
           .orderBy(desc(submissionVersions.createdAt))
-          .all()
+
       : [];
   const docIds = versions.map((v) => v.documentId);
   const versionDocs =
     docIds.length > 0
-      ? await db.select().from(documents).where(inArray(documents.id, docIds)).all()
+      ? await db.select().from(documents).where(inArray(documents.id, docIds))
       : [];
   const docById = new Map(versionDocs.map((d) => [d.id, d]));
 
@@ -58,7 +57,7 @@ export async function SubmissionsTab({ activity, userId }: { activity: ActivityR
             ),
           )
           .orderBy(desc(aiReviews.createdAt))
-          .all()
+
       : [];
 
   return (

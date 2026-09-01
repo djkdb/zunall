@@ -30,13 +30,13 @@ function evidenceKindFor(activityType: string, status: string): EvidenceKind {
  * 이미 임포트된 활동(sourceId 일치)은 건너뛴다. 반환: 새로 만든 근거 수.
  */
 export async function importEvidenceFromActivities(userId: string): Promise<number> {
-  const acts = await db.select().from(activities).where(eq(activities.userId, userId)).all();
+  const acts = await db.select().from(activities).where(eq(activities.userId, userId));
   let created = 0;
 
   for (const act of acts) {
     if (act.status === "interested" || act.status === "planned") continue;
 
-    const existing = await db
+    const existing = (await db
       .select({ id: careerEvidence.id })
       .from(careerEvidence)
       .where(
@@ -46,7 +46,7 @@ export async function importEvidenceFromActivities(userId: string): Promise<numb
           eq(careerEvidence.sourceId, act.id),
         ),
       )
-      .get();
+      .limit(1))[0];
     if (existing) continue;
 
     const kind = evidenceKindFor(act.type, act.status);
@@ -75,8 +75,7 @@ export async function importEvidenceFromActivities(userId: string): Promise<numb
         sourceType: "activity",
         sourceId: act.id,
         createdAt: Date.now(),
-      })
-      .run();
+      });
     created++;
   }
 

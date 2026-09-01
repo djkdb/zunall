@@ -12,8 +12,7 @@ export async function logHistory(
   message: string,
 ): Promise<void> {
   await db.insert(activityHistory)
-    .values({ id: newId(), userId, activityId, kind, message, createdAt: Date.now() })
-    .run();
+    .values({ id: newId(), userId, activityId, kind, message, createdAt: Date.now() });
 }
 
 /** 앱 내부 알림 생성 (dedupeKey가 있으면 중복 생성하지 않음) */
@@ -26,11 +25,11 @@ export async function pushNotification(params: {
   dedupeKey?: string;
 }): Promise<void> {
   if (params.dedupeKey) {
-    const existing = await db
+    const existing = (await db
       .select({ id: notifications.id })
       .from(notifications)
       .where(and(eq(notifications.userId, params.userId), eq(notifications.dedupeKey, params.dedupeKey)))
-      .get();
+      .limit(1))[0];
     if (existing) return;
   }
   await db.insert(notifications)
@@ -44,6 +43,5 @@ export async function pushNotification(params: {
       dedupeKey: params.dedupeKey ?? null,
       read: 0,
       createdAt: Date.now(),
-    })
-    .run();
+    });
 }

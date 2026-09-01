@@ -10,29 +10,27 @@ import type { ActionResult } from "@/actions/activities";
 /** 활동별 개인 메모 저장 (upsert) */
 export async function saveNote(activityId: string, content: string): Promise<ActionResult> {
   const user = await requireUser();
-  const act = await db
+  const act = (await db
     .select({ id: activities.id })
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!act) return { ok: false, error: "활동을 찾을 수 없습니다." };
   if (content.length > 20000) return { ok: false, error: "메모가 너무 깁니다." };
 
-  const existing = await db
+  const existing = (await db
     .select({ id: notes.id })
     .from(notes)
     .where(and(eq(notes.activityId, activityId), eq(notes.userId, user.id)))
-    .get();
+    .limit(1))[0];
 
   if (existing) {
     await db.update(notes)
       .set({ content, updatedAt: Date.now() })
-      .where(eq(notes.id, existing.id))
-      .run();
+      .where(eq(notes.id, existing.id));
   } else {
     await db.insert(notes)
-      .values({ id: newId(), userId: user.id, activityId, content, updatedAt: Date.now() })
-      .run();
+      .values({ id: newId(), userId: user.id, activityId, content, updatedAt: Date.now() });
   }
 
   revalidatePath(`/activities/${activityId}`);

@@ -23,11 +23,11 @@ export async function createEvent(input: EventInput): Promise<ActionResult> {
 
   // activityId가 주어졌으면 소유권 확인
   if (data.activityId) {
-    const act = await db
+    const act = (await db
       .select({ id: activities.id })
       .from(activities)
       .where(and(eq(activities.id, data.activityId), eq(activities.userId, user.id)))
-      .get();
+      .limit(1))[0];
     if (!act) return { ok: false, error: "활동을 찾을 수 없습니다." };
   }
 
@@ -44,8 +44,7 @@ export async function createEvent(input: EventInput): Promise<ActionResult> {
       endDate: data.endDate,
       memo: data.memo,
       createdAt: Date.now(),
-    })
-    .run();
+    });
 
   if (data.activityId) {
     await logHistory(user.id, data.activityId, "event", `일정 추가: ${data.title} (${data.date})`);
@@ -56,11 +55,11 @@ export async function createEvent(input: EventInput): Promise<ActionResult> {
 
 export async function updateEvent(eventId: string, input: EventInput): Promise<ActionResult> {
   const user = await requireUser();
-  const existing = await db
+  const existing = (await db
     .select()
     .from(events)
     .where(and(eq(events.id, eventId), eq(events.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!existing) return { ok: false, error: "일정을 찾을 수 없습니다." };
 
   const parsed = eventSchema.safeParse(input);
@@ -76,8 +75,7 @@ export async function updateEvent(eventId: string, input: EventInput): Promise<A
       endDate: data.endDate,
       memo: data.memo,
     })
-    .where(eq(events.id, eventId))
-    .run();
+    .where(eq(events.id, eventId));
 
   revalidateEventPaths(existing.activityId);
   return { ok: true, id: eventId };
@@ -85,14 +83,14 @@ export async function updateEvent(eventId: string, input: EventInput): Promise<A
 
 export async function deleteEvent(eventId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const existing = await db
+  const existing = (await db
     .select()
     .from(events)
     .where(and(eq(events.id, eventId), eq(events.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!existing) return { ok: false, error: "일정을 찾을 수 없습니다." };
 
-  await db.delete(events).where(eq(events.id, eventId)).run();
+  await db.delete(events).where(eq(events.id, eventId));
   if (existing.activityId) {
     await logHistory(user.id, existing.activityId, "event", `일정 삭제: ${existing.title}`);
   }

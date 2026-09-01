@@ -13,14 +13,12 @@ export default async function CalendarPage() {
     .select()
     .from(events)
     .where(eq(events.userId, user.id))
-    .orderBy(events.date)
-    .all();
+    .orderBy(events.date);
 
   const activityOptions = await db
     .select({ id: activities.id, name: activities.name, color: activities.color })
     .from(activities)
-    .where(eq(activities.userId, user.id))
-    .all();
+    .where(eq(activities.userId, user.id));
 
   return (
     <div className="space-y-5">

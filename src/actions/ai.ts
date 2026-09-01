@@ -49,11 +49,11 @@ export async function applyAnnouncementResult(
   options: { applyDates: boolean; applyCriteria: boolean; applySummary: boolean },
 ): Promise<ActionResult> {
   const user = await requireUser();
-  const review = await db
+  const review = (await db
     .select()
     .from(aiReviews)
     .where(and(eq(aiReviews.id, reviewId), eq(aiReviews.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!review || review.status !== "done" || !review.resultJson) {
     return { ok: false, error: "적용할 분석 결과를 찾을 수 없습니다." };
   }
@@ -71,11 +71,11 @@ export async function applyAnnouncementResult(
   if (!parsed.success) return { ok: false, error: "분석 결과 형식이 올바르지 않습니다." };
   const data = parsed.data;
 
-  const activity = await db
+  const activity = (await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, review.activityId), eq(activities.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!activity) return { ok: false, error: "활동을 찾을 수 없습니다." };
 
   const applied: string[] = [];
@@ -95,8 +95,7 @@ export async function applyAnnouncementResult(
     if (Object.keys(updates).length > 0) {
       await db.update(activities)
         .set({ ...updates, updatedAt: Date.now() })
-        .where(eq(activities.id, activity.id))
-        .run();
+        .where(eq(activities.id, activity.id));
 
       // 캘린더 일정 자동 등록
       const pairs: Array<[string | null | undefined, string, string]> = [
@@ -106,11 +105,11 @@ export async function applyAnnouncementResult(
       ];
       for (const [date, type, label] of pairs) {
         if (!date) continue;
-        const exists = await db
+        const exists = (await db
           .select({ id: events.id })
           .from(events)
           .where(and(eq(events.activityId, activity.id), eq(events.type, type), eq(events.date, date)))
-          .get();
+          .limit(1))[0];
         if (!exists) {
           await db.insert(events)
             .values({
@@ -121,8 +120,7 @@ export async function applyAnnouncementResult(
               type,
               date,
               createdAt: Date.now(),
-            })
-            .run();
+            });
         }
       }
       applied.push("주요 일정");
@@ -134,8 +132,7 @@ export async function applyAnnouncementResult(
     const existing = await db
       .select()
       .from(evaluationCriteria)
-      .where(eq(evaluationCriteria.activityId, activity.id))
-      .all();
+      .where(eq(evaluationCriteria.activityId, activity.id));
     const existingNames = new Set(existing.map((c) => c.name));
     let position = existing.length;
     let added = 0;
@@ -151,8 +148,7 @@ export async function applyAnnouncementResult(
           description: criterion.description ?? null,
           source: criterion.source,
           position: position++,
-        })
-        .run();
+        });
       added++;
     }
     if (added > 0) applied.push(`평가 기준 ${added}개`);
@@ -161,8 +157,7 @@ export async function applyAnnouncementResult(
   if (options.applySummary) {
     await db.update(activities)
       .set({ aiSummary: review.resultJson, updatedAt: Date.now() })
-      .where(eq(activities.id, activity.id))
-      .run();
+      .where(eq(activities.id, activity.id));
     applied.push("AI 요약");
   }
 
@@ -182,32 +177,32 @@ export async function createTaskFromAI(
   reviewId: string,
 ): Promise<ActionResult> {
   const user = await requireUser();
-  const activity = await db
+  const activity = (await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!activity) return { ok: false, error: "활동을 찾을 수 없습니다." };
 
   const trimmed = title.trim().slice(0, 200);
   if (!trimmed) return { ok: false, error: "작업 제목이 비어 있습니다." };
 
   // 같은 리뷰에서 동일 제목의 작업이 이미 있으면 중복 생성 방지
-  const dup = await db
+  const dup = (await db
     .select({ id: tasks.id })
     .from(tasks)
     .where(
       and(eq(tasks.userId, user.id), eq(tasks.sourceReviewId, reviewId), eq(tasks.title, trimmed)),
     )
-    .get();
+    .limit(1))[0];
   if (dup) return { ok: false, error: "이미 같은 작업이 등록되어 있습니다." };
 
-  const maxPos = await db
+  const maxPos = (await db
     .select({ position: tasks.position })
     .from(tasks)
     .where(eq(tasks.userId, user.id))
     .orderBy(desc(tasks.position))
-    .get();
+    .limit(1))[0];
 
   const id = newId();
   const now = Date.now();
@@ -224,8 +219,7 @@ export async function createTaskFromAI(
       sourceReviewId: reviewId,
       createdAt: now,
       updatedAt: now,
-    })
-    .run();
+    });
 
   await logHistory(user.id, activityId, "task", `AI 피드백에서 작업 생성: ${trimmed}`);
   revalidatePath(`/activities/${activityId}`);
@@ -240,11 +234,11 @@ export async function addCriterion(
   input: { name: string; weight: number; description?: string },
 ): Promise<ActionResult> {
   const user = await requireUser();
-  const activity = await db
+  const activity = (await db
     .select({ id: activities.id })
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!activity) return { ok: false, error: "활동을 찾을 수 없습니다." };
 
   const parsed = criteriaItemSchema.safeParse({ ...input, source: "manual" });
@@ -255,7 +249,7 @@ export async function addCriterion(
       .select({ id: evaluationCriteria.id })
       .from(evaluationCriteria)
       .where(eq(evaluationCriteria.activityId, activityId))
-      .all()
+
   ).length;
 
   await db.insert(evaluationCriteria)
@@ -268,8 +262,7 @@ export async function addCriterion(
       description: parsed.data.description,
       source: "manual",
       position: count,
-    })
-    .run();
+    });
 
   revalidatePath(`/activities/${activityId}`);
   return { ok: true };
@@ -277,14 +270,14 @@ export async function addCriterion(
 
 export async function deleteCriterion(criterionId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const criterion = await db
+  const criterion = (await db
     .select()
     .from(evaluationCriteria)
     .where(and(eq(evaluationCriteria.id, criterionId), eq(evaluationCriteria.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!criterion) return { ok: false, error: "평가 기준을 찾을 수 없습니다." };
 
-  await db.delete(evaluationCriteria).where(eq(evaluationCriteria.id, criterionId)).run();
+  await db.delete(evaluationCriteria).where(eq(evaluationCriteria.id, criterionId));
   revalidatePath(`/activities/${criterion.activityId}`);
   return { ok: true };
 }

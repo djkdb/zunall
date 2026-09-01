@@ -14,11 +14,11 @@ import type { ActionResult } from "@/actions/activities";
 const MAX_EXTRACT_CHARS = 200_000;
 
 async function assertOwnedActivity(activityId: string, userId: string) {
-  return await db
+  return (await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, userId)))
-    .get();
+    .limit(1))[0];
 }
 
 /**
@@ -46,7 +46,7 @@ export async function uploadDocument(formData: FormData): Promise<ActionResult> 
   let version = 1;
   let displayName = file.name;
   if (groupId) {
-    const latest = await db
+    const latest = (await db
       .select()
       .from(documents)
       .where(
@@ -57,7 +57,7 @@ export async function uploadDocument(formData: FormData): Promise<ActionResult> 
         ),
       )
       .orderBy(desc(documents.version))
-      .get();
+      .limit(1))[0];
     if (!latest) return { ok: false, error: "버전을 올릴 문서를 찾을 수 없습니다." };
     version = latest.version + 1;
     displayName = latest.name;
@@ -97,8 +97,7 @@ export async function uploadDocument(formData: FormData): Promise<ActionResult> 
       groupId: groupId ?? id,
       extractedText,
       createdAt: Date.now(),
-    })
-    .run();
+    });
 
   await logHistory(
     user.id,
@@ -125,11 +124,11 @@ export async function updateDocumentMeta(
   meta: { category?: string; description?: string; name?: string },
 ): Promise<ActionResult> {
   const user = await requireUser();
-  const doc = await db
+  const doc = (await db
     .select()
     .from(documents)
     .where(and(eq(documents.id, documentId), eq(documents.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!doc) return { ok: false, error: "문서를 찾을 수 없습니다." };
 
   const updates: Partial<typeof documents.$inferInsert> = {};
@@ -138,22 +137,22 @@ export async function updateDocumentMeta(
   if (meta.name !== undefined && meta.name.trim()) updates.name = meta.name.trim().slice(0, 200);
   if (Object.keys(updates).length === 0) return { ok: true };
 
-  await db.update(documents).set(updates).where(eq(documents.id, documentId)).run();
+  await db.update(documents).set(updates).where(eq(documents.id, documentId));
   revalidatePath(`/activities/${doc.activityId}`);
   return { ok: true };
 }
 
 export async function deleteDocument(documentId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const doc = await db
+  const doc = (await db
     .select()
     .from(documents)
     .where(and(eq(documents.id, documentId), eq(documents.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!doc) return { ok: false, error: "문서를 찾을 수 없습니다." };
 
   await deleteStoredFile(doc.storagePath);
-  await db.delete(documents).where(eq(documents.id, documentId)).run();
+  await db.delete(documents).where(eq(documents.id, documentId));
   await logHistory(user.id, doc.activityId, "file", `파일 삭제: ${doc.name} (v${doc.version})`);
 
   revalidatePath(`/activities/${doc.activityId}`);

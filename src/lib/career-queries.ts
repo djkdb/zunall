@@ -40,15 +40,15 @@ export interface CareerContext {
 /** Career 화면·대시보드가 공유하는 컨텍스트를 한 번에 조립한다. */
 export async function getCareerContext(userId: string): Promise<CareerContext> {
   const profile =
-    await db.select().from(careerProfiles).where(eq(careerProfiles.userId, userId)).get() ?? null;
+    (await db.select().from(careerProfiles).where(eq(careerProfiles.userId, userId)).limit(1))[0] ?? null;
 
   const goal =
-    await db
+    (await db
       .select()
       .from(careerGoals)
       .where(and(eq(careerGoals.userId, userId), eq(careerGoals.isActive, 1)))
       .orderBy(desc(careerGoals.updatedAt))
-      .get() ?? null;
+      .limit(1))[0] ?? null;
 
   const template = matchTemplate(
     goal
@@ -60,13 +60,12 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
       : null,
   );
 
-  const skills = await db.select().from(userSkills).where(eq(userSkills.userId, userId)).all();
+  const skills = await db.select().from(userSkills).where(eq(userSkills.userId, userId));
   const evidence = await db
     .select()
     .from(careerEvidence)
     .where(eq(careerEvidence.userId, userId))
-    .orderBy(desc(careerEvidence.createdAt))
-    .all();
+    .orderBy(desc(careerEvidence.createdAt));
 
   const skillScores = computeSkillScores(
     skills.map((s) => ({ name: s.name, category: s.category, selfScore: s.selfScore })),
@@ -81,8 +80,7 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
   const acts = await db
     .select({ status: activities.status })
     .from(activities)
-    .where(eq(activities.userId, userId))
-    .all();
+    .where(eq(activities.userId, userId));
 
   const readiness = computeReadiness({
     template,
@@ -106,8 +104,7 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
   const actions = await db
     .select()
     .from(careerActions)
-    .where(eq(careerActions.userId, userId))
-    .all();
+    .where(eq(careerActions.userId, userId));
   const excludeTitles = new Set(
     actions.filter((a) => a.status !== "suggested").map((a) => a.title),
   );
@@ -136,12 +133,12 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
  * 성장 그래프("72 → 81")의 데이터가 된다.
  */
 export async function recordScoreSnapshot(userId: string, score: number, breakdown: unknown): Promise<void> {
-  const latest = await db
+  const latest = (await db
     .select()
     .from(scoreSnapshots)
     .where(eq(scoreSnapshots.userId, userId))
     .orderBy(desc(scoreSnapshots.createdAt))
-    .get();
+    .limit(1))[0];
 
   const breakdownJson = JSON.stringify(breakdown);
   const latestDay = latest ? toDateStr(new Date(latest.createdAt)) : null;
@@ -149,13 +146,11 @@ export async function recordScoreSnapshot(userId: string, score: number, breakdo
     // 같은 날에는 최신값으로 갱신만 한다
     await db.update(scoreSnapshots)
       .set({ score, breakdown: breakdownJson, createdAt: Date.now() })
-      .where(eq(scoreSnapshots.id, latest.id))
-      .run();
+      .where(eq(scoreSnapshots.id, latest.id));
     return;
   }
   await db.insert(scoreSnapshots)
-    .values({ id: newId(), userId, score, breakdown: breakdownJson, createdAt: Date.now() })
-    .run();
+    .values({ id: newId(), userId, score, breakdown: breakdownJson, createdAt: Date.now() });
 }
 
 export async function getScoreTrend(userId: string): Promise<{ first: number | null; latest: number | null; monthAgo: number | null }> {
@@ -163,8 +158,7 @@ export async function getScoreTrend(userId: string): Promise<{ first: number | n
     .select()
     .from(scoreSnapshots)
     .where(eq(scoreSnapshots.userId, userId))
-    .orderBy(scoreSnapshots.createdAt)
-    .all();
+    .orderBy(scoreSnapshots.createdAt);
   if (rows.length === 0) return { first: null, latest: null, monthAgo: null };
   const monthStart = Date.now() - 30 * 86400000;
   const monthAgoRow = rows.filter((r) => r.createdAt <= monthStart).pop() ?? rows[0];
@@ -181,28 +175,27 @@ export async function getScoreTrend(userId: string): Promise<{ first: number | n
  * 반환: 커리어 미션이 완료되었는지 여부.
  */
 export async function handleTaskCompletionForCareer(userId: string, taskId: string): Promise<boolean> {
-  const linkedAction = await db
+  const linkedAction = (await db
     .select()
     .from(careerActions)
     .where(and(eq(careerActions.userId, userId), eq(careerActions.taskId, taskId)))
-    .get();
+    .limit(1))[0];
 
-  const linkedRoadmap = await db
+  const linkedRoadmap = (await db
     .select()
     .from(roadmapItems)
     .where(and(eq(roadmapItems.userId, userId), eq(roadmapItems.taskId, taskId)))
-    .get();
+    .limit(1))[0];
 
   let missionDone = false;
   if (linkedAction && linkedAction.status !== "done") {
     await db.update(careerActions)
       .set({ status: "done", updatedAt: Date.now() })
-      .where(eq(careerActions.id, linkedAction.id))
-      .run();
+      .where(eq(careerActions.id, linkedAction.id));
     missionDone = true;
   }
   if (linkedRoadmap && linkedRoadmap.status !== "done") {
-    await db.update(roadmapItems).set({ status: "done" }).where(eq(roadmapItems.id, linkedRoadmap.id)).run();
+    await db.update(roadmapItems).set({ status: "done" }).where(eq(roadmapItems.id, linkedRoadmap.id));
   }
 
   if (missionDone || linkedRoadmap) {
@@ -217,7 +210,6 @@ export async function countOngoingActivities(userId: string): Promise<number> {
   const rows = await db
     .select({ status: activities.status })
     .from(activities)
-    .where(eq(activities.userId, userId))
-    .all();
+    .where(eq(activities.userId, userId));
   return rows.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status)).length;
 }

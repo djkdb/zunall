@@ -48,11 +48,11 @@ export interface RunAIResult {
 export async function runAIAction(params: RunAIParams): Promise<RunAIResult> {
   const { userId, activityId, action } = params;
 
-  const activity = await db
+  const activity = (await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, userId)))
-    .get();
+    .limit(1))[0];
   if (!activity) return { ok: false, reviewId: "", error: "활동을 찾을 수 없습니다." };
 
   const context = await buildContext(userId, activity, params.submissionId ?? null, action);
@@ -71,8 +71,7 @@ export async function runAIAction(params: RunAIParams): Promise<RunAIResult> {
       provider: provider.name,
       status: "running",
       createdAt: Date.now(),
-    })
-    .run();
+    });
 
   try {
     const prompt = buildPrompt(action, context.ctx);
@@ -84,8 +83,7 @@ export async function runAIAction(params: RunAIParams): Promise<RunAIResult> {
     const message = e instanceof Error ? e.message : "AI 실행 중 알 수 없는 오류가 발생했습니다.";
     await db.update(aiReviews)
       .set({ status: "error", errorMessage: message, completedAt: Date.now() })
-      .where(eq(aiReviews.id, reviewId))
-      .run();
+      .where(eq(aiReviews.id, reviewId));
     await pushNotification({
       userId,
       activityId,
@@ -114,8 +112,7 @@ async function buildContext(
     .select()
     .from(evaluationCriteria)
     .where(eq(evaluationCriteria.activityId, activity.id))
-    .orderBy(evaluationCriteria.position)
-    .all();
+    .orderBy(evaluationCriteria.position);
   const criteria = criteriaRows.map((c) => ({
     name: c.name,
     weight: c.weight,
@@ -134,8 +131,7 @@ async function buildContext(
         eq(documents.category, "notice"),
       ),
     )
-    .orderBy(desc(documents.createdAt))
-    .all();
+    .orderBy(desc(documents.createdAt));
   const announcementText = noticeDocs
     .filter((d) => d.extractedText)
     .map((d) => `《${d.name}》\n${d.extractedText}`)
@@ -157,11 +153,11 @@ async function buildContext(
   const needsSubmission = ["evaluate_submission", "final_check", "proofread", "improvements", "expected_questions"].includes(action);
 
   if (submissionId) {
-    const submission = await db
+    const submission = (await db
       .select()
       .from(submissions)
       .where(and(eq(submissions.id, submissionId), eq(submissions.userId, userId)))
-      .get();
+      .limit(1))[0];
     if (!submission) return { error: "제출물을 찾을 수 없습니다." };
     submissionTitle = submission.title;
 
@@ -202,8 +198,7 @@ async function buildContext(
           eq(documents.category, "work"),
         ),
       )
-      .orderBy(desc(documents.createdAt))
-      .all();
+      .orderBy(desc(documents.createdAt));
     submissionText = workDocs
       .filter((d) => d.extractedText)
       .map((d) => `《${d.name}》\n${d.extractedText}`)
@@ -211,23 +206,22 @@ async function buildContext(
   }
 
   // 지원자 프로필: 이름 + 활동 이력 + 커리어 목표/헤드라인 (있으면)
-  const user = await db.select().from(users).where(eq(users.id, userId)).get();
+  const user = (await db.select().from(users).where(eq(users.id, userId)).limit(1))[0];
   const myActivities = await db
     .select({ name: activities.name, type: activities.type, status: activities.status })
     .from(activities)
-    .where(eq(activities.userId, userId))
-    .all();
+    .where(eq(activities.userId, userId));
   const wonCount = myActivities.filter((a) => a.status === "won").length;
-  const careerGoal = await db
+  const careerGoal = (await db
     .select({ name: careerGoals.name })
     .from(careerGoals)
     .where(and(eq(careerGoals.userId, userId), eq(careerGoals.isActive, 1)))
-    .get();
-  const careerProfile = await db
+    .limit(1))[0];
+  const careerProfile = (await db
     .select({ headline: careerProfiles.headline })
     .from(careerProfiles)
     .where(eq(careerProfiles.userId, userId))
-    .get();
+    .limit(1))[0];
   const userProfile = [
     `이름: ${user?.name ?? "사용자"}.`,
     careerGoal ? `커리어 목표: ${careerGoal.name}.` : null,
@@ -337,8 +331,7 @@ async function persistResult(
           weaknesses: JSON.stringify(item.weaknesses),
           recommendations: JSON.stringify(item.recommendations),
           position: idx,
-        })
-        .run();
+        });
     }
   } else if (result.kind === "final_check") {
     overallScore = result.data.score;
@@ -362,15 +355,13 @@ async function persistResult(
       resultJson: JSON.stringify(result.data),
       completedAt: Date.now(),
     })
-    .where(eq(aiReviews.id, reviewId))
-    .run();
+    .where(eq(aiReviews.id, reviewId));
 
   // 제출물 평가면 제출물 상태 갱신
   if (action === "evaluate_submission" && submissionId) {
     await db.update(submissions)
       .set({ status: "ai_reviewed", updatedAt: Date.now() })
-      .where(eq(submissions.id, submissionId))
-      .run();
+      .where(eq(submissions.id, submissionId));
   }
 
   const scoreText =

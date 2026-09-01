@@ -74,8 +74,7 @@ export default async function DashboardPage() {
     .select()
     .from(events)
     .where(and(eq(events.userId, user.id), gte(events.date, today), lte(events.date, weekEnd)))
-    .orderBy(events.date)
-    .all();
+    .orderBy(events.date);
   const todayEvents = weekEvents.filter((e) => e.date === today);
 
   // 오늘/지난 마감 작업
@@ -83,8 +82,7 @@ export default async function DashboardPage() {
     .select()
     .from(tasks)
     .where(and(eq(tasks.userId, user.id), inArray(tasks.status, ["todo", "in_progress", "review"])))
-    .orderBy(tasks.dueDate)
-    .all();
+    .orderBy(tasks.dueDate);
   const dueTasks = openTasks
     .filter((t) => t.dueDate && t.dueDate <= weekEnd)
     .sort((a, b) => (a.dueDate! < b.dueDate! ? -1 : 1));
@@ -98,8 +96,7 @@ export default async function DashboardPage() {
         eq(submissions.userId, user.id),
         inArray(submissions.status, ["draft", "review_needed"]),
       ),
-    )
-    .all();
+    );
   const subIds = subs.map((s) => s.id);
   const versionedSubIds = new Set(
     subIds.length > 0
@@ -107,7 +104,7 @@ export default async function DashboardPage() {
           .select({ submissionId: submissionVersions.submissionId })
           .from(submissionVersions)
           .where(inArray(submissionVersions.submissionId, subIds))
-          .all())
+          )
           .map((v) => v.submissionId)
       : [],
   );
@@ -119,7 +116,7 @@ export default async function DashboardPage() {
     .from(submissions)
     .where(and(eq(submissions.userId, user.id), gte(submissions.dueDate, today)))
     .orderBy(submissions.dueDate)
-    .all())
+    )
     .filter((s) => s.status !== "submitted")
     .slice(0, 4);
 
@@ -129,20 +126,19 @@ export default async function DashboardPage() {
     .from(notifications)
     .where(eq(notifications.userId, user.id))
     .orderBy(desc(notifications.createdAt))
-    .all())
+    )
     .slice(0, 5);
   const unreadCount = (await db
     .select({ id: notifications.id })
     .from(notifications)
     .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0)))
-    .all()).length;
+    ).length;
 
   // 전체 진행률
   const allTaskRows = await db
     .select({ status: tasks.status })
     .from(tasks)
-    .where(eq(tasks.userId, user.id))
-    .all();
+    .where(eq(tasks.userId, user.id));
   const overallProgress =
     allTaskRows.length > 0
       ? Math.round((allTaskRows.filter((t) => t.status === "done").length / allTaskRows.length) * 100)
@@ -159,7 +155,7 @@ export default async function DashboardPage() {
         eq(aiReviews.status, "done"),
       ),
     )
-    .all())
+    )
     .filter((r) => r.overallScore != null && r.maxScore);
 
   // 마감 임박(7일 이내) + 최근 추가
@@ -177,7 +173,7 @@ export default async function DashboardPage() {
     .select()
     .from(opportunityAnalyses)
     .where(eq(opportunityAnalyses.userId, user.id))
-    .all())
+    )
     .filter((a) => a.recommendation === "apply" || a.recommendation === "hold")
     .sort((a, b) => (b.fitScore ?? 0) - (a.fitScore ?? 0));
   const recommendedOpps = oppAnalyses

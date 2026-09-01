@@ -21,8 +21,7 @@ export async function ensureDeadlineNotifications(userId: string): Promise<void>
   const acts = await db
     .select()
     .from(activities)
-    .where(and(eq(activities.userId, userId), inArray(activities.status, [...ONGOING_STATUSES, "interested"])))
-    .all();
+    .where(and(eq(activities.userId, userId), inArray(activities.status, [...ONGOING_STATUSES, "interested"])));
 
   for (const act of acts) {
     checkDeadline(userId, act.id, act.name, "지원 마감", act.applyDeadline, `act:${act.id}:apply`);
@@ -34,8 +33,7 @@ export async function ensureDeadlineNotifications(userId: string): Promise<void>
   const evts = await db
     .select()
     .from(events)
-    .where(and(eq(events.userId, userId), inArray(events.type, DEADLINE_EVENT_TYPES)))
-    .all();
+    .where(and(eq(events.userId, userId), inArray(events.type, DEADLINE_EVENT_TYPES)));
 
   for (const evt of evts) {
     const actName = evt.activityId ? activityNames.get(evt.activityId) : undefined;

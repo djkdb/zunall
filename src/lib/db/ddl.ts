@@ -1,18 +1,21 @@
-// 부팅 시 실행되는 스키마 부트스트랩 DDL.
-// src/lib/db/schema.ts 와 반드시 동기화를 유지할 것.
+// PostgreSQL 스키마 부트스트랩 DDL.
+// - 로컬(PGlite) 부팅 시 자동 실행되고, Supabase에는 scripts/export-schema.ts 로
+//   생성한 schema.sql 을 1회 적용한다.
+// - src/lib/db/schema.ts 와 반드시 동기화를 유지할 것.
+// - epoch ms 컬럼은 int4 범위를 넘으므로 BIGINT를 사용한다.
 export const BOOTSTRAP_DDL = `
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  expires_at INTEGER NOT NULL
+  expires_at BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS activities (
@@ -37,8 +40,8 @@ CREATE TABLE IF NOT EXISTS activities (
   achievement TEXT,
   learned TEXT,
   skills TEXT,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 
@@ -65,7 +68,7 @@ CREATE TABLE IF NOT EXISTS events (
   time TEXT,
   end_date TEXT,
   memo TEXT,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_user ON events(user_id);
 CREATE INDEX IF NOT EXISTS idx_events_activity ON events(activity_id);
@@ -82,9 +85,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   status TEXT NOT NULL DEFAULT 'todo',
   position INTEGER NOT NULL DEFAULT 0,
   source_review_id TEXT,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  completed_at INTEGER
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL,
+  completed_at BIGINT
 );
 CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_activity ON tasks(activity_id);
@@ -103,7 +106,7 @@ CREATE TABLE IF NOT EXISTS documents (
   version INTEGER NOT NULL DEFAULT 1,
   group_id TEXT NOT NULL,
   extracted_text TEXT,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_documents_user ON documents(user_id);
 CREATE INDEX IF NOT EXISTS idx_documents_activity ON documents(activity_id);
@@ -116,8 +119,8 @@ CREATE TABLE IF NOT EXISTS submissions (
   description TEXT,
   status TEXT NOT NULL DEFAULT 'draft',
   due_date TEXT,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_submissions_user ON submissions(user_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_activity ON submissions(activity_id);
@@ -129,7 +132,7 @@ CREATE TABLE IF NOT EXISTS submission_versions (
   version_label TEXT NOT NULL,
   is_final INTEGER NOT NULL DEFAULT 0,
   note TEXT,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_subver_submission ON submission_versions(submission_id);
 
@@ -138,7 +141,7 @@ CREATE TABLE IF NOT EXISTS evaluation_criteria (
   user_id TEXT NOT NULL,
   activity_id TEXT NOT NULL,
   name TEXT NOT NULL,
-  weight REAL NOT NULL DEFAULT 0,
+  weight DOUBLE PRECISION NOT NULL DEFAULT 0,
   description TEXT,
   source TEXT NOT NULL DEFAULT 'manual',
   position INTEGER NOT NULL DEFAULT 0
@@ -154,14 +157,14 @@ CREATE TABLE IF NOT EXISTS ai_reviews (
   action TEXT NOT NULL,
   provider TEXT NOT NULL DEFAULT 'mock',
   status TEXT NOT NULL DEFAULT 'done',
-  overall_score REAL,
-  max_score REAL,
-  confidence REAL,
+  overall_score DOUBLE PRECISION,
+  max_score DOUBLE PRECISION,
+  confidence DOUBLE PRECISION,
   summary TEXT,
   result_json TEXT,
   error_message TEXT,
-  created_at INTEGER NOT NULL,
-  completed_at INTEGER
+  created_at BIGINT NOT NULL,
+  completed_at BIGINT
 );
 CREATE INDEX IF NOT EXISTS idx_reviews_user ON ai_reviews(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_activity ON ai_reviews(activity_id);
@@ -170,8 +173,8 @@ CREATE TABLE IF NOT EXISTS ai_review_items (
   id TEXT PRIMARY KEY,
   review_id TEXT NOT NULL,
   name TEXT NOT NULL,
-  score REAL NOT NULL,
-  max_score REAL NOT NULL,
+  score DOUBLE PRECISION NOT NULL,
+  max_score DOUBLE PRECISION NOT NULL,
   strengths TEXT,
   weaknesses TEXT,
   recommendations TEXT,
@@ -188,7 +191,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   body TEXT,
   dedupe_key TEXT,
   read INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_dedupe ON notifications(dedupe_key);
@@ -198,7 +201,7 @@ CREATE TABLE IF NOT EXISTS notes (
   user_id TEXT NOT NULL,
   activity_id TEXT NOT NULL,
   content TEXT NOT NULL DEFAULT '',
-  updated_at INTEGER NOT NULL
+  updated_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_notes_activity ON notes(activity_id);
 
@@ -213,8 +216,8 @@ CREATE TABLE IF NOT EXISTS career_goals (
   target_period TEXT,
   priority TEXT NOT NULL DEFAULT 'HIGH',
   is_active INTEGER NOT NULL DEFAULT 1,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_goals_user ON career_goals(user_id);
 
@@ -224,7 +227,7 @@ CREATE TABLE IF NOT EXISTS user_skills (
   name TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'tech',
   self_score INTEGER,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_user_skills_user ON user_skills(user_id);
 
@@ -238,7 +241,7 @@ CREATE TABLE IF NOT EXISTS career_evidence (
   skills TEXT,
   source_type TEXT,
   source_id TEXT,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_evidence_user ON career_evidence(user_id);
 
@@ -250,8 +253,8 @@ CREATE TABLE IF NOT EXISTS career_profiles (
   desired_roles TEXT,
   desired_companies TEXT,
   github_username TEXT,
-  onboarded_at INTEGER,
-  updated_at INTEGER NOT NULL
+  onboarded_at BIGINT,
+  updated_at BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS career_actions (
@@ -261,12 +264,12 @@ CREATE TABLE IF NOT EXISTS career_actions (
   skill TEXT,
   title TEXT NOT NULL,
   reason TEXT,
-  expected_effect REAL NOT NULL DEFAULT 0,
+  expected_effect DOUBLE PRECISION NOT NULL DEFAULT 0,
   expected_minutes INTEGER NOT NULL DEFAULT 60,
   status TEXT NOT NULL DEFAULT 'suggested',
   task_id TEXT,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_actions_user ON career_actions(user_id);
 
@@ -280,16 +283,16 @@ CREATE TABLE IF NOT EXISTS roadmap_items (
   status TEXT NOT NULL DEFAULT 'planned',
   task_id TEXT,
   position INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_roadmap_user ON roadmap_items(user_id);
 
 CREATE TABLE IF NOT EXISTS score_snapshots (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  score REAL NOT NULL,
+  score DOUBLE PRECISION NOT NULL,
   breakdown TEXT,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_snapshots_user ON score_snapshots(user_id);
 
@@ -298,14 +301,14 @@ CREATE TABLE IF NOT EXISTS opportunity_analyses (
   user_id TEXT NOT NULL,
   activity_id TEXT NOT NULL,
   requirements TEXT,
-  fit_score REAL,
+  fit_score DOUBLE PRECISION,
   fit_breakdown TEXT,
   recommendation TEXT,
   recommendation_reason TEXT,
-  prep_hours REAL,
-  gap_effect REAL,
+  prep_hours DOUBLE PRECISION,
+  gap_effect DOUBLE PRECISION,
   alternative TEXT,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_opp_user ON opportunity_analyses(user_id);
 CREATE INDEX IF NOT EXISTS idx_opp_activity ON opportunity_analyses(activity_id);
@@ -316,7 +319,7 @@ CREATE TABLE IF NOT EXISTS activity_history (
   activity_id TEXT NOT NULL,
   kind TEXT NOT NULL DEFAULT 'updated',
   message TEXT NOT NULL,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_history_activity ON activity_history(activity_id);
 `;

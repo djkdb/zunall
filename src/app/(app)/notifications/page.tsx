@@ -44,8 +44,7 @@ export default async function NotificationsPage({
     .select()
     .from(notifications)
     .where(eq(notifications.userId, user.id))
-    .orderBy(desc(notifications.createdAt))
-    .all();
+    .orderBy(desc(notifications.createdAt));
 
   const unreadCount = all.filter((n) => n.read === 0).length;
 
@@ -59,8 +58,7 @@ export default async function NotificationsPage({
   const activityRows = await db
     .select({ id: activities.id, name: activities.name })
     .from(activities)
-    .where(eq(activities.userId, user.id))
-    .all();
+    .where(eq(activities.userId, user.id));
   const activityNameById = new Map(activityRows.map((a) => [a.id, a.name]));
 
   const tabs = FILTERS.map((f) => ({

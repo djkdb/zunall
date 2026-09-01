@@ -28,7 +28,7 @@ const RECOMMENDATION_LABELS: Record<string, { label: string; className: string }
 
 export async function FitTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
   const ctx = await getCareerContext(userId);
-  const analysis = await db
+  const analysis = (await db
     .select()
     .from(opportunityAnalyses)
     .where(
@@ -38,13 +38,13 @@ export async function FitTab({ activity, userId }: { activity: ActivityRow; user
       ),
     )
     .orderBy(desc(opportunityAnalyses.createdAt))
-    .get();
+    .limit(1))[0];
 
   const noticeDocCount = (await db
     .select({ id: documents.id })
     .from(documents)
     .where(and(eq(documents.activityId, activity.id), eq(documents.category, "notice")))
-    .all()).length;
+    ).length;
 
   if (!ctx.onboarded) {
     return (

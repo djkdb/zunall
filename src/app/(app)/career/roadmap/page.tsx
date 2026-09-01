@@ -28,8 +28,7 @@ export default async function RoadmapPage() {
     .select()
     .from(roadmapItems)
     .where(eq(roadmapItems.userId, user.id))
-    .orderBy(roadmapItems.month, roadmapItems.position)
-    .all();
+    .orderBy(roadmapItems.month, roadmapItems.position);
 
   const byMonth = new Map<string, typeof items>();
   for (const item of items) {

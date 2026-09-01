@@ -11,8 +11,7 @@ export async function TasksTab({ activity, userId }: { activity: ActivityRow; us
     .select()
     .from(tasks)
     .where(and(eq(tasks.activityId, activity.id), eq(tasks.userId, userId)))
-    .orderBy(tasks.position)
-    .all();
+    .orderBy(tasks.position);
 
   const done = activityTasks.filter((t) => t.status === "done").length;
   const progress =

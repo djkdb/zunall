@@ -24,8 +24,7 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
     .select()
     .from(tasks)
     .where(and(eq(tasks.activityId, activity.id), eq(tasks.userId, userId)))
-    .orderBy(desc(tasks.updatedAt))
-    .all();
+    .orderBy(desc(tasks.updatedAt));
   const openTasks = activityTasks.filter((t) => t.status !== "done");
   const doneCount = activityTasks.length - openTasks.length;
   const progress =
@@ -36,10 +35,10 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
     .from(events)
     .where(and(eq(events.activityId, activity.id), gte(events.date, todayStr())))
     .orderBy(events.date)
-    .all())
+    )
     .slice(0, 5);
 
-  const latestEval = await db
+  const latestEval = (await db
     .select()
     .from(aiReviews)
     .where(
@@ -50,14 +49,13 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
       ),
     )
     .orderBy(desc(aiReviews.createdAt))
-    .get();
+    .limit(1))[0];
 
   const criteria = await db
     .select()
     .from(evaluationCriteria)
     .where(eq(evaluationCriteria.activityId, activity.id))
-    .orderBy(evaluationCriteria.position)
-    .all();
+    .orderBy(evaluationCriteria.position);
 
   // AI 요약 (사용자가 적용한 경우)
   let aiSummary: AnnouncementSummary | null = null;

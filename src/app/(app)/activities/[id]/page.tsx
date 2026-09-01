@@ -63,21 +63,21 @@ export default async function ActivityDetailPage({
 
   // 탭 카운트
   const counts = {
-    calendar: (await db.select({ id: events.id }).from(events).where(eq(events.activityId, id)).all()).length,
-    documents: (await db.select({ id: documents.id }).from(documents).where(eq(documents.activityId, id)).all()).length,
+    calendar: (await db.select({ id: events.id }).from(events).where(eq(events.activityId, id))).length,
+    documents: (await db.select({ id: documents.id }).from(documents).where(eq(documents.activityId, id))).length,
     tasks: (await db
       .select({ id: tasks.id, status: tasks.status })
       .from(tasks)
       .where(eq(tasks.activityId, id))
-      .all())
+      )
       .filter((t) => t.status !== "done").length,
-    submissions: (await db.select({ id: submissions.id }).from(submissions).where(eq(submissions.activityId, id)).all()).length,
+    submissions: (await db.select({ id: submissions.id }).from(submissions).where(eq(submissions.activityId, id))).length,
     ai: (await db
       .select({ id: aiReviews.id })
       .from(aiReviews)
       .where(and(eq(aiReviews.activityId, id), eq(aiReviews.status, "done")))
-      .all()).length,
-    history: (await db.select({ id: activityHistory.id }).from(activityHistory).where(eq(activityHistory.activityId, id)).all()).length,
+      ).length,
+    history: (await db.select({ id: activityHistory.id }).from(activityHistory).where(eq(activityHistory.activityId, id))).length,
   };
 
   const tabs = [

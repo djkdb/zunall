@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .select({ id: notifications.id })
     .from(notifications)
     .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0)))
-    .all()).length;
+    ).length;
 
   return (
     <div className="flex min-h-screen">

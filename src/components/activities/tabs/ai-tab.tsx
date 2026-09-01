@@ -32,28 +32,25 @@ export async function AITab({
     .select()
     .from(evaluationCriteria)
     .where(eq(evaluationCriteria.activityId, activity.id))
-    .orderBy(evaluationCriteria.position)
-    .all();
+    .orderBy(evaluationCriteria.position);
 
   const subs = await db
     .select()
     .from(submissions)
     .where(and(eq(submissions.activityId, activity.id), eq(submissions.userId, userId)))
-    .orderBy(desc(submissions.createdAt))
-    .all();
+    .orderBy(desc(submissions.createdAt));
 
   const reviews = await db
     .select()
     .from(aiReviews)
     .where(and(eq(aiReviews.activityId, activity.id), eq(aiReviews.userId, userId)))
-    .orderBy(desc(aiReviews.createdAt))
-    .all();
+    .orderBy(desc(aiReviews.createdAt));
 
   const noticeDocCount = (await db
     .select({ id: documents.id })
     .from(documents)
     .where(and(eq(documents.activityId, activity.id), eq(documents.category, "notice")))
-    .all()).length;
+    ).length;
 
   const selectedReview =
     (selectedReviewId ? reviews.find((r) => r.id === selectedReviewId) : null) ??

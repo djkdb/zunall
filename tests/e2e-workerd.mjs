@@ -1,12 +1,12 @@
 /**
  * Cloudflare Workers 런타임 스모크 테스트.
- * 준비: npm run build:cf && npx wrangler d1 execute zunall --local --file=schema.sql
- *       && npx wrangler dev --port 8787 --var AI_PROVIDER:mock
+ * 준비: npm run build:cf && (Postgres 준비 + schema.sql 적용)
+ *       && npx wrangler dev --port 8799 --var DATABASE_URL:... --var SUPABASE_URL:...
  * 실행: node tests/e2e-workerd.mjs
  */
 import { chromium } from "playwright-core";
 import fs from "node:fs";
-const BASE = "http://localhost:8787";
+const BASE = process.env.BASE ?? "http://localhost:8787";
 const results = [];
 const step = (n, ok, d="") => { results.push(ok); console.log(`${ok?"✅":"❌"} ${n}${d?` — ${d}`:""}`); };
 
@@ -23,7 +23,7 @@ try {
   await page.getByLabel("비밀번호").fill("worker123!");
   await page.getByRole("button", { name: "회원가입" }).click();
   await page.waitForURL(`${BASE}/`, { timeout: 30000 });
-  step("workerd: 회원가입(D1 쓰기+세션) → 대시보드", true);
+  step("workerd: 회원가입(Postgres 쓰기+scrypt+세션) → 대시보드", true);
 
   await page.goto(`${BASE}/career`);
   await page.getByLabel("어떤 목표를 향해 가고 있나요? *").fill("AI Software Engineer");
@@ -48,7 +48,7 @@ try {
   await page.getByLabel("분류").selectOption("notice");
   await page.getByRole("button", { name: "업로드", exact: true }).click();
   await page.waitForSelector("text=wk-notice.txt", { timeout: 30000 });
-  step("workerd: 파일 업로드(R2 시뮬레이션) + 텍스트 추출", (await page.locator("text=텍스트 추출됨").count()) > 0);
+  step("workerd: 파일 업로드(Supabase Storage) + 텍스트 추출", (await page.locator("text=텍스트 추출됨").count()) > 0);
 
   const dl = await page.evaluate(async () => {
     const link = document.querySelector("a[href^='/api/files/']");
@@ -56,7 +56,7 @@ try {
     const res = await fetch(link.getAttribute("href"));
     return { ok: res.ok, len: (await res.arrayBuffer()).byteLength };
   });
-  step("workerd: R2에서 파일 다운로드", !!dl?.ok && dl.len > 0, `${dl?.len} bytes`);
+  step("workerd: Supabase Storage 다운로드", !!dl?.ok && dl.len > 0, `${dl?.len} bytes`);
 
   await page.goto(`${url}?tab=fit`);
   await page.getByRole("button", { name: "지원 적합도 분석" }).click();

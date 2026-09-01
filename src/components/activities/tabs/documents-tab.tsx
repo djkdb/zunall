@@ -24,8 +24,7 @@ export async function DocumentsTab({ activity, userId }: { activity: ActivityRow
     .select()
     .from(documents)
     .where(and(eq(documents.activityId, activity.id), eq(documents.userId, userId)))
-    .orderBy(desc(documents.createdAt))
-    .all();
+    .orderBy(desc(documents.createdAt));
 
   // 그룹(=문서)별 최신 버전만 대표로 표시하고, 과거 버전은 함께 묶는다
   const groups = new Map<string, DocumentRow[]>();

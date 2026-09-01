@@ -16,9 +16,9 @@ function sessionDays(): number {
 export async function createSession(userId: string): Promise<void> {
   const token = randomBytes(32).toString("hex");
   const expiresAt = Date.now() + sessionDays() * 86400000;
-  await db.insert(sessions).values({ token, userId, expiresAt }).run();
+  await db.insert(sessions).values({ token, userId, expiresAt });
   // 만료된 세션 정리 (부수 작업)
-  await db.delete(sessions).where(lt(sessions.expiresAt, Date.now())).run();
+  await db.delete(sessions).where(lt(sessions.expiresAt, Date.now()));
 
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
@@ -34,7 +34,7 @@ export async function destroySession(): Promise<void> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (token) {
-    await db.delete(sessions).where(eq(sessions.token, token)).run();
+    await db.delete(sessions).where(eq(sessions.token, token));
   }
   cookieStore.delete(COOKIE_NAME);
 }
@@ -49,8 +49,7 @@ export const getCurrentUser = cache(async (): Promise<UserRow | null> => {
     .select({ user: users })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
-    .where(and(eq(sessions.token, token), gt(sessions.expiresAt, Date.now())))
-    .all();
+    .where(and(eq(sessions.token, token), gt(sessions.expiresAt, Date.now())));
 
   return rows[0]?.user ?? null;
 });

@@ -37,7 +37,9 @@
 | --- | --- |
 | Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
 | Backend | Server Actions + Route Handlers |
-| DB | SQLite (better-sqlite3 + Drizzle) — D1/PostgreSQL 전환 고려한 레이어 분리 |
+| DB | **PostgreSQL** (Drizzle) — 배포는 Supabase, 로컬은 PGlite(설치 불필요) 자동 폴백 |
+| 스토리지 | **Supabase Storage** (배포) / 로컬 파일시스템 (개발) — 환경변수로 자동 전환 |
+| 호스팅 | **Cloudflare Workers** (OpenNext) 또는 Docker/VM |
 | 점수 엔진 | `services/score/*` + `services/career/*` — 순수 함수, 단위 테스트 13개 |
 | AI | Provider 추상화: `mock`(휴리스틱) / `claude`(CLI) / `anthropic`(API) — AI는 추출만, 점수는 규칙 레이어가 계산 |
 | 검증 | Zod (AI JSON 스키마 검증 + 재시도) |
@@ -50,8 +52,10 @@ npm run dev            # http://localhost:3000 (AI_PROVIDER=mock 기본)
 npm run seed           # 데모 데이터 (demo@zunall.app / demo1234!)
 ```
 
+`DATABASE_URL` 이 없으면 내장 PGlite로 동작하므로 DB 설치가 필요 없습니다.
 실제 Claude 사용: `.env.local`에 `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY=...`
-배포: **[DEPLOY.md](./DEPLOY.md)** — Docker 즉시 배포, 또는 **Cloudflare Workers(D1+R2, 마이그레이션 완료)** 5개 명령으로 배포
+
+배포: **[DEPLOY.md](./DEPLOY.md)** — **Supabase(DB·스토리지) + Cloudflare Workers(호스팅)**
 
 ## 검증
 
@@ -61,7 +65,10 @@ npm run test:score           # 점수 엔진 단위 테스트 (13)
 node tests/e2e-career.mjs    # Career OS E2E: 온보딩→Gap→적합도→미션→완료 루프 (19)
 node tests/e2e-smoke.mjs     # 활동 관리 E2E (17)
 node tests/sim-user.mjs      # 사용자 관점 시뮬레이션 (35)
+node tests/e2e-workerd.mjs   # Cloudflare Workers 런타임 스모크 (6)
 ```
+
+E2E는 `DATABASE_URL` 을 지정하면 실제 PostgreSQL을 대상으로도 그대로 돌아갑니다.
 
 ## 설계 원칙
 

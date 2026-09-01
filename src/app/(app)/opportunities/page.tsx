@@ -37,14 +37,13 @@ export default async function OpportunitiesPage() {
     .from(activities)
     .where(eq(activities.userId, user.id))
     .orderBy(desc(activities.updatedAt))
-    .all())
+    )
     .filter((a) => !(FINISHED_STATUSES as string[]).includes(a.status));
 
   const analyses = await db
     .select()
     .from(opportunityAnalyses)
-    .where(eq(opportunityAnalyses.userId, user.id))
-    .all();
+    .where(eq(opportunityAnalyses.userId, user.id));
   const analysisByActivity = new Map(analyses.map((a) => [a.activityId, a]));
 
   // 분석된 것은 적합도 높은 순, 미분석은 뒤로

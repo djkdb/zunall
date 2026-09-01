@@ -67,11 +67,11 @@ export async function saveGoal(input: GoalInput): Promise<ActionResult> {
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  const existing = await db
+  const existing = (await db
     .select()
     .from(careerGoals)
     .where(and(eq(careerGoals.userId, user.id), eq(careerGoals.isActive, 1)))
-    .get();
+    .limit(1))[0];
 
   const values = {
     type: data.type,
@@ -87,12 +87,11 @@ export async function saveGoal(input: GoalInput): Promise<ActionResult> {
   let id: string;
   if (existing) {
     id = existing.id;
-    await db.update(careerGoals).set(values).where(eq(careerGoals.id, existing.id)).run();
+    await db.update(careerGoals).set(values).where(eq(careerGoals.id, existing.id));
   } else {
     id = newId();
     await db.insert(careerGoals)
-      .values({ id, userId: user.id, isActive: 1, createdAt: Date.now(), ...values })
-      .run();
+      .values({ id, userId: user.id, isActive: 1, createdAt: Date.now(), ...values });
   }
 
   await snapshot(user.id);
@@ -117,11 +116,11 @@ export async function saveProfileBasics(input: ProfileInput): Promise<ActionResu
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const data = parsed.data;
 
-  const existing = await db
+  const existing = (await db
     .select()
     .from(careerProfiles)
     .where(eq(careerProfiles.userId, user.id))
-    .get();
+    .limit(1))[0];
 
   const values = {
     headline: data.headline?.trim() || null,
@@ -133,9 +132,9 @@ export async function saveProfileBasics(input: ProfileInput): Promise<ActionResu
   };
 
   if (existing) {
-    await db.update(careerProfiles).set(values).where(eq(careerProfiles.id, existing.id)).run();
+    await db.update(careerProfiles).set(values).where(eq(careerProfiles.id, existing.id));
   } else {
-    await db.insert(careerProfiles).values({ id: newId(), userId: user.id, ...values }).run();
+    await db.insert(careerProfiles).values({ id: newId(), userId: user.id, ...values });
   }
 
   await snapshot(user.id);
@@ -148,20 +147,18 @@ export async function completeOnboarding(): Promise<ActionResult> {
   const user = await requireUser();
   const imported = await importEvidenceFromActivities(user.id);
 
-  const existing = await db
+  const existing = (await db
     .select()
     .from(careerProfiles)
     .where(eq(careerProfiles.userId, user.id))
-    .get();
+    .limit(1))[0];
   if (existing) {
     await db.update(careerProfiles)
       .set({ onboardedAt: existing.onboardedAt ?? Date.now(), updatedAt: Date.now() })
-      .where(eq(careerProfiles.id, existing.id))
-      .run();
+      .where(eq(careerProfiles.id, existing.id));
   } else {
     await db.insert(careerProfiles)
-      .values({ id: newId(), userId: user.id, onboardedAt: Date.now(), updatedAt: Date.now() })
-      .run();
+      .values({ id: newId(), userId: user.id, onboardedAt: Date.now(), updatedAt: Date.now() });
   }
 
   await snapshot(user.id);
@@ -196,11 +193,11 @@ export async function addSkill(name: string, selfScore?: number | null): Promise
   if (!trimmed) return { ok: false, error: "스킬 이름을 입력해주세요." };
 
   const [normalized] = normalizeSkillNames([trimmed]);
-  const existing = await db
+  const existing = (await db
     .select()
     .from(userSkills)
     .where(and(eq(userSkills.userId, user.id), eq(userSkills.name, normalized)))
-    .get();
+    .limit(1))[0];
   if (existing) return { ok: false, error: "이미 등록된 스킬입니다." };
 
   const catalog = SKILL_CATALOG.find((s) => s.name === normalized);
@@ -217,8 +214,7 @@ export async function addSkill(name: string, selfScore?: number | null): Promise
       category: catalog?.category ?? "tech",
       selfScore: score,
       createdAt: Date.now(),
-    })
-    .run();
+    });
 
   await snapshot(user.id);
   revalidateCareer();
@@ -228,8 +224,7 @@ export async function addSkill(name: string, selfScore?: number | null): Promise
 export async function removeSkill(skillId: string): Promise<ActionResult> {
   const user = await requireUser();
   await db.delete(userSkills)
-    .where(and(eq(userSkills.id, skillId), eq(userSkills.userId, user.id)))
-    .run();
+    .where(and(eq(userSkills.id, skillId), eq(userSkills.userId, user.id)));
   await snapshot(user.id);
   revalidateCareer();
   return { ok: true };
@@ -269,8 +264,7 @@ export async function addEvidence(input: EvidenceInput): Promise<ActionResult> {
       sourceType: "manual",
       sourceId: null,
       createdAt: Date.now(),
-    })
-    .run();
+    });
 
   await snapshot(user.id);
   revalidateCareer();
@@ -280,8 +274,7 @@ export async function addEvidence(input: EvidenceInput): Promise<ActionResult> {
 export async function deleteEvidence(evidenceId: string): Promise<ActionResult> {
   const user = await requireUser();
   await db.delete(careerEvidence)
-    .where(and(eq(careerEvidence.id, evidenceId), eq(careerEvidence.userId, user.id)))
-    .run();
+    .where(and(eq(careerEvidence.id, evidenceId), eq(careerEvidence.userId, user.id)));
   await snapshot(user.id);
   revalidateCareer();
   return { ok: true };
@@ -305,21 +298,21 @@ export async function acceptMission(input: MissionInput): Promise<ActionResult> 
   if (!parsed.success) return { ok: false, error: "추천 행동 정보가 올바르지 않습니다." };
   const data = parsed.data;
 
-  const dup = await db
+  const dup = (await db
     .select({ id: careerActions.id })
     .from(careerActions)
     .where(and(eq(careerActions.userId, user.id), eq(careerActions.title, data.title)))
-    .get();
+    .limit(1))[0];
   if (dup) return { ok: false, error: "이미 등록된 행동입니다." };
 
   const ctx = await getCareerContext(user.id);
 
-  const maxPos = await db
+  const maxPos = (await db
     .select({ position: tasks.position })
     .from(tasks)
     .where(eq(tasks.userId, user.id))
     .orderBy(desc(tasks.position))
-    .get();
+    .limit(1))[0];
 
   const taskId = newId();
   const now = Date.now();
@@ -340,8 +333,7 @@ export async function acceptMission(input: MissionInput): Promise<ActionResult> 
       sourceReviewId: null,
       createdAt: now,
       updatedAt: now,
-    })
-    .run();
+    });
 
   await db.insert(careerActions)
     .values({
@@ -357,8 +349,7 @@ export async function acceptMission(input: MissionInput): Promise<ActionResult> 
       taskId,
       createdAt: now,
       updatedAt: now,
-    })
-    .run();
+    });
 
   revalidateCareer();
   return { ok: true, id: taskId };
@@ -385,8 +376,7 @@ export async function dismissMission(input: MissionInput): Promise<ActionResult>
       status: "dismissed",
       createdAt: now,
       updatedAt: now,
-    })
-    .run();
+    });
 
   revalidateCareer();
   return { ok: true };
@@ -413,7 +403,7 @@ export async function addRoadmapItem(input: RoadmapItemInput): Promise<ActionRes
       .select({ id: roadmapItems.id })
       .from(roadmapItems)
       .where(eq(roadmapItems.userId, user.id))
-      .all()
+
   ).length;
 
   await db.insert(roadmapItems)
@@ -427,8 +417,7 @@ export async function addRoadmapItem(input: RoadmapItemInput): Promise<ActionRes
       status: "planned",
       position: count,
       createdAt: Date.now(),
-    })
-    .run();
+    });
 
   revalidatePath("/career/roadmap");
   return { ok: true };
@@ -448,7 +437,7 @@ export async function generateRoadmap(): Promise<ActionResult> {
         .select({ title: roadmapItems.title })
         .from(roadmapItems)
         .where(eq(roadmapItems.userId, user.id))
-        .all()
+
     ).map((r) => r.title),
   );
   const candidates = rankActions(ctx.gaps, existingTitles, 9);
@@ -473,8 +462,7 @@ export async function generateRoadmap(): Promise<ActionResult> {
         status: "planned",
         position: index,
         createdAt: Date.now(),
-      })
-      .run();
+      });
     created++;
   }
 
@@ -489,8 +477,7 @@ export async function setRoadmapStatus(itemId: string, status: string): Promise<
   }
   await db.update(roadmapItems)
     .set({ status })
-    .where(and(eq(roadmapItems.id, itemId), eq(roadmapItems.userId, user.id)))
-    .run();
+    .where(and(eq(roadmapItems.id, itemId), eq(roadmapItems.userId, user.id)));
   revalidatePath("/career/roadmap");
   return { ok: true };
 }
@@ -498,8 +485,7 @@ export async function setRoadmapStatus(itemId: string, status: string): Promise<
 export async function deleteRoadmapItem(itemId: string): Promise<ActionResult> {
   const user = await requireUser();
   await db.delete(roadmapItems)
-    .where(and(eq(roadmapItems.id, itemId), eq(roadmapItems.userId, user.id)))
-    .run();
+    .where(and(eq(roadmapItems.id, itemId), eq(roadmapItems.userId, user.id)));
   revalidatePath("/career/roadmap");
   return { ok: true };
 }
@@ -507,20 +493,20 @@ export async function deleteRoadmapItem(itemId: string): Promise<ActionResult> {
 /** 로드맵 항목을 Task로 등록 */
 export async function roadmapItemToTask(itemId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const item = await db
+  const item = (await db
     .select()
     .from(roadmapItems)
     .where(and(eq(roadmapItems.id, itemId), eq(roadmapItems.userId, user.id)))
-    .get();
+    .limit(1))[0];
   if (!item) return { ok: false, error: "로드맵 항목을 찾을 수 없습니다." };
   if (item.taskId) return { ok: false, error: "이미 작업으로 등록되어 있습니다." };
 
-  const maxPos = await db
+  const maxPos = (await db
     .select({ position: tasks.position })
     .from(tasks)
     .where(eq(tasks.userId, user.id))
     .orderBy(desc(tasks.position))
-    .get();
+    .limit(1))[0];
 
   const taskId = newId();
   const now = Date.now();
@@ -538,12 +524,10 @@ export async function roadmapItemToTask(itemId: string): Promise<ActionResult> {
       position: (maxPos?.position ?? 0) + 1,
       createdAt: now,
       updatedAt: now,
-    })
-    .run();
+    });
   await db.update(roadmapItems)
     .set({ taskId, status: "in_progress" })
-    .where(eq(roadmapItems.id, itemId))
-    .run();
+    .where(eq(roadmapItems.id, itemId));
 
   revalidatePath("/career/roadmap");
   revalidatePath("/");

@@ -35,15 +35,15 @@ export type ActionResult = { ok: true; id?: string } | { ok: false; error: strin
 
 /** 소유권 확인 후 활동 반환 (없으면 null) */
 async function getOwnedActivity(activityId: string, userId: string) {
-  return await db
+  return (await db
     .select()
     .from(activities)
     .where(and(eq(activities.id, activityId), eq(activities.userId, userId)))
-    .get();
+    .limit(1))[0];
 }
 
 async function syncTags(userId: string, activityId: string, tagsText: string | null) {
-  await db.delete(activityTags).where(eq(activityTags.activityId, activityId)).run();
+  await db.delete(activityTags).where(eq(activityTags.activityId, activityId));
   if (!tagsText) return;
 
   const names = Array.from(
@@ -56,16 +56,16 @@ async function syncTags(userId: string, activityId: string, tagsText: string | n
     ),
   );
   for (const name of names) {
-    let tag = await db
+    let tag = (await db
       .select()
       .from(tags)
       .where(and(eq(tags.userId, userId), eq(tags.name, name)))
-      .get();
+      .limit(1))[0];
     if (!tag) {
       tag = { id: newId(), userId, name };
-      await db.insert(tags).values(tag).run();
+      await db.insert(tags).values(tag);
     }
-    await db.insert(activityTags).values({ activityId, tagId: tag.id }).run();
+    await db.insert(activityTags).values({ activityId, tagId: tag.id });
   }
 }
 
@@ -80,7 +80,7 @@ export async function createActivity(input: ActivityInput): Promise<ActionResult
       .select({ id: activities.id })
       .from(activities)
       .where(eq(activities.userId, user.id))
-      .all()
+
   ).length;
 
   const id = newId();
@@ -105,8 +105,7 @@ export async function createActivity(input: ActivityInput): Promise<ActionResult
       memo: data.memo,
       createdAt: now,
       updatedAt: now,
-    })
-    .run();
+    });
 
   await syncTags(user.id, id, data.tagsText);
   await autoCreateDeadlineEvents(user.id, id, data);
@@ -130,13 +129,13 @@ async function autoCreateDeadlineEvents(
   ];
   for (const [date, type, label] of pairs) {
     if (!date) continue;
-    const exists = await db
+    const exists = (await db
       .select({ id: events.id })
       .from(events)
       .where(
         and(eq(events.activityId, activityId), eq(events.type, type), eq(events.date, date)),
       )
-      .get();
+      .limit(1))[0];
     if (exists) continue;
     await db.insert(events)
       .values({
@@ -147,8 +146,7 @@ async function autoCreateDeadlineEvents(
         type,
         date,
         createdAt: Date.now(),
-      })
-      .run();
+      });
   }
 }
 
@@ -179,8 +177,7 @@ export async function updateActivity(activityId: string, input: ActivityInput): 
       memo: data.memo,
       updatedAt: Date.now(),
     })
-    .where(eq(activities.id, activityId))
-    .run();
+    .where(eq(activities.id, activityId));
 
   await syncTags(user.id, activityId, data.tagsText);
   await autoCreateDeadlineEvents(user.id, activityId, data);
@@ -211,8 +208,7 @@ export async function updateActivityStatus(activityId: string, status: string): 
 
   await db.update(activities)
     .set({ status, updatedAt: Date.now() })
-    .where(eq(activities.id, activityId))
-    .run();
+    .where(eq(activities.id, activityId));
 
   await logHistory(
     user.id,
@@ -244,8 +240,7 @@ export async function updatePortfolio(activityId: string, input: PortfolioInput)
       skills: data.skills,
       updatedAt: Date.now(),
     })
-    .where(eq(activities.id, activityId))
-    .run();
+    .where(eq(activities.id, activityId));
 
   await logHistory(user.id, activityId, "updated", "활동 기록(포트폴리오) 수정");
   revalidatePath(`/activities/${activityId}`);
@@ -261,8 +256,7 @@ export async function deleteActivity(activityId: string): Promise<void> {
   const docs = await db
     .select()
     .from(documents)
-    .where(and(eq(documents.activityId, activityId), eq(documents.userId, user.id)))
-    .all();
+    .where(and(eq(documents.activityId, activityId), eq(documents.userId, user.id)));
   for (const doc of docs) await deleteStoredFile(doc.storagePath);
 
   const subIds = (
@@ -270,33 +264,33 @@ export async function deleteActivity(activityId: string): Promise<void> {
       .select({ id: submissions.id })
       .from(submissions)
       .where(eq(submissions.activityId, activityId))
-      .all()
+
   ).map((s) => s.id);
   const reviewIds = (
     await db
       .select({ id: aiReviews.id })
       .from(aiReviews)
       .where(eq(aiReviews.activityId, activityId))
-      .all()
+
   ).map((r) => r.id);
 
-  await db.delete(activityTags).where(eq(activityTags.activityId, activityId)).run();
-  await db.delete(events).where(eq(events.activityId, activityId)).run();
-  await db.delete(tasks).where(eq(tasks.activityId, activityId)).run();
-  await db.delete(documents).where(eq(documents.activityId, activityId)).run();
+  await db.delete(activityTags).where(eq(activityTags.activityId, activityId));
+  await db.delete(events).where(eq(events.activityId, activityId));
+  await db.delete(tasks).where(eq(tasks.activityId, activityId));
+  await db.delete(documents).where(eq(documents.activityId, activityId));
   if (subIds.length > 0) {
-    await db.delete(submissionVersions).where(inArray(submissionVersions.submissionId, subIds)).run();
+    await db.delete(submissionVersions).where(inArray(submissionVersions.submissionId, subIds));
   }
-  await db.delete(submissions).where(eq(submissions.activityId, activityId)).run();
-  await db.delete(evaluationCriteria).where(eq(evaluationCriteria.activityId, activityId)).run();
+  await db.delete(submissions).where(eq(submissions.activityId, activityId));
+  await db.delete(evaluationCriteria).where(eq(evaluationCriteria.activityId, activityId));
   if (reviewIds.length > 0) {
-    await db.delete(aiReviewItems).where(inArray(aiReviewItems.reviewId, reviewIds)).run();
+    await db.delete(aiReviewItems).where(inArray(aiReviewItems.reviewId, reviewIds));
   }
-  await db.delete(aiReviews).where(eq(aiReviews.activityId, activityId)).run();
-  await db.delete(notes).where(eq(notes.activityId, activityId)).run();
-  await db.delete(notifications).where(eq(notifications.activityId, activityId)).run();
-  await db.delete(activityHistory).where(eq(activityHistory.activityId, activityId)).run();
-  await db.delete(activities).where(eq(activities.id, activityId)).run();
+  await db.delete(aiReviews).where(eq(aiReviews.activityId, activityId));
+  await db.delete(notes).where(eq(notes.activityId, activityId));
+  await db.delete(notifications).where(eq(notifications.activityId, activityId));
+  await db.delete(activityHistory).where(eq(activityHistory.activityId, activityId));
+  await db.delete(activities).where(eq(activities.id, activityId));
 
   revalidatePath("/activities");
   revalidatePath("/");

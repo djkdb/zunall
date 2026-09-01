@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { getProviderName } from "@/services/ai/provider";
+import { storageBackend } from "@/lib/storage";
 import { NOTIFY_THRESHOLDS } from "@/lib/constants";
 
 export const metadata: Metadata = { title: "설정" };
@@ -11,6 +12,7 @@ export const metadata: Metadata = { title: "설정" };
 export default async function SettingsPage() {
   const user = await requireUser();
   const provider = getProviderName();
+  const storage = storageBackend();
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -62,6 +64,26 @@ export default async function SettingsPage() {
             호출(배포 환경 권장, <code className="rounded bg-secondary px-1">ANTHROPIC_API_KEY</code>{" "}
             필요)입니다. 자세한 설정은 프로젝트의{" "}
             <code className="rounded bg-secondary px-1">.env.example</code>을 참고하세요.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>데이터 저장소</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">파일 스토리지</span>
+            <Badge variant={storage === "supabase" ? "default" : "secondary"}>{storage}</Badge>
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            <code className="rounded bg-secondary px-1">SUPABASE_URL</code> 과{" "}
+            <code className="rounded bg-secondary px-1">SUPABASE_SERVICE_ROLE_KEY</code> 가 설정되면
+            Supabase Storage 를, 없으면 로컬 <code className="rounded bg-secondary px-1">data/uploads</code> 를
+            사용합니다. 데이터베이스는{" "}
+            <code className="rounded bg-secondary px-1">DATABASE_URL</code> 이 있으면 해당
+            PostgreSQL(Supabase), 없으면 내장 PGlite 로 동작합니다.
           </p>
         </CardContent>
       </Card>

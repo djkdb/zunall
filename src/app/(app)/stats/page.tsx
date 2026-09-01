@@ -32,12 +32,11 @@ export const metadata: Metadata = { title: "통계" };
 export default async function StatsPage() {
   const user = await requireUser();
 
-  const acts = await db.select().from(activities).where(eq(activities.userId, user.id)).all();
+  const acts = await db.select().from(activities).where(eq(activities.userId, user.id));
   const allTasks = await db
     .select({ status: tasks.status })
     .from(tasks)
-    .where(eq(tasks.userId, user.id))
-    .all();
+    .where(eq(tasks.userId, user.id));
   const evalReviews = (await db
     .select()
     .from(aiReviews)
@@ -48,7 +47,7 @@ export default async function StatsPage() {
         eq(aiReviews.status, "done"),
       ),
     )
-    .all())
+    )
     .filter((r) => r.overallScore != null && r.maxScore);
 
   const total = acts.length;
@@ -232,7 +231,7 @@ async function CareerStatsSection({ userId }: { userId: string }) {
     .select({ status: careerActions.status })
     .from(careerActions)
     .where(eq(careerActions.userId, userId))
-    .all())
+    )
     .filter((a) => a.status === "accepted" || a.status === "done");
   const doneActions = actions.filter((a) => a.status === "done").length;
   const actionRate = actions.length > 0 ? Math.round((doneActions / actions.length) * 100) : null;
@@ -241,7 +240,7 @@ async function CareerStatsSection({ userId }: { userId: string }) {
     .select({ fitScore: opportunityAnalyses.fitScore })
     .from(opportunityAnalyses)
     .where(eq(opportunityAnalyses.userId, userId))
-    .all())
+    )
     .filter((f) => f.fitScore != null);
   const avgFit =
     fits.length > 0
