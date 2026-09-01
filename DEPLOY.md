@@ -14,6 +14,46 @@ Zunall은 **PostgreSQL 하나만 있으면** 전부 동작합니다.
 
 ---
 
+## 터미널이 처음이라면 — 여기부터
+
+**터미널 여는 법 (Mac)**: `Command(⌘) + Space` → `터미널` 입력 → Enter
+(Windows는 시작 메뉴 → `PowerShell`)
+
+검은 창에 `사용자이름@MacBook ~ %` 같은 줄이 보입니다. **`%` 뒤에 명령을 붙여넣고 Enter** 를 치면 실행됩니다.
+
+| 상황 | 방법 |
+| --- | --- |
+| 붙여넣기 | `Command + V` |
+| 명령이 끝났는지 확인 | `%` 가 다시 나타나면 끝난 것 |
+| 실행 중인 명령 멈추기 | `Control + C` |
+| 창 하나 더 열기 | `Command + T` |
+| 성공했는데 아무 메시지도 없음 | 정상입니다. 터미널은 성공하면 조용합니다 |
+
+**가장 흔한 실수는 "폴더를 안 옮긴 것"입니다.** `npm` 으로 시작하는 명령은 전부
+`zunall` 폴더 안에서 쳐야 하고, 아니면 `npm ERR! Could not read package.json` 이 납니다.
+
+```bash
+pwd
+```
+끝이 `/zunall` 이면 정상. 아니면 `cd ~/zunall` 로 이동하세요.
+터미널을 껐다 켜면 위치가 초기화되므로 매번 `cd ~/zunall` 부터 시작합니다.
+
+### `DATABASE_URL="..." npm run seed` 형태의 명령
+
+명령 **앞에** 붙은 `이름="값"` 은 그 명령 한 번에만 적용되는 임시 설정입니다.
+파일에 저장되지 않고 터미널을 닫으면 사라집니다. 실제로는 아래처럼 **한 줄**로 칩니다.
+
+```bash
+DATABASE_URL="postgresql://neondb_owner:npg_Ab3xY9@ep-cool-name-123456.ap-southeast-1.aws.neon.tech/neondb?sslmode=require" npm run seed
+```
+
+- `DATABASE_URL=` 바로 뒤에 큰따옴표 → 주소 붙여넣기 → 큰따옴표로 닫기
+- 한 칸 띄우고 `npm run seed`
+- 중간에 Enter 를 치지 말 것 (전체가 한 줄)
+- 메모 앱·메신저를 거치면 따옴표가 `“ ”` 로 바뀌어 에러가 납니다. 따옴표는 터미널에서 직접 입력하세요.
+
+---
+
 ## 0단계 — 사전 준비 (Mac / Windows 공통)
 
 ```bash
@@ -23,14 +63,22 @@ node -v
 낮으면 [nodejs.org](https://nodejs.org) 에서 LTS를 설치하거나 `nvm install 22 && nvm use 22`.
 
 ```bash
+cd ~
+```
+```bash
 git clone https://github.com/djkdb/zunall.git
 ```
+→ `Resolving deltas: 100% ... done.` 이 나오면 성공
+
 ```bash
 cd zunall
 ```
+→ 이제부터 모든 명령은 이 폴더 안에서 실행합니다
+
 ```bash
 npm install
 ```
+→ `added ... packages` 가 나오면 성공. 노란 `warn` 은 무시해도 되고 빨간 `ERR!` 만 문제입니다.
 `npm install` 을 건너뛰면 `opennextjs-cloudflare: command not found` 가 납니다.
 
 준비물은 두 개뿐입니다 — **Cloudflare 계정**(무료)과 **Postgres 주소**(1단계에서 발급).
@@ -96,7 +144,8 @@ npx wrangler login
 ```bash
 npx wrangler secret put DATABASE_URL
 ```
-실행하면 값 입력 프롬프트가 뜹니다. 1-1의 연결 문자열을 붙여넣고 Enter.
+`Enter a secret value:` 에서 커서가 멈춥니다. 여기에 1-1의 연결 문자열을 붙여넣고 Enter.
+**붙여넣어도 화면에 글자가 보이지 않는 것이 정상입니다**(비밀번호 입력과 같음).
 "Worker가 없는데 만들까요?" 라고 물으면 `y`.
 
 ```bash
@@ -143,6 +192,9 @@ DB 저장은 20MB 제한 기준 개인 사용에 충분하지만, Neon 무료 0.
 | `Authentication error [code: 10000]` | 로그인 만료 → `npx wrangler logout` 후 다시 `npx wrangler login` |
 | `relation "users" does not exist` | 1-2 단계(schema.sql)를 DB에 적용하지 않음 |
 | `password authentication failed` | 연결 문자열의 비밀번호 자리를 실제 값으로 바꾸지 않음 |
+| `npm ERR! Could not read package.json` | zunall 폴더 밖에서 실행 → `cd ~/zunall` |
+| `command not found: npm` | Node.js 미설치 → nodejs.org 에서 LTS 설치 후 터미널 재시작 |
+| `zsh: parse error` / 따옴표 오류 | 스마트 따옴표(`“ ”`) 사용 → 터미널에서 `"` 직접 입력 |
 | 배포는 됐는데 DB 오류 | secret 미등록 → `npx wrangler secret list` 로 확인 |
 | Workers에서 DB 연결 실패 | `npx wrangler secret put DB_DRIVER` → `neon-http` 또는 `postgres-js` 로 드라이버 강제 |
 
