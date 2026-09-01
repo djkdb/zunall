@@ -85,6 +85,11 @@ export function SubmissionsTab({ activity, userId }: { activity: ActivityRow; us
               latestReview?.overallScore != null && latestReview.maxScore
                 ? Math.round((latestReview.overallScore / latestReview.maxScore) * 100)
                 : null;
+            // 평가 점수 변화 추이 (오래된 순)
+            const scoreHistory = reviews
+              .filter((r) => r.submissionId === submission.id && r.overallScore != null && r.maxScore)
+              .sort((a, b) => a.createdAt - b.createdAt)
+              .map((r) => Math.round((r.overallScore! / r.maxScore!) * 100));
             const days = daysUntil(submission.dueDate);
             const hasVersion = subVersions.length > 0;
 
@@ -107,6 +112,34 @@ export function SubmissionsTab({ activity, userId }: { activity: ActivityRow; us
                     </div>
                     {submission.description && (
                       <p className="mt-1 text-xs text-muted-foreground">{submission.description}</p>
+                    )}
+                    {scoreHistory.length > 1 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        점수 변화:{" "}
+                        {scoreHistory.map((score, i) => (
+                          <span key={i}>
+                            {i > 0 && <span className="mx-0.5 text-muted-foreground/60">→</span>}
+                            <span
+                              className={cn(
+                                "font-semibold",
+                                i === scoreHistory.length - 1 &&
+                                  (score > scoreHistory[i - 1]
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : score < scoreHistory[i - 1]
+                                      ? "text-rose-600 dark:text-rose-400"
+                                      : "text-foreground"),
+                              )}
+                            >
+                              {score}
+                            </span>
+                          </span>
+                        ))}
+                        {scoreHistory[scoreHistory.length - 1] > scoreHistory[0] && (
+                          <span className="ml-1 text-emerald-600 dark:text-emerald-400">
+                            (+{scoreHistory[scoreHistory.length - 1] - scoreHistory[0]})
+                          </span>
+                        )}
+                      </p>
                     )}
                   </div>
                   <div className="flex shrink-0 items-center gap-1">

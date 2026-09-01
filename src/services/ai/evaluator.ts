@@ -9,6 +9,8 @@ import {
   aiReviewItems,
   submissions,
   users,
+  careerGoals,
+  careerProfiles,
 } from "@/lib/db";
 import { logHistory, pushNotification } from "@/lib/history";
 import { newId, daysUntil, safeJsonParse } from "@/lib/utils";
@@ -22,6 +24,7 @@ import {
   evaluationResultSchema,
   finalCheckSchema,
   adviceResultSchema,
+  opportunityRequirementsSchema,
   type AIResultData,
 } from "./schemas";
 
@@ -207,7 +210,7 @@ function buildContext(
       .join("\n\n---\n\n");
   }
 
-  // 지원자 프로필: 이름 + 활동 이력 요약
+  // 지원자 프로필: 이름 + 활동 이력 + 커리어 목표/헤드라인 (있으면)
   const user = db.select().from(users).where(eq(users.id, userId)).get();
   const myActivities = db
     .select({ name: activities.name, type: activities.type, status: activities.status })
@@ -215,7 +218,25 @@ function buildContext(
     .where(eq(activities.userId, userId))
     .all();
   const wonCount = myActivities.filter((a) => a.status === "won").length;
-  const userProfile = `이름: ${user?.name ?? "사용자"}. 등록된 활동 ${myActivities.length}개 (수상 ${wonCount}회). 이 활동에 대한 메모: ${activity.memo ?? "없음"}`;
+  const careerGoal = db
+    .select({ name: careerGoals.name })
+    .from(careerGoals)
+    .where(and(eq(careerGoals.userId, userId), eq(careerGoals.isActive, 1)))
+    .get();
+  const careerProfile = db
+    .select({ headline: careerProfiles.headline })
+    .from(careerProfiles)
+    .where(eq(careerProfiles.userId, userId))
+    .get();
+  const userProfile = [
+    `이름: ${user?.name ?? "사용자"}.`,
+    careerGoal ? `커리어 목표: ${careerGoal.name}.` : null,
+    careerProfile?.headline ? `프로필: ${careerProfile.headline}.` : null,
+    `등록된 활동 ${myActivities.length}개 (수상 ${wonCount}회).`,
+    `이 활동에 대한 메모: ${activity.memo ?? "없음"}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return {
     ctx: {
@@ -240,6 +261,8 @@ function schemaFor(action: AIAction) {
     case "analyze_announcement":
     case "extract_criteria":
       return { kind: "announcement" as const, schema: announcementSummarySchema };
+    case "analyze_opportunity":
+      return { kind: "opportunity" as const, schema: opportunityRequirementsSchema };
     case "evaluate_submission":
       return { kind: "evaluation" as const, schema: evaluationResultSchema };
     case "final_check":

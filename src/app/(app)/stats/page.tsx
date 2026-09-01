@@ -3,7 +3,15 @@ import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 import { Trophy, Sparkles, TrendingUp } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
-import { db, activities, tasks, aiReviews } from "@/lib/db";
+import {
+  db,
+  activities,
+  tasks,
+  aiReviews,
+  careerActions,
+  opportunityAnalyses,
+} from "@/lib/db";
+import { getCareerContext, getScoreTrend } from "@/lib/career-queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -113,6 +121,9 @@ export default async function StatsPage() {
         </p>
       </div>
 
+      {/* Career 지표 */}
+      <CareerStatsSection userId={user.id} />
+
       {/* 핵심 지표 */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <MetricCard label="총 참여 활동" value={String(total)} />
@@ -206,6 +217,65 @@ export default async function StatsPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function CareerStatsSection({ userId }: { userId: string }) {
+  const ctx = getCareerContext(userId);
+  if (!ctx.onboarded) return null;
+
+  const trend = getScoreTrend(userId);
+  const monthAgo = trend.monthAgo != null ? Math.round(trend.monthAgo) : null;
+  const latest = Math.round(trend.latest ?? ctx.readiness.score);
+
+  const actions = db
+    .select({ status: careerActions.status })
+    .from(careerActions)
+    .where(eq(careerActions.userId, userId))
+    .all()
+    .filter((a) => a.status === "accepted" || a.status === "done");
+  const doneActions = actions.filter((a) => a.status === "done").length;
+  const actionRate = actions.length > 0 ? Math.round((doneActions / actions.length) * 100) : null;
+
+  const fits = db
+    .select({ fitScore: opportunityAnalyses.fitScore })
+    .from(opportunityAnalyses)
+    .where(eq(opportunityAnalyses.userId, userId))
+    .all()
+    .filter((f) => f.fitScore != null);
+  const avgFit =
+    fits.length > 0
+      ? Math.round(fits.reduce((s, f) => s + (f.fitScore ?? 0), 0) / fits.length)
+      : null;
+
+  return (
+    <section>
+      <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Career</h2>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <MetricCard
+          label="Career Score"
+          value={String(latest)}
+          sub={
+            monthAgo !== null && monthAgo !== latest
+              ? `최근 30일 ${monthAgo} → ${latest}`
+              : "합격 확률이 아닌 준비도"
+          }
+          highlight
+        />
+        <MetricCard label="가장 큰 Gap" value={ctx.gaps[0] ? `-${ctx.gaps[0].gap}` : "-"} sub={ctx.gaps[0]?.skill} />
+        <MetricCard label="근거 (Evidence)" value={String(ctx.evidence.length)} sub={`스킬 ${ctx.skillScores.length}개 뒷받침`} />
+        <MetricCard
+          label="추천 행동 완료율"
+          value={actionRate !== null ? `${actionRate}%` : "-"}
+          sub={actions.length > 0 ? `${doneActions}/${actions.length} 완료` : "시작한 미션 없음"}
+        />
+        <MetricCard
+          label="평균 지원 적합도"
+          value={avgFit !== null ? String(avgFit) : "-"}
+          sub={fits.length > 0 ? `기회 ${fits.length}개 분석` : "분석한 기회 없음"}
+        />
+      </div>
+    </section>
   );
 }
 

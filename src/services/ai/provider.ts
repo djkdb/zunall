@@ -27,14 +27,24 @@ export interface AIProvider {
 }
 
 export function getProviderName(): string {
-  return process.env.AI_PROVIDER === "claude" ? "claude" : "mock";
+  const value = process.env.AI_PROVIDER;
+  if (value === "claude" || value === "anthropic") return value;
+  return "mock";
 }
 
 export async function getProvider(): Promise<AIProvider> {
-  if (getProviderName() === "claude") {
-    const { ClaudeCliProvider } = await import("./claude-cli.provider");
-    return new ClaudeCliProvider();
+  switch (getProviderName()) {
+    case "claude": {
+      const { ClaudeCliProvider } = await import("./claude-cli.provider");
+      return new ClaudeCliProvider();
+    }
+    case "anthropic": {
+      const { AnthropicProvider } = await import("./anthropic.provider");
+      return new AnthropicProvider();
+    }
+    default: {
+      const { MockProvider } = await import("./mock.provider");
+      return new MockProvider();
+    }
   }
-  const { MockProvider } = await import("./mock.provider");
-  return new MockProvider();
 }

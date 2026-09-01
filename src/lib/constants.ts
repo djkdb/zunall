@@ -9,6 +9,8 @@ export const ACTIVITY_TYPES = {
   project: "프로젝트",
   education: "교육",
   intern: "인턴",
+  recruit: "채용",
+  opensource: "오픈소스",
   etc: "기타",
 } as const;
 export type ActivityType = keyof typeof ACTIVITY_TYPES;
@@ -129,6 +131,7 @@ export type NotificationType = keyof typeof NOTIFICATION_TYPES;
 
 export const AI_ACTIONS = {
   analyze_announcement: "공고문 분석",
+  analyze_opportunity: "요구 역량 분석",
   extract_criteria: "평가 기준 추출",
   fit_analysis: "내 적합도 분석",
   evaluate_submission: "제출물 평가",

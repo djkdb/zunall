@@ -1,113 +1,90 @@
-# Zunall — 대외활동 통합 관리 + AI 평가 웹앱
+# Zunall — AI Career OS
 
-공모전, 대외활동, 서포터즈, 해커톤, 프로젝트, 교육, 인턴 프로그램 등 모든 외부 활동을
-**프로젝트 단위로 통합 관리**하고, **AI가 제출물을 활동의 공식 평가 기준에 맞춰 분석·피드백**해주는
-개인용 대외활동 OS입니다.
+**스펙을 관리하는 서비스가 아닙니다.**
+내가 원하는 직무와 목표를 기준으로 현재 나의 경험을 분석하고, 부족한 부분을 찾고,
+지금 가장 효과적인 행동을 추천하고, 실제 지원물까지 개선해주는 **개인 커리어 운영체제**입니다.
 
-## 주요 기능
+> 많이 하는 것보다, **맞는 것**을 하게 합니다.
 
-- **활동 관리** — 활동 종류/상태/중요도/태그, 상태 변경, 마감일 자동 일정 등록
-- **Dashboard** — 오늘·이번 주 마감, D-day 색상 강조(🔴 D-1 / 🟠 D-3 / 🟡 D-7 / 🟢 여유), 마감 임박 활동, 해야 할 일, AI 평가가 필요한 결과물, 최근 알림
-- **캘린더** — 월간/주간/목록 뷰, 활동별 색상, 활동 상세에서는 해당 활동 일정만 필터링
-- **작업 관리** — TODO → IN PROGRESS → REVIEW → DONE 칸반(드래그&드롭), 우선순위/마감일
-- **문서 관리** — 공고/안내·참고자료·내가 만든 자료·제출자료 분류, 버전 관리, 업로드 시 PDF/DOCX/PPTX/TXT 텍스트 자동 추출
-- **제출물 관리** — v1, v2, … Final 버전 관리, 상태 추적
-- **알림 센터** — D-7/D-3/D-1/당일 마감 알림 자동 생성(중복 방지), 유형별 필터
-- **AI 평가 (핵심)** —
-  - 공고문 분석: 모집 기간·지원 자격·제출 형식·평가 기준·유의사항·시상 추출 → **사용자 확인 후에만 활동에 반영**
-  - 평가 기준 추출 및 직접 관리 (공식/추론/직접입력 구분)
-  - 제출물 평가: 공식 평가 기준 대비 항목별 점수 + 잘한 점/부족한 점/개선 방법
-  - 제출 전 최종 검토(Final Check): 파일/마감/기준 충족/개인정보 체크리스트
-  - 적합도 분석, 문서 첨삭, 개선점 찾기, 예상 질문 생성
-  - **AI 피드백 → 작업(Task) 생성** 원클릭 연결
-- **포트폴리오 기록** — 활동별 역할/성과/배운 점/사용 기술 기록
-- **통계** — 수상률, 완료율, 분야별 참여 비율, 월별 등록 추이, AI 평균 점수, AI 예상 vs 실제 결과
-- **다크 모드 / 반응형**
+## 핵심 루프
+
+```
+목표 설정 → 경험/역량 분석 → Career Profile → Gap 분석 → 기회 탐색
+→ 지원 가치 판단 → 합격 전략 → 실행(Task) → 제출물 AI 평가 → 결과 기록
+→ Profile 업데이트 → 다음 행동 추천
+```
+
+## Career OS 기능
+
+- **Career Profile** (`/career`) — 목표·헤드라인·스킬·근거(Evidence)를 하나로 통합. 3단계 온보딩, 기존 활동/수상 기록 자동 임포트
+- **Career Readiness Score** — 합격 확률이 아닌 **설명 가능한 규칙 기반 준비도**. 목표 스킬 충족도(55) + 실전 경험(15) + 검증 근거(15) + 기본기(15), 모든 항목에 산출 근거 표시
+- **근거 기반 스킬 점수** — AI가 임의로 점수를 만들지 않음. 프로젝트/수상/활동 근거의 가중 합산(수확 체감)으로 계산하고, 점수를 펼치면 기여 내역이 보임. 자가 평가는 낮은 가중치 참고값
+- **Career Gap 엔진** (`/career/gaps`) — 목표 직무 템플릿(AI 엔지니어/프론트엔드/백엔드/데이터/PM/마케터/디자이너…) 대비 부족 역량을 "왜 필요한가 / 왜 부족한가 / 추천 행동 / 예상 효과·소요시간"과 함께 제시
+- **🔥 Today's Career Mission** — 오늘 가장 효과적인 행동 1개를 (효과 × Gap 가중치 ÷ 시간)으로 선정. 수락하면 Task 생성 → 완료하면 Career Score 갱신 + 다음 미션 추천
+- **Opportunity Fit** (`/opportunities`, 활동 상세 '적합도' 탭) — AI가 공고에서 요구 역량을 추출하면 **규칙 레이어가** 내 프로필과 비교해 적합도를 가산 항목(+/−)으로 계산. "좋은 기회인가"가 아니라 **"지금의 나에게 좋은 기회인가"** 를 판단
+- **지원 비추천 기능** — 준비 시간 대비 Gap 감소 효과가 낮으면 지원을 말리고, 대신 지금 더 효과적인 대안 행동을 제시
+- **Career Roadmap** (`/career/roadmap`) — Gap 추천 행동으로 3개월 계획 자동 생성, 각 항목을 Task로 연결
+- **제출물 개선 루프** — 초안 업로드 → AI 평가 → 개선 → 재평가, 카드에 점수 변화(74 → 82 → 91) 표시
+- **성장 통계** — Career Score 30일 변화, 추천 행동 완료율, 평균 지원 적합도
+
+## 기존 활동 관리 기능 (전부 유지)
+
+활동 CRUD·8탭 상세, D-day 대시보드, 월/주/목록 캘린더, 칸반 Task, 문서 분류·버전 관리(PDF/DOCX/PPTX/TXT 텍스트 추출), 제출물 v1~Final, D-7/3/1/당일 알림, AI 공고 분석(사용자 확인 후 반영)·평가 기준 추출·제출물 평가·Final Check·첨삭·예상 질문, 포트폴리오 기록, 통계, 다크 모드, 반응형.
 
 ## 기술 스택
 
 | 영역 | 기술 |
 | --- | --- |
-| Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, shadcn 스타일 컴포넌트 |
-| Backend | Next.js Server Actions + Route Handlers |
-| DB | SQLite (better-sqlite3 + Drizzle ORM) — PostgreSQL/Supabase 전환을 고려한 스키마/레이어 분리 |
-| 인증 | 자체 이메일/비밀번호 (scrypt 해시 + 세션 쿠키) |
-| 스토리지 | 로컬 파일시스템 (`data/uploads`) — 스토리지 서비스 모듈로 추상화 |
-| 문서 분석 | pdf-parse(PDF), mammoth(DOCX), jszip+fast-xml-parser(PPTX) |
-| AI | Claude CLI provider + Mock provider (환경변수 전환) |
-| 차트 | Recharts |
-| 검증 | Zod (+ AI JSON Schema 검증 및 재시도) |
+| Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
+| Backend | Server Actions + Route Handlers |
+| DB | SQLite (better-sqlite3 + Drizzle) — D1/PostgreSQL 전환 고려한 레이어 분리 |
+| 점수 엔진 | `services/score/*` + `services/career/*` — 순수 함수, 단위 테스트 13개 |
+| AI | Provider 추상화: `mock`(휴리스틱) / `claude`(CLI) / `anthropic`(API) — AI는 추출만, 점수는 규칙 레이어가 계산 |
+| 검증 | Zod (AI JSON 스키마 검증 + 재시도) |
 
 ## 시작하기
 
 ```bash
 npm install
-cp .env.example .env.local   # 필요 시 수정 (기본값으로도 동작)
-npm run dev                  # http://localhost:3000
+npm run dev            # http://localhost:3000 (AI_PROVIDER=mock 기본)
+npm run seed           # 데모 데이터 (demo@zunall.app / demo1234!)
 ```
 
-데모 데이터로 둘러보기:
+실제 Claude 사용: `.env.local`에 `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY=...`
+배포: **[DEPLOY.md](./DEPLOY.md)** (Docker 즉시 배포 + Cloudflare D1/R2 마이그레이션 가이드)
+
+## 검증
 
 ```bash
-npm run seed
-# 계정: demo@zunall.app / demo1234!
+npm run typecheck && npm run lint && npm run build
+npm run test:score           # 점수 엔진 단위 테스트 (13)
+node tests/e2e-career.mjs    # Career OS E2E: 온보딩→Gap→적합도→미션→완료 루프 (19)
+node tests/e2e-smoke.mjs     # 활동 관리 E2E (17)
+node tests/sim-user.mjs      # 사용자 관점 시뮬레이션 (35)
 ```
 
-## AI Provider 설정
+## 설계 원칙
 
-기본값은 `mock`으로, Claude CLI가 없어도 전체 앱이 동작합니다.
-Mock provider는 고정 응답이 아니라 업로드된 문서에서 날짜·배점표를 휴리스틱으로 추출하고
-결정적 점수를 생성하는 개발용 분석기입니다.
+1. **점수에는 반드시 근거** — 모든 점수(스킬/준비도/적합도)는 기여 항목 배열과 함께 반환되고 UI에 표시
+2. **AI는 추출, 규칙은 판단** — AI는 문서에서 요구사항·날짜·기준을 추출할 뿐, 점수 계산은 테스트 가능한 `services/score/` 레이어가 담당
+3. **합격 확률 표현 금지** — Career Readiness / 지원 적합도 / 추천으로만 표현하고 추정치임을 명시
+4. **자동 확정 금지** — AI 추출값(마감일·평가 기준)은 사용자가 확인 후 반영
+5. **사용자 데이터 격리** — 모든 엔티티에 userId 소유권 검증
+6. **AI 실패 내성** — provider 오류 시 앱이 아닌 해당 액션만 실패, JSON 검증 실패 시 재시도
 
-실제 Claude 평가를 사용하려면:
-
-```env
-AI_PROVIDER=claude
-CLAUDE_COMMAND=claude   # PATH의 실행 파일 또는 절대 경로
-CLAUDE_ARGS=-p
-CLAUDE_TIMEOUT=180000
-```
-
-보안: Claude CLI는 shell을 거치지 않고 `spawn`으로 실행되며, 프롬프트는 인자가 아닌
-**stdin**으로만 전달되어 command injection이 차단됩니다.
-
-## 프로젝트 구조
+## 프로젝트 구조 (Career 확장분)
 
 ```
 src/
-  app/
-    (auth)/login, signup        # 인증 페이지
-    (app)/                      # 로그인 필요 영역 (사이드바 셸)
-      page.tsx                  # Dashboard
-      activities/               # 목록 / 생성 / 상세(8개 탭) / 수정
-      calendar/  notifications/  stats/  settings/
-    api/files/[id]/             # 파일 다운로드
-  actions/                      # Server Actions (도메인별)
-  components/                   # UI 컴포넌트 (ui/, activities/, ai/, calendar/, …)
   lib/
-    db/                         # Drizzle 스키마 + 부트스트랩 DDL
-    auth/                       # scrypt + 세션
-    storage.ts                  # 파일 스토리지 (경로 검증 포함)
-    queries.ts  validators.ts  constants.ts  utils.ts
+    career-constants.ts     # 스킬 카탈로그, 역할 템플릿, Gap 행동 템플릿
+    career-queries.ts       # CareerContext 조립, 스냅샷, Task 완료 연동
   services/
-    ai/                         # provider / prompt-builder / evaluator / schemas
-    document/                   # PDF·DOCX·PPTX 텍스트 추출
-    notification/               # D-day 알림 생성
-scripts/seed.ts                 # 데모 데이터
+    score/                  # skill / readiness / opportunity-fit — 순수 함수
+    career/                 # templates / gap / mission / skill-detect / evidence-import
+    ai/anthropic.provider.ts
+  actions/ career.ts opportunity.ts
+  app/(app)/ career/ (skills, gaps, roadmap)  opportunities/
+  components/career/
+tests/ score.test.ts  e2e-career.mjs  e2e-smoke.mjs  sim-user.mjs
 ```
-
-## 검증 명령
-
-```bash
-npm run typecheck   # TypeScript
-npm run lint        # ESLint
-npm run build       # production build
-```
-
-## 보안 고려사항
-
-- 모든 쿼리는 `userId` 소유권 검증을 거침 (사용자 간 데이터 격리)
-- 업로드: 확장자 허용 목록 + 크기 제한, 저장 파일명은 서버 생성 키만 사용 (path traversal 방지)
-- 다운로드: 스토리지 루트 밖 경로 접근 차단
-- Claude CLI: shell 미사용 + stdin 프롬프트 전달 + 타임아웃/출력 크기 제한
-- 세션: httpOnly 쿠키, scrypt 비밀번호 해시

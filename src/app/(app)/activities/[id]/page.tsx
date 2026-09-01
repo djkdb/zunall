@@ -19,6 +19,7 @@ import { TabNav } from "@/components/ui/tab-nav";
 import { StatusSelect } from "@/components/activities/status-select";
 import { DeleteActivityButton } from "@/components/activities/delete-activity-button";
 import { OverviewTab } from "@/components/activities/tabs/overview-tab";
+import { FitTab } from "@/components/activities/tabs/fit-tab";
 import { CalendarTab } from "@/components/activities/tabs/calendar-tab";
 import { DocumentsTab } from "@/components/activities/tabs/documents-tab";
 import { TasksTab } from "@/components/activities/tabs/tasks-tab";
@@ -36,7 +37,7 @@ import { cn, ddayColorClass, ddayDotClass, ddayLabel } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "활동 상세" };
 
-const TAB_KEYS = ["overview", "calendar", "documents", "tasks", "submissions", "ai", "notes", "history"] as const;
+const TAB_KEYS = ["overview", "fit", "calendar", "documents", "tasks", "submissions", "ai", "notes", "history"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 export default async function ActivityDetailPage({
@@ -81,6 +82,7 @@ export default async function ActivityDetailPage({
 
   const tabs = [
     { key: "overview", label: "Overview" },
+    { key: "fit", label: "적합도" },
     { key: "calendar", label: "일정", count: counts.calendar },
     { key: "documents", label: "문서", count: counts.documents },
     { key: "tasks", label: "작업", count: counts.tasks },
@@ -169,6 +171,7 @@ export default async function ActivityDetailPage({
 
       <div className="animate-fade-in">
         {tab === "overview" && <OverviewTab activity={activity} userId={user.id} />}
+        {tab === "fit" && <FitTab activity={activity} userId={user.id} />}
         {tab === "calendar" && <CalendarTab activity={activity} userId={user.id} />}
         {tab === "documents" && <DocumentsTab activity={activity} userId={user.id} />}
         {tab === "tasks" && <TasksTab activity={activity} userId={user.id} />}

@@ -90,6 +90,10 @@ export function ReviewResult({
         <AdviceView review={review} data={result.data} activityId={activityId} />
       )}
 
+      {result.kind === "opportunity" && (
+        <OpportunityRequirementsView data={result.data} activityId={activityId} />
+      )}
+
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         {DISCLAIMER}
@@ -362,6 +366,87 @@ function FinalCheckView({
           </ul>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ─── 공고 요구사항 추출 ──────────────────────────────────────
+
+function OpportunityRequirementsView({
+  data,
+  activityId,
+}: {
+  data: Extract<AIResultData, { kind: "opportunity" }>["data"];
+  activityId: string;
+}) {
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="p-5">
+          <p className="text-sm text-muted-foreground">{data.summary}</p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {data.requiredSkills.map((s) => (
+              <Badge key={s}>{s}</Badge>
+            ))}
+            {data.preferredSkills.map((s) => (
+              <Badge key={s} variant="outline">
+                우대 · {s}
+              </Badge>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            이 추출 결과를 바탕으로 한{" "}
+            <a href={`/activities/${activityId}?tab=fit`} className="text-primary hover:underline">
+              지원 적합도 분석
+            </a>
+            을 확인하세요.
+          </p>
+        </CardContent>
+      </Card>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {data.responsibilities.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>주요 역할</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-inside list-disc space-y-1 text-sm">
+                {data.responsibilities.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+        {data.qualifications.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>지원 자격</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-inside list-disc space-y-1 text-sm">
+                {data.qualifications.map((q, i) => (
+                  <li key={i}>{q}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+        {data.submissionItems.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>제출물</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-inside list-disc space-y-1 text-sm">
+                {data.submissionItems.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

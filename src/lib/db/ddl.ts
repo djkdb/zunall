@@ -202,6 +202,114 @@ CREATE TABLE IF NOT EXISTS notes (
 );
 CREATE INDEX IF NOT EXISTS idx_notes_activity ON notes(activity_id);
 
+CREATE TABLE IF NOT EXISTS career_goals (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'ROLE',
+  name TEXT NOT NULL,
+  description TEXT,
+  target_companies TEXT,
+  target_roles TEXT,
+  target_period TEXT,
+  priority TEXT NOT NULL DEFAULT 'HIGH',
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_goals_user ON career_goals(user_id);
+
+CREATE TABLE IF NOT EXISTS user_skills (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'tech',
+  self_score INTEGER,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_user_skills_user ON user_skills(user_id);
+
+CREATE TABLE IF NOT EXISTS career_evidence (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'etc',
+  title TEXT NOT NULL,
+  description TEXT,
+  url TEXT,
+  skills TEXT,
+  source_type TEXT,
+  source_id TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_evidence_user ON career_evidence(user_id);
+
+CREATE TABLE IF NOT EXISTS career_profiles (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL UNIQUE,
+  headline TEXT,
+  summary TEXT,
+  desired_roles TEXT,
+  desired_companies TEXT,
+  github_username TEXT,
+  onboarded_at INTEGER,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS career_actions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  goal_id TEXT,
+  skill TEXT,
+  title TEXT NOT NULL,
+  reason TEXT,
+  expected_effect REAL NOT NULL DEFAULT 0,
+  expected_minutes INTEGER NOT NULL DEFAULT 60,
+  status TEXT NOT NULL DEFAULT 'suggested',
+  task_id TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_actions_user ON career_actions(user_id);
+
+CREATE TABLE IF NOT EXISTS roadmap_items (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  goal_id TEXT,
+  month TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'planned',
+  task_id TEXT,
+  position INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_roadmap_user ON roadmap_items(user_id);
+
+CREATE TABLE IF NOT EXISTS score_snapshots (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  score REAL NOT NULL,
+  breakdown TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_snapshots_user ON score_snapshots(user_id);
+
+CREATE TABLE IF NOT EXISTS opportunity_analyses (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_id TEXT NOT NULL,
+  requirements TEXT,
+  fit_score REAL,
+  fit_breakdown TEXT,
+  recommendation TEXT,
+  recommendation_reason TEXT,
+  prep_hours REAL,
+  gap_effect REAL,
+  alternative TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_opp_user ON opportunity_analyses(user_id);
+CREATE INDEX IF NOT EXISTS idx_opp_activity ON opportunity_analyses(activity_id);
+
 CREATE TABLE IF NOT EXISTS activity_history (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,

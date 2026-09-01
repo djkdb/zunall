@@ -102,8 +102,22 @@ export const adviceResultSchema = z.object({
 });
 export type AdviceResult = z.infer<typeof adviceResultSchema>;
 
+/** 공고에서 추출한 요구사항 (Career Fit 계산의 입력) */
+export const opportunityRequirementsSchema = z.object({
+  summary: z.string().default(""),
+  /** 카탈로그 스킬명으로 정규화된 요구 역량 */
+  requiredSkills: stringArray,
+  preferredSkills: stringArray,
+  responsibilities: stringArray, // 주요 역할
+  qualifications: stringArray, // 지원 자격
+  submissionItems: stringArray, // 제출물
+  keywords: stringArray,
+});
+export type OpportunityRequirements = z.infer<typeof opportunityRequirementsSchema>;
+
 export type AIResultData =
   | { kind: "announcement"; data: AnnouncementSummary }
   | { kind: "evaluation"; data: EvaluationResult }
   | { kind: "final_check"; data: FinalCheckResult }
-  | { kind: "advice"; data: AdviceResult };
+  | { kind: "advice"; data: AdviceResult }
+  | { kind: "opportunity"; data: OpportunityRequirements };

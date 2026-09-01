@@ -8,6 +8,9 @@ import {
   Bell,
   ArrowRight,
   Plus,
+  Compass,
+  Target,
+  Crosshair,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import {
@@ -18,8 +21,12 @@ import {
   submissions,
   submissionVersions,
   aiReviews,
+  opportunityAnalyses,
 } from "@/lib/db";
 import { getActivitiesWithMeta } from "@/lib/queries";
+import { getCareerContext, getScoreTrend } from "@/lib/career-queries";
+import { ReadinessCard } from "@/components/career/readiness-card";
+import { MissionCard } from "@/components/career/mission-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ActivityCard } from "@/components/activities/activity-card";
@@ -55,6 +62,9 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const today = todayStr();
   const weekEnd = toDateStr(new Date(Date.now() + 7 * 86400000));
+
+  const careerCtx = getCareerContext(user.id);
+  const scoreTrend = getScoreTrend(user.id);
 
   const allActivities = getActivitiesWithMeta(user.id);
   const ongoing = allActivities.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status));
@@ -162,6 +172,24 @@ export default async function DashboardPage() {
 
   const activityNameById = new Map(allActivities.map((a) => [a.id, a.name]));
 
+  // 추천 기회: 분석 완료 + 지원 추천/보강 상위 3개
+  const oppAnalyses = db
+    .select()
+    .from(opportunityAnalyses)
+    .where(eq(opportunityAnalyses.userId, user.id))
+    .all()
+    .filter((a) => a.recommendation === "apply" || a.recommendation === "hold")
+    .sort((a, b) => (b.fitScore ?? 0) - (a.fitScore ?? 0));
+  const recommendedOpps = oppAnalyses
+    .map((analysis) => {
+      const activity = allActivities.find(
+        (act) => act.id === analysis.activityId && !["won", "lost", "done"].includes(act.status),
+      );
+      return activity ? { analysis, activity } : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .slice(0, 3);
+
   return (
     <div className="space-y-6">
       {/* 인사 */}
@@ -170,6 +198,9 @@ export default async function DashboardPage() {
           <h1 className="text-xl font-bold tracking-tight">
             {greeting()} {user.name}님
           </h1>
+          {careerCtx.onboarded && careerCtx.profile?.headline ? (
+            <p className="mt-0.5 text-sm font-medium text-primary">{careerCtx.profile.headline}</p>
+          ) : null}
           <p className="mt-1 text-sm text-muted-foreground">
             오늘 마감 일정 {todayEvents.length}개 · 이번 주 해야 할 일 {dueTasks.length}개
             {unreadCount > 0 && ` · 읽지 않은 알림 ${unreadCount}개`}
@@ -181,6 +212,110 @@ export default async function DashboardPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Career OS 영역 */}
+      {careerCtx.onboarded ? (
+        <>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <ReadinessCard
+              compact
+              readiness={careerCtx.readiness}
+              templateLabel={careerCtx.template.label}
+              trend={{
+                monthAgo: scoreTrend.monthAgo,
+                latest: scoreTrend.latest ?? careerCtx.readiness.score,
+              }}
+            />
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-1.5">
+                  <Target className="h-4 w-4 text-muted-foreground" /> Current Goal
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Link href="/career" className="text-base font-semibold hover:text-primary">
+                  🎯 {careerCtx.goal?.name}
+                </Link>
+                <p className="mt-2 text-xs font-semibold text-muted-foreground">가장 큰 Gap</p>
+                {careerCtx.gaps.length === 0 ? (
+                  <p className="mt-1 text-sm text-muted-foreground">목표 수준 달성 🎉</p>
+                ) : (
+                  <ul className="mt-1 space-y-1">
+                    {careerCtx.gaps.slice(0, 3).map((gap) => (
+                      <li key={gap.skill} className="flex items-center justify-between text-sm">
+                        <span>{gap.skill}</span>
+                        <span className="font-semibold text-rose-600 dark:text-rose-400">
+                          -{gap.gap}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Link
+                  href="/career/gaps"
+                  className="mt-2 inline-block text-xs text-primary hover:underline"
+                >
+                  Gap 분석 보기 <ArrowRight className="inline h-3 w-3" />
+                </Link>
+              </CardContent>
+            </Card>
+            <MissionCard
+              mission={careerCtx.mission}
+              activeTask={
+                careerCtx.activeAction
+                  ? { title: careerCtx.activeAction.title, taskId: careerCtx.activeAction.taskId }
+                  : null
+              }
+            />
+          </div>
+
+          {recommendedOpps.length > 0 && (
+            <section>
+              <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+                <Crosshair className="h-4 w-4" /> 추천 기회
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {recommendedOpps.map(({ analysis, activity }) => (
+                  <Link
+                    key={analysis.id}
+                    href={`/activities/${activity.id}?tab=fit`}
+                    className="rounded-lg border bg-card p-3.5 transition-colors hover:border-primary/40"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="min-w-0 truncate text-sm font-semibold">{activity.name}</p>
+                      <span className="shrink-0 text-lg font-bold text-primary">
+                        {Math.round(analysis.fitScore ?? 0)}
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                      {analysis.recommendationReason}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      ) : (
+        <Card className="border-primary/40 bg-gradient-to-br from-accent/60 to-card">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
+            <div>
+              <p className="flex items-center gap-1.5 text-sm font-bold">
+                <Compass className="h-4 w-4 text-primary" /> AI Career OS를 시작해보세요
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                목표를 설정하면 내 경험을 분석해 Career Score와 부족한 부분, 오늘 가장 효과적인
+                행동을 알려드립니다.
+              </p>
+            </div>
+            <Link href="/career">
+              <Button size="sm">
+                Career Profile 만들기 <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

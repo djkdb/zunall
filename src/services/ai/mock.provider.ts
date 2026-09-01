@@ -5,7 +5,9 @@ import type {
   EvaluationResult,
   FinalCheckResult,
   AdviceResult,
+  OpportunityRequirements,
 } from "./schemas";
+import { detectSkills } from "@/services/career/skill-detect";
 
 /**
  * Claude CLI가 없는 개발/데모 환경용 Mock provider.
@@ -24,6 +26,8 @@ export class MockProvider implements AIProvider {
       case "analyze_announcement":
       case "extract_criteria":
         return JSON.stringify(analyzeAnnouncement(ctx));
+      case "analyze_opportunity":
+        return JSON.stringify(analyzeOpportunity(ctx));
       case "evaluate_submission":
         return JSON.stringify(evaluateSubmission(ctx));
       case "final_check":
@@ -183,6 +187,42 @@ function analyzeAnnouncement(ctx: AIContext): AnnouncementSummary {
     cautions,
     prizes,
     keyDates: { applyDeadline, submitDeadline, announceDate },
+  };
+}
+
+function analyzeOpportunity(ctx: AIContext): OpportunityRequirements {
+  const text = ctx.announcementText;
+  const hasText = text.trim().length > 50;
+  const base = hasText ? text : `${ctx.activityName} ${ctx.organizer ?? ""}`;
+
+  // 우대 섹션과 본문을 분리해 감지 정확도를 높인다
+  const preferredSection = hasText
+    ? extractListNear(text, ["우대", "우대사항", "우대 사항", "이런 분이면 좋아요"]).join("\n")
+    : "";
+  const allSkills = detectSkills(base, 8);
+  const preferredDetected = preferredSection ? detectSkills(preferredSection, 4) : [];
+  const requiredSkills = allSkills.filter((s) => !preferredDetected.includes(s)).slice(0, 6);
+
+  const qualifications = hasText
+    ? extractListNear(text, ["지원 자격", "지원자격", "참가 자격", "참가 대상", "모집 대상", "자격 요건"], 5)
+    : [];
+  const responsibilities = hasText
+    ? extractListNear(text, ["주요 업무", "담당 업무", "활동 내용", "역할", "하는 일", "미션"], 5)
+    : [];
+  const submissionItems = hasText
+    ? extractListNear(text, ["제출물", "제출 서류", "제출서류", "필수 제출", "제출 형식"], 5)
+    : [];
+
+  return {
+    summary: hasText
+      ? `공고 문서에서 요구 역량 ${requiredSkills.length}개${preferredDetected.length > 0 ? `, 우대 역량 ${preferredDetected.length}개` : ""}를 감지했습니다.`
+      : "공고 문서가 없어 활동 이름·주최 정보만으로 추정했습니다. '공고 / 안내' 문서를 업로드하면 훨씬 정확해집니다.",
+    requiredSkills,
+    preferredSkills: preferredDetected,
+    responsibilities,
+    qualifications,
+    submissionItems,
+    keywords: allSkills,
   };
 }
 

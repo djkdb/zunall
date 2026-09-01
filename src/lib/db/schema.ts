@@ -282,6 +282,146 @@ export const activityHistory = sqliteTable(
   (t) => [index("idx_history_activity").on(t.activityId)],
 );
 
+// ─── Career OS 도메인 ────────────────────────────────────────
+// 스킬 카탈로그는 코드 상수(SKILL_CATALOG)로 관리하고,
+// 사용자가 보유한 스킬만 user_skills에 저장한다.
+
+export const careerGoals = sqliteTable(
+  "career_goals",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    type: text("type").notNull().default("ROLE"), // ROLE | COMPANY | INDUSTRY | GENERAL
+    name: text("name").notNull(),
+    description: text("description"),
+    targetCompanies: text("target_companies"), // JSON string[]
+    targetRoles: text("target_roles"), // JSON string[]
+    targetPeriod: text("target_period"),
+    priority: text("priority").notNull().default("HIGH"),
+    isActive: integer("is_active").notNull().default(1),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (t) => [index("idx_goals_user").on(t.userId)],
+);
+
+export const userSkills = sqliteTable(
+  "user_skills",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    name: text("name").notNull(),
+    category: text("category").notNull().default("tech"),
+    // 자가 평가(0~100). 근거가 아니라 낮은 신뢰도의 참고값으로만 취급한다.
+    selfScore: integer("self_score"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("idx_user_skills_user").on(t.userId)],
+);
+
+export const careerEvidence = sqliteTable(
+  "career_evidence",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    kind: text("kind").notNull().default("etc"),
+    title: text("title").notNull(),
+    description: text("description"),
+    url: text("url"),
+    skills: text("skills"), // JSON string[] (스킬명)
+    sourceType: text("source_type"), // activity | manual | github | task
+    sourceId: text("source_id"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("idx_evidence_user").on(t.userId)],
+);
+
+export const careerProfiles = sqliteTable(
+  "career_profiles",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().unique(),
+    headline: text("headline"), // 예: "Software × AI"
+    summary: text("summary"),
+    desiredRoles: text("desired_roles"), // JSON string[]
+    desiredCompanies: text("desired_companies"), // JSON string[]
+    githubUsername: text("github_username"),
+    onboardedAt: integer("onboarded_at"),
+    updatedAt: integer("updated_at").notNull(),
+  },
+);
+
+export const careerActions = sqliteTable(
+  "career_actions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    goalId: text("goal_id"),
+    skill: text("skill"),
+    title: text("title").notNull(),
+    reason: text("reason"),
+    expectedEffect: real("expected_effect").notNull().default(0),
+    expectedMinutes: integer("expected_minutes").notNull().default(60),
+    status: text("status").notNull().default("suggested"), // suggested | accepted | done | dismissed
+    taskId: text("task_id"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (t) => [index("idx_actions_user").on(t.userId)],
+);
+
+export const roadmapItems = sqliteTable(
+  "roadmap_items",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    goalId: text("goal_id"),
+    month: text("month").notNull(), // YYYY-MM
+    title: text("title").notNull(),
+    description: text("description"),
+    status: text("status").notNull().default("planned"),
+    taskId: text("task_id"),
+    position: integer("position").notNull().default(0),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("idx_roadmap_user").on(t.userId)],
+);
+
+export const scoreSnapshots = sqliteTable(
+  "score_snapshots",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    score: real("score").notNull(),
+    breakdown: text("breakdown"), // JSON
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("idx_snapshots_user").on(t.userId)],
+);
+
+export const opportunityAnalyses = sqliteTable(
+  "opportunity_analyses",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    activityId: text("activity_id").notNull(),
+    // AI가 추출한 요구사항 (OpportunityRequirements JSON)
+    requirements: text("requirements"),
+    fitScore: real("fit_score"),
+    fitBreakdown: text("fit_breakdown"), // JSON: 근거 항목 배열
+    recommendation: text("recommendation"), // apply | hold | skip
+    recommendationReason: text("recommendation_reason"),
+    prepHours: real("prep_hours"),
+    gapEffect: real("gap_effect"),
+    alternative: text("alternative"), // JSON: 대안 행동
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    index("idx_opp_user").on(t.userId),
+    index("idx_opp_activity").on(t.activityId),
+  ],
+);
+
 export type UserRow = typeof users.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
 export type TagRow = typeof tags.$inferSelect;
@@ -296,3 +436,11 @@ export type AIReviewItemRow = typeof aiReviewItems.$inferSelect;
 export type NotificationRow = typeof notifications.$inferSelect;
 export type NoteRow = typeof notes.$inferSelect;
 export type HistoryRow = typeof activityHistory.$inferSelect;
+export type CareerGoalRow = typeof careerGoals.$inferSelect;
+export type UserSkillRow = typeof userSkills.$inferSelect;
+export type EvidenceRow = typeof careerEvidence.$inferSelect;
+export type CareerProfileRow = typeof careerProfiles.$inferSelect;
+export type CareerActionRow = typeof careerActions.$inferSelect;
+export type RoadmapItemRow = typeof roadmapItems.$inferSelect;
+export type ScoreSnapshotRow = typeof scoreSnapshots.$inferSelect;
+export type OpportunityAnalysisRow = typeof opportunityAnalyses.$inferSelect;

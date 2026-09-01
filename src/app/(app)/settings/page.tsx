@@ -55,11 +55,13 @@ export default async function SettingsPage() {
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
             서버 환경변수 <code className="rounded bg-secondary px-1">AI_PROVIDER</code>로
-            설정합니다. <code className="rounded bg-secondary px-1">mock</code>은 Claude CLI 없이
-            동작하는 휴리스틱 분석이고, <code className="rounded bg-secondary px-1">claude</code>로
-            바꾸면 서버에 설치된 Claude CLI(
-            <code className="rounded bg-secondary px-1">CLAUDE_COMMAND</code>)를 호출해 실제 AI
-            평가를 수행합니다. 자세한 설정은 프로젝트의 <code className="rounded bg-secondary px-1">.env.example</code>을 참고하세요.
+            설정합니다. <code className="rounded bg-secondary px-1">mock</code>은 Claude 없이
+            동작하는 휴리스틱 분석, <code className="rounded bg-secondary px-1">claude</code>는
+            서버에 설치된 Claude CLI 호출,{" "}
+            <code className="rounded bg-secondary px-1">anthropic</code>은 Anthropic API 직접
+            호출(배포 환경 권장, <code className="rounded bg-secondary px-1">ANTHROPIC_API_KEY</code>{" "}
+            필요)입니다. 자세한 설정은 프로젝트의{" "}
+            <code className="rounded bg-secondary px-1">.env.example</code>을 참고하세요.
           </p>
         </CardContent>
       </Card>

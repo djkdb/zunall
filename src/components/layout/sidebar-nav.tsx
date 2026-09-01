@@ -9,6 +9,8 @@ import {
   Bell,
   BarChart3,
   Settings,
+  Compass,
+  Crosshair,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +27,8 @@ export function SidebarNav({ unreadCount }: { unreadCount: number }) {
 
   const items: NavItem[] = [
     { href: "/", label: "대시보드", icon: LayoutDashboard },
+    { href: "/career", label: "커리어", icon: Compass },
+    { href: "/opportunities", label: "기회", icon: Crosshair },
     { href: "/activities", label: "활동", icon: FolderKanban },
     { href: "/calendar", label: "캘린더", icon: CalendarDays },
     { href: "/notifications", label: "알림", icon: Bell, badge: unreadCount },

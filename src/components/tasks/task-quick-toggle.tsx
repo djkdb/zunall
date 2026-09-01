@@ -11,16 +11,20 @@ import type { TaskRow } from "@/lib/db";
 export function TaskQuickToggle({ task }: { task: TaskRow }) {
   const router = useRouter();
   const [pending, startTransition] = React.useTransition();
+  // 낙관적 UI: 클릭 즉시 체크 표시, 서버 반영 후 실제 상태로 동기화
+  const [checked, setChecked] = React.useState(task.status === "done");
+  React.useEffect(() => setChecked(task.status === "done"), [task.status]);
   const days = daysUntil(task.dueDate);
 
   return (
     <li className="flex items-center gap-2 text-sm">
       <input
         type="checkbox"
-        checked={task.status === "done"}
+        checked={checked}
         disabled={pending}
         onChange={(e) => {
           const next = e.target.checked ? "done" : "todo";
+          setChecked(e.target.checked);
           startTransition(async () => {
             await updateTaskStatus(task.id, next);
             router.refresh();
@@ -29,7 +33,7 @@ export function TaskQuickToggle({ task }: { task: TaskRow }) {
         className="h-4 w-4 shrink-0 cursor-pointer rounded border-input accent-[hsl(var(--primary))]"
         aria-label={`${task.title} 완료 처리`}
       />
-      <span className={cn("min-w-0 flex-1 truncate", task.status === "done" && "text-muted-foreground line-through")}>
+      <span className={cn("min-w-0 flex-1 truncate", checked && "text-muted-foreground line-through")}>
         {task.title}
       </span>
       {task.priority !== "medium" && (

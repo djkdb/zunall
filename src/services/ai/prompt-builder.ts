@@ -1,5 +1,6 @@
 import "server-only";
 import type { AIAction } from "@/lib/constants";
+import { SKILL_CATALOG } from "@/lib/career-constants";
 import type { AIContext } from "./provider";
 
 // 프롬프트를 코드 전반에 하드코딩하지 않고 이 모듈에서만 조립한다.
@@ -53,6 +54,8 @@ export function buildPrompt(action: AIAction, ctx: AIContext): string {
     case "analyze_announcement":
     case "extract_criteria":
       return buildAnnouncementPrompt(ctx, action === "extract_criteria");
+    case "analyze_opportunity":
+      return buildOpportunityPrompt(ctx);
     case "evaluate_submission":
       return buildEvaluationPrompt(ctx);
     case "final_check":
@@ -103,6 +106,29 @@ ${contextBlock(ctx)}
   "cautions": ["유의사항"],
   "prizes": ["시상 내역"],
   "keyDates": {"applyDeadline": "YYYY-MM-DD|null", "submitDeadline": "YYYY-MM-DD|null", "announceDate": "YYYY-MM-DD|null"}
+}`;
+}
+
+function buildOpportunityPrompt(ctx: AIContext): string {
+  const catalogNames = SKILL_CATALOG.map((s) => s.name).join(", ");
+  return `너는 채용/공모전/대외활동 공고에서 요구 역량을 추출하는 커리어 분석 전문가다.
+아래 공고를 분석해 이 기회가 요구하는 역량과 조건을 구조화하라.
+${COMMON_RULES}
+- requiredSkills와 preferredSkills는 반드시 다음 표준 역량명 중에서만 고른다 (해당 없으면 제외):
+  ${catalogNames}
+- 공고에 명시되지 않은 역량을 임의로 추가하지 않는다.
+
+${contextBlock(ctx)}
+
+[출력 JSON 스키마]
+{
+  "summary": "이 기회가 요구하는 것 요약 (1~2문장)",
+  "requiredSkills": ["표준 역량명"],
+  "preferredSkills": ["표준 역량명 (우대 사항)"],
+  "responsibilities": ["주요 역할/업무"],
+  "qualifications": ["지원 자격"],
+  "submissionItems": ["제출물"],
+  "keywords": ["공고 핵심 키워드"]
 }`;
 }
 

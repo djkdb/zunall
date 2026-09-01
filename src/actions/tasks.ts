@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { and, desc, eq } from "drizzle-orm";
 import { db, tasks, activities } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
-import { logHistory } from "@/lib/history";
+import { logHistory, pushNotification } from "@/lib/history";
+import { handleTaskCompletionForCareer } from "@/lib/career-queries";
 import { newId } from "@/lib/utils";
 import { taskSchema, type TaskInput } from "@/lib/validators";
 import { TASK_STATUSES } from "@/lib/constants";
@@ -118,6 +119,22 @@ export async function updateTaskStatus(taskId: string, status: string): Promise<
   if (existing.activityId && status === "done" && existing.status !== "done") {
     logHistory(user.id, existing.activityId, "task", `작업 완료: ${existing.title}`);
   }
+
+  // 커리어 미션/로드맵과 연결된 작업이면 완료 처리 + Career Score 갱신
+  if (status === "done" && existing.status !== "done") {
+    const missionDone = handleTaskCompletionForCareer(user.id, taskId);
+    if (missionDone) {
+      pushNotification({
+        userId: user.id,
+        type: "system",
+        title: "커리어 미션 완료 🔥",
+        body: `"${existing.title}" 완료 — Career Score가 갱신되었습니다. 프로필에 근거를 추가하면 점수에 반영됩니다.`,
+      });
+      revalidatePath("/career");
+      revalidatePath("/career/gaps");
+    }
+  }
+
   revalidateTaskPaths(existing.activityId);
   return { ok: true };
 }
