@@ -181,7 +181,9 @@ function buildContext(
       const days = daysUntil(submission.dueDate ?? activity.submitDeadline);
       if (days !== null && days < 0) flags.push("DEADLINE_PASSED");
       else if (days !== null && days <= 2) flags.push("DEADLINE_SOON");
-      extraInstruction = `파일명: ${latest.doc.originalName}, 크기: ${(latest.doc.size / 1024 / 1024).toFixed(2)}MB, 형식: ${latest.doc.mime}. 플래그: ${flags.join(", ") || "없음"} (SIZE_OVER=크기 초과, DEADLINE_PASSED=마감 지남, DEADLINE_SOON=마감 임박)`;
+      // 플래그는 [대괄호] 형태로만 표기한다 — mock provider가 substring 검사로 판별하므로
+      // 설명 문구에 플래그 토큰이 그대로 들어가면 오탐이 발생한다.
+      extraInstruction = `파일명: ${latest.doc.originalName}, 크기: ${(latest.doc.size / 1024 / 1024).toFixed(2)}MB, 형식: ${latest.doc.mime}. 상태 플래그: ${flags.length > 0 ? flags.map((f) => `[${f}]`).join(" ") : "(문제 없음)"}. 플래그 의미 — SIZE_OVER: 파일 크기 초과, DEADLINE_PASSED: 마감 지남, DEADLINE_SOON: 마감 임박.`;
     }
   } else if (needsSubmission && action !== "expected_questions") {
     return { error: "이 액션은 제출물을 선택해야 합니다." };

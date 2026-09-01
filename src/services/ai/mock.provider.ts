@@ -68,10 +68,10 @@ function findDatesNear(text: string, keywords: string[]): string | null {
   for (const line of lines) {
     if (!keywords.some((k) => line.includes(k))) continue;
     for (const pattern of DATE_PATTERNS) {
-      pattern.lastIndex = 0;
-      const m = pattern.exec(line);
-      if (m) {
-        const [, y, mo, d] = m;
+      // "2026.08.20 ~ 2026.09.20" 같은 기간 표기는 마지막 날짜(종료일)가 마감이다.
+      const matches = [...line.matchAll(pattern)];
+      if (matches.length > 0) {
+        const [, y, mo, d] = matches[matches.length - 1];
         return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
       }
     }
@@ -121,6 +121,8 @@ function extractListNear(text: string, keywords: string[], max = 6): string[] {
       continue;
     }
     if (capture && captureRemaining > 0) {
+      // 다음 섹션 머리글(■, 【 등)을 만나면 수집 종료 — 섹션 경계를 넘지 않는다.
+      if (/^[■□◆▶►●#【\[]/.test(trimmed)) break;
       captureRemaining--;
       const item = trimmed.replace(/^[-•*·▶►○●\d.)\s]+/, "").trim();
       if (item.length >= 4 && item.length <= 120) out.push(item);
@@ -318,9 +320,10 @@ function finalCheck(ctx: AIContext): FinalCheckResult {
   const feat = textFeatures(text);
   const hasFile = text.trim().length > 0 || (ctx.submissionTitle ?? "") !== "";
   const extra = ctx.extraInstruction ?? "";
-  const sizeOk = !extra.includes("SIZE_OVER");
-  const deadlinePassed = extra.includes("DEADLINE_PASSED");
-  const deadlineSoon = extra.includes("DEADLINE_SOON");
+  // 플래그는 [토큰] 형태로만 판별 (설명 문구의 단어와 혼동 방지)
+  const sizeOk = !extra.includes("[SIZE_OVER]");
+  const deadlinePassed = extra.includes("[DEADLINE_PASSED]");
+  const deadlineSoon = extra.includes("[DEADLINE_SOON]");
 
   const checks: FinalCheckResult["checks"] = [
     {
