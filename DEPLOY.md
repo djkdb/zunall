@@ -8,6 +8,7 @@ Zunall은 **PostgreSQL 하나만 있으면** 전부 동작합니다.
 | DB | PGlite (내장, 설치 불필요) | **무료 Postgres 아무거나** (`DATABASE_URL`) |
 | 파일 | DB에 저장 | **DB에 저장** (기본) — 원하면 R2/Supabase로 전환 |
 | 호스팅 | `npm run dev` | **Cloudflare Workers** 또는 Docker/VM |
+| 배포 실행 | - | 터미널(`npm run deploy:cf`) 또는 **Cloudflare가 자동 빌드**(Workers Builds) |
 | AI | mock (휴리스틱) | Anthropic API (`ANTHROPIC_API_KEY`, 선택) |
 
 전환은 **환경변수만으로** 이뤄집니다. 코드 수정이 필요 없습니다.
@@ -127,7 +128,18 @@ DATABASE_URL="복사한 연결 문자열" npm run seed
 
 ---
 
-## 2단계 — Cloudflare Workers 배포
+## 2단계 — 배포 방법 두 가지
+
+| 방법 | 어떻게 | 언제 좋은가 |
+| --- | --- | --- |
+| **A. 터미널에서 배포** | 내 컴퓨터에서 `npm run deploy:cf` | 지금 바로 한 번 올려보고 싶을 때 |
+| **B. Cloudflare가 대신 빌드** (Workers Builds) | GitHub에 push → Cloudflare가 자동 빌드·배포 | 앞으로 계속 쓸 때 — 터미널이 필요 없음 |
+
+둘 다 결과물은 같습니다. **B로 연결해두면 이후에는 코드를 push 하기만 하면 됩니다.**
+
+---
+
+## 2-A단계 — 터미널에서 배포
 
 > ⚠️ 명령은 **한 줄씩 그대로** 복사해 실행하세요 (주석까지 붙여넣으면 오류가 납니다).
 
@@ -162,6 +174,51 @@ npm run deploy:cf
 점검만 따로 돌리려면 `npm run preflight:cf` 입니다.
 
 **필요한 secret은 `DATABASE_URL` 하나뿐입니다.**
+
+---
+
+## 2-B단계 — Cloudflare가 대신 빌드하게 하기 (터미널 없이)
+
+Cloudflare의 **Workers Builds** 는 GitHub 저장소를 연결해두면 push 할 때마다
+Cloudflare 쪽 서버에서 빌드하고 배포까지 합니다. 내 컴퓨터에 Node도, wrangler도 필요 없습니다.
+
+### 1. 대시보드에서 저장소 연결
+
+[dash.cloudflare.com](https://dash.cloudflare.com) → **Compute (Workers)** → 이미 만들어둔
+`zunall` Worker 선택 → **Settings → Build** → **Connect** → GitHub 인증 →
+저장소 `djkdb/zunall` 선택.
+
+(아직 Worker가 없다면 **Create → Workers → Import a repository** 로 시작해도 됩니다)
+
+### 2. 빌드 설정 입력
+
+| 항목 | 값 |
+| --- | --- |
+| Build command | `npm run build:cf` |
+| Deploy command | `npx wrangler deploy` |
+| Branch | 배포할 브랜치 (예: `main`) |
+| Root directory | 비워둠 |
+
+Node 버전 오류가 나면 **Settings → Variables → Build variables** 에
+`NODE_VERSION = 22` 를 추가하세요.
+
+### 3. 시크릿은 대시보드에서 등록
+
+**Settings → Variables and Secrets → Add** → Type을 **Secret** 으로 두고
+`DATABASE_URL` 에 Postgres 연결 문자열을 붙여넣습니다.
+(터미널에서 `npx wrangler secret put` 으로 이미 넣었다면 그대로 있습니다)
+
+`ANTHROPIC_API_KEY` 도 같은 방법으로, 실제 Claude 분석을 쓸 때만 추가하면 됩니다.
+
+### 4. 이후 사용법
+
+GitHub에 push → Cloudflare가 자동으로 빌드 → 몇 분 뒤 배포 완료.
+진행 상황과 로그는 Worker의 **Deployments** 탭에서 볼 수 있고, 실패하면 거기서 원인이 보입니다.
+
+> 주의: Workers Builds는 `npm run deploy:cf` 대신 위의 두 명령을 직접 실행하므로
+> 크기 검사(`check-worker-size.ts`)를 거치지 않습니다. 라이브러리를 크게 추가한 날에는
+> 로컬에서 `npm run size:cf` 로 한 번 확인하거나, Build command 를
+> `npm run build:cf && npm run size:cf` 로 바꿔두면 됩니다.
 
 ---
 
@@ -233,6 +290,7 @@ DB 저장은 20MB 제한 기준 개인 사용에 충분하지만, Neon 무료 0.
 | `zsh: parse error` / 따옴표 오류 | 스마트 따옴표(`“ ”`) 사용 → 터미널에서 `"` 직접 입력 |
 | `exceeded the size limit of 3 MiB` | 번들이 무료 한도 초과 → 위 "Worker 크기 제한" 절 참고 (`npm run size:cf` 로 확인) |
 | `Please enable R2` | 예전 코드 사용 중 → 최신 코드를 pull 하세요 (지금은 R2 없이 동작) |
+| Workers Builds 빌드 실패 (Node 버전) | Build variables 에 `NODE_VERSION=22` 추가 |
 | 배포는 됐는데 DB 오류 | secret 미등록 → `npx wrangler secret list` 로 확인 |
 | Workers에서 DB 연결 실패 | `npx wrangler secret put DB_DRIVER` → `neon-http` 또는 `postgres-js` 로 드라이버 강제 |
 
