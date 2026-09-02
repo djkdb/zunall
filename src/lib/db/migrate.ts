@@ -42,12 +42,20 @@ export async function runPendingMigrations(db: AppDb): Promise<MigrationStatus> 
   const pending = MIGRATIONS.filter((m) => !done.has(m.name));
   if (pending.length === 0) return status;
 
-  // 동시 실행 방지 (락을 못 잡으면 다른 인스턴스가 처리 중이므로 건너뛴다)
-  const lock = (await db.execute(sql`SELECT pg_try_advisory_lock(${LOCK_ID}) AS locked`)) as unknown as
-    | Array<{ locked: boolean }>
-    | { rows?: Array<{ locked: boolean }> };
-  const lockRows = Array.isArray(lock) ? lock : (lock.rows ?? []);
-  if (!lockRows[0]?.locked) {
+  // 동시 실행 방지. 파라미터 대신 리터럴을 쓴다 — 서버리스 드라이버는 파라미터를
+  // 텍스트로 보내 함수 오버로드 추론이 어긋날 수 있다.
+  // 락을 못 잡거나 지원되지 않아도 마이그레이션 자체는 재실행 안전하므로 그대로 진행한다.
+  let locked = true;
+  try {
+    const lock = (await db.execute(
+      sql.raw(`SELECT pg_try_advisory_lock(${LOCK_ID}) AS locked`),
+    )) as unknown as Array<{ locked: boolean }> | { rows?: Array<{ locked: boolean }> };
+    const lockRows = Array.isArray(lock) ? lock : (lock.rows ?? []);
+    locked = lockRows[0]?.locked !== false;
+  } catch {
+    locked = true;
+  }
+  if (!locked) {
     status.pending = pending.map((m) => m.name);
     return status;
   }
@@ -72,7 +80,8 @@ export async function runPendingMigrations(db: AppDb): Promise<MigrationStatus> 
       }
     }
   } finally {
-    await db.execute(sql`SELECT pg_advisory_unlock(${LOCK_ID})`);
+    // 서버리스 환경에선 연결이 이미 끊겨 락이 자동 해제됐을 수 있다 — 실패해도 무시한다
+    await db.execute(sql.raw(`SELECT pg_advisory_unlock(${LOCK_ID})`)).catch(() => undefined);
   }
   return status;
 }

@@ -161,13 +161,19 @@ async function ensureSchema(): Promise<void> {
   // 아직 적용되지 않은 마이그레이션은 항상 스스로 적용한다.
   // (DB_AUTO_MIGRATE=0 으로 끌 수 있다)
   if (process.env.DB_AUTO_MIGRATE !== "0") {
-    const { runPendingMigrations } = await import("./migrate");
-    const status = await runPendingMigrations(database);
-    if (status.applied.length > 0) {
-      console.log(`DB 마이그레이션 적용: ${status.applied.join(", ")}`);
-    }
-    for (const failure of status.failed) {
-      console.error(`DB 마이그레이션 실패 (${failure.name}): ${failure.error}`);
+    // 마이그레이션 실패가 화면 전체를 죽이면 안 된다.
+    // 실패해도 앱은 뜨고, /api/health 가 무엇이 남았는지 알려준다.
+    try {
+      const { runPendingMigrations } = await import("./migrate");
+      const status = await runPendingMigrations(database);
+      if (status.applied.length > 0) {
+        console.log(`DB 마이그레이션 적용: ${status.applied.join(", ")}`);
+      }
+      for (const failure of status.failed) {
+        console.error(`DB 마이그레이션 실패 (${failure.name}): ${failure.error}`);
+      }
+    } catch (error) {
+      console.error("DB 마이그레이션 실행 실패:", error instanceof Error ? error.message : error);
     }
   }
 }
