@@ -34,14 +34,26 @@ function GoogleMark() {
   );
 }
 
+/** 구글이 알려준 실패 사유별 해결 방법 */
+const GOOGLE_REASONS: Record<string, string> = {
+  invalid_client: "클라이언트 ID 또는 시크릿이 콘솔의 값과 다릅니다. 두 값을 다시 등록해주세요.",
+  unauthorized_client: "이 클라이언트로는 허용되지 않은 요청입니다. OAuth 클라이언트 유형이 '웹 애플리케이션'인지 확인해주세요.",
+  redirect_uri_mismatch:
+    "콘솔의 '승인된 리디렉션 URI' 가 실제 주소와 다릅니다. 아래 주소를 그대로 등록해주세요: /api/auth/google/callback",
+  invalid_grant: "인가 코드가 만료되었거나 리디렉션 URI 가 일치하지 않습니다. 다시 시도해보고, 그래도 안 되면 리디렉션 URI 를 확인해주세요.",
+  invalid_request: "요청 형식이 올바르지 않습니다. 리디렉션 URI 설정을 확인해주세요.",
+};
+
 export function AuthForm({
   mode,
   googleEnabled = false,
   errorCode,
+  errorReason,
 }: {
   mode: "login" | "signup";
   googleEnabled?: boolean;
   errorCode?: string;
+  errorReason?: string;
 }) {
   const action = mode === "login" ? login : signup;
   const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
@@ -61,9 +73,14 @@ export function AuthForm({
         </div>
 
         {errorCode && OAUTH_ERRORS[errorCode] && (
-          <p className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-center text-xs text-destructive">
-            {OAUTH_ERRORS[errorCode]}
-          </p>
+          <div className="mb-4 space-y-1 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <p className="text-center">{OAUTH_ERRORS[errorCode]}</p>
+            {errorReason && (
+              <p className="text-center opacity-90">
+                {GOOGLE_REASONS[errorReason] ?? `구글이 알려준 사유: ${errorReason}`}
+              </p>
+            )}
+          </div>
         )}
 
         {googleEnabled && (

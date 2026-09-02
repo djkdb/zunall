@@ -2,15 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, users } from "@/lib/db";
 import { issueSession } from "@/lib/auth/session";
-import { STATE_COOKIE, callbackUrl, exchangeCode, googleAuthEnabled } from "@/lib/auth/google";
+import {
+  STATE_COOKIE,
+  TokenExchangeError,
+  callbackUrl,
+  exchangeCode,
+  googleAuthEnabled,
+} from "@/lib/auth/google";
 import { newId } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 /** 구글 콜백 — 코드를 프로필로 교환하고 계정을 만들거나 연결한 뒤 로그인시킨다. */
 export async function GET(request: NextRequest) {
-  const fail = (reason: string) =>
-    NextResponse.redirect(new URL(`/login?error=${reason}`, request.url));
+  const fail = (reason: string, detail?: string) =>
+    NextResponse.redirect(
+      new URL(
+        `/login?error=${reason}${detail ? `&reason=${encodeURIComponent(detail)}` : ""}`,
+        request.url,
+      ),
+    );
 
   if (!googleAuthEnabled()) return fail("google_disabled");
 
@@ -29,8 +40,9 @@ export async function GET(request: NextRequest) {
     profile = await exchangeCode(code, callbackUrl(request.url, request.headers));
   } catch (error) {
     // 클라이언트 ID/시크릿이 틀렸거나 리디렉션 URI 가 콘솔 설정과 다를 때
-    console.error("google token exchange failed:", error instanceof Error ? error.message : error);
-    return fail("google_token");
+    const code = error instanceof TokenExchangeError ? error.code : "unknown";
+    console.error("google token exchange failed:", code, error instanceof Error ? error.message : error);
+    return fail("google_token", code);
   }
   if (!profile.emailVerified) return fail("google_unverified");
 

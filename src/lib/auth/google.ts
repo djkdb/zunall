@@ -23,6 +23,24 @@ export function googleAuthEnabled(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
+/** 설정 상태 요약 (진단용). 시크릿 값은 노출하지 않는다. */
+export function googleConfigReport(): {
+  enabled: boolean;
+  clientIdSet: boolean;
+  clientIdLooksValid: boolean;
+  clientSecretSet: boolean;
+  redirectUriOverride: string | null;
+} {
+  const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
+  return {
+    enabled: googleAuthEnabled(),
+    clientIdSet: Boolean(clientId),
+    clientIdLooksValid: clientId.endsWith(".apps.googleusercontent.com"),
+    clientSecretSet: Boolean(process.env.GOOGLE_CLIENT_SECRET),
+    redirectUriOverride: process.env.GOOGLE_REDIRECT_URI ?? null,
+  };
+}
+
 export function newOAuthState(): string {
   return randomBytes(16).toString("hex");
 }
@@ -49,6 +67,17 @@ export function authorizeUrl(state: string, redirectUri: string): string {
     prompt: "select_account",
   });
   return `${authEndpoint()}?${params.toString()}`;
+}
+
+/** 토큰 교환 실패. code 는 구글이 준 사유(invalid_client 등) */
+export class TokenExchangeError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "TokenExchangeError";
+  }
 }
 
 export interface GoogleProfile {
@@ -80,7 +109,16 @@ export async function exchangeCode(code: string, redirectUri: string): Promise<G
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`구글 토큰 교환 실패 (${response.status}): ${detail.slice(0, 200)}`);
+    // 구글은 실패 사유를 { "error": "invalid_client", ... } 형태로 알려준다.
+    // 이 값이 곧 해결 방법을 가리키므로 코드로 보존해 화면까지 전달한다.
+    let code = "unknown";
+    try {
+      const parsed = JSON.parse(detail) as { error?: string };
+      if (parsed.error) code = parsed.error;
+    } catch {
+      /* JSON 이 아니면 unknown 으로 둔다 */
+    }
+    throw new TokenExchangeError(code, `구글 토큰 교환 실패 (${response.status})`);
   }
 
   const data = (await response.json()) as { id_token?: string };

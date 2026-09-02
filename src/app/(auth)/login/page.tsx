@@ -9,10 +9,15 @@ export const metadata: Metadata = { title: "로그인" };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; reason?: string }>;
 }) {
   const user = await getCurrentUser();
   if (user) redirect("/");
-  const { error } = await searchParams;
-  return <AuthForm mode="login" googleEnabled={googleAuthEnabled()} errorCode={error} />;
+  const { error, reason } = await searchParams;
+  return <AuthForm
+      mode="login"
+      googleEnabled={googleAuthEnabled()}
+      errorCode={error}
+      errorReason={reason}
+    />;
 }

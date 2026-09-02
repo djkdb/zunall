@@ -7,6 +7,7 @@ import { REQUIRED_TABLES } from "@/lib/db/ddl";
 import { inspectDatabaseUrl } from "@/lib/db/url";
 import { getProviderName, providerFallbackReason } from "@/services/ai/provider";
 import { isCloudflareWorkers } from "@/lib/runtime";
+import { callbackUrl, googleConfigReport } from "@/lib/auth/google";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export const dynamic = "force-dynamic";
  * 브라우저에서 /api/health 를 열면 무엇이 빠졌는지 한국어로 알려준다.
  * 접속 문자열·키 같은 비밀값은 절대 노출하지 않는다.
  */
-export async function GET() {
+export async function GET(request: Request) {
   const onWorkers = isCloudflareWorkers();
   const configured = Boolean(process.env.DATABASE_URL);
 
@@ -38,6 +39,14 @@ export async function GET() {
     aiProvider: string;
     problems: string[];
     notices: string[];
+    google: {
+      enabled: boolean;
+      clientIdSet: boolean;
+      clientIdLooksValid: boolean;
+      clientSecretSet: boolean;
+      redirectUriOverride: string | null;
+      redirectUri: string;
+    };
   } = {
     ok: false,
     runtime: onWorkers ? "cloudflare-workers" : "node",
@@ -50,7 +59,18 @@ export async function GET() {
     aiProvider: getProviderName(),
     problems: [],
     notices: [],
+    google: {
+      ...googleConfigReport(),
+      // 콘솔의 "승인된 리디렉션 URI" 에 이 값을 그대로 넣어야 한다
+      redirectUri: callbackUrl(request.url, request.headers),
+    },
   };
+
+  if (report.google.enabled && !report.google.clientIdLooksValid) {
+    report.notices.push(
+      "GOOGLE_CLIENT_ID 가 '...apps.googleusercontent.com' 형태가 아닙니다. 값을 다시 확인해주세요.",
+    );
+  }
 
   const aiNotice = providerFallbackReason();
   if (aiNotice) report.notices.push(aiNotice);

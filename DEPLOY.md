@@ -316,6 +316,9 @@ Type 을 **Secret** 으로 두고 두 개를 추가합니다.
 | 데이터베이스에 구글 로그인용 컬럼이 없습니다 | `migrations/001-google-login.sql` 미실행 |
 | 보안 확인에 실패했습니다 | state 쿠키 만료(10분) — 다시 시도 |
 
+화면에는 구글이 알려준 사유(`invalid_client`, `redirect_uri_mismatch` 등)까지 함께 표시됩니다.
+`/api/health` 의 `google.redirectUri` 값이 **콘솔에 등록해야 할 주소 그대로**이니, 그대로 복사해 넣으세요.
+
 ---
 
 ## 배포가 이상할 때 — /api/health
