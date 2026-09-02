@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { databaseKind } from "@/lib/db/info";
 import { storageBackend } from "@/lib/storage";
-import { REQUIRED_TABLES } from "@/lib/db/ddl";
+import { REQUIRED_TABLES, BIGINT_COLUMNS } from "@/lib/db/ddl";
 import { inspectDatabaseUrl } from "@/lib/db/url";
 import { getProviderName, providerFallbackReason } from "@/services/ai/provider";
 import { isCloudflareWorkers } from "@/lib/runtime";
@@ -35,6 +35,8 @@ export async function GET(request: Request) {
     };
     missingTables: string[];
     missingColumns: string[];
+    /** 밀리초 시간값을 담기에 타입이 좁은 컬럼 (INTEGER 로 만들어진 경우) */
+    narrowColumns: string[];
     storage: string;
     aiProvider: string;
     problems: string[];
@@ -55,6 +57,7 @@ export async function GET(request: Request) {
     connected: false,
     missingTables: [],
     missingColumns: [],
+    narrowColumns: [],
     storage: storageBackend(),
     aiProvider: getProviderName(),
     problems: [],
@@ -112,12 +115,26 @@ export async function GET(request: Request) {
 
     // 나중에 추가된 컬럼(구글 로그인 등)은 테이블이 있어도 빠져 있을 수 있다
     const colRows = (await db.execute(
-      sql`SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'`,
+      sql`SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public'`,
     )) as unknown as
-      | Array<{ table_name: string; column_name: string }>
-      | { rows?: Array<{ table_name: string; column_name: string }> };
+      | Array<{ table_name: string; column_name: string; data_type: string }>
+      | { rows?: Array<{ table_name: string; column_name: string; data_type: string }> };
     const colList = Array.isArray(colRows) ? colRows : (colRows.rows ?? []);
     const columns = new Set(colList.map((c) => `${c.table_name}.${c.column_name}`));
+    const types = new Map(colList.map((c) => [`${c.table_name}.${c.column_name}`, c.data_type]));
+
+    // 시간(밀리초) 컬럼이 INTEGER 면 2038년 문제가 아니라 지금 당장 저장이 실패한다
+    report.narrowColumns = BIGINT_COLUMNS.filter(([table, column]) => {
+      const type = types.get(`${table}.${column}`);
+      return type !== undefined && type !== "bigint";
+    }).map(([table, column]) => `${table}.${column}`);
+    if (report.narrowColumns.length > 0) {
+      report.problems.push(
+        `시간 컬럼 ${report.narrowColumns.length}개의 타입이 좁습니다 (${report.narrowColumns.slice(0, 3).join(", ")}${report.narrowColumns.length > 3 ? " 외" : ""}). ` +
+          "migrations/006-bigint-epoch.sql 을 DB 콘솔에서 실행하세요. " +
+          "(회원가입·로그인이 'out of range for type integer' 로 실패하는 원인입니다)",
+      );
+    }
     const REQUIRED_COLUMNS = ["users.google_id", "users.avatar_url"];
     report.missingColumns = REQUIRED_COLUMNS.filter((c) => !columns.has(c));
     if (report.missingColumns.length > 0) {

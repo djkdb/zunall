@@ -10,9 +10,10 @@ import {
   StickyNote,
   BookMarked,
 } from "lucide-react";
-import { db, activityHistory, type ActivityRow } from "@/lib/db";
+import { db, activityHistory, retrospectives, type ActivityRow } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PortfolioForm } from "@/components/activities/portfolio-form";
+import { RetrospectiveForm } from "@/components/activities/retrospective-form";
 import { formatDateTime } from "@/lib/utils";
 import type { HistoryKind } from "@/lib/constants";
 
@@ -34,6 +35,14 @@ export async function HistoryTab({ activity }: { activity: ActivityRow }) {
     .from(activityHistory)
     .where(eq(activityHistory.activityId, activity.id))
     .orderBy(desc(activityHistory.createdAt));
+
+  const retro = (
+    await db
+      .select()
+      .from(retrospectives)
+      .where(eq(retrospectives.activityId, activity.id))
+      .limit(1)
+  )[0];
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
@@ -61,7 +70,18 @@ export async function HistoryTab({ activity }: { activity: ActivityRow }) {
         )}
       </div>
 
-      <div>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-1.5">
+              <BookMarked className="h-4 w-4 text-muted-foreground" /> 활동 회고 (STAR)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RetrospectiveForm activityId={activity.id} retro={retro ?? null} />
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-1.5">

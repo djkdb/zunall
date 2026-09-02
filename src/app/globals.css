@@ -63,3 +63,24 @@
     @apply rounded-full bg-muted-foreground/30;
   }
 }
+
+/* 포트폴리오 인쇄: 앱 껍데기를 걷어내고 본문만 남긴다 */
+@media print {
+  aside,
+  nav,
+  header button,
+  .print\:hidden {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+}

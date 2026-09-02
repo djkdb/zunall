@@ -154,6 +154,21 @@ CREATE TABLE IF NOT EXISTS submission_versions (
 );
 CREATE INDEX IF NOT EXISTS idx_subver_submission ON submission_versions(submission_id);
 
+CREATE TABLE IF NOT EXISTS retrospectives (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_id TEXT NOT NULL UNIQUE,
+  situation TEXT,
+  task TEXT,
+  action TEXT,
+  result TEXT,
+  learned TEXT,
+  skills TEXT,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_retro_user ON retrospectives(user_id);
+
 CREATE TABLE IF NOT EXISTS essay_questions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -388,6 +403,7 @@ export const REQUIRED_TABLES = [
   "documents",
   "submissions",
   "submission_versions",
+  "retrospectives",
   "essay_questions",
   "essay_drafts",
   "evaluation_criteria",
@@ -405,4 +421,43 @@ export const REQUIRED_TABLES = [
   "opportunity_analyses",
   "document_blobs",
   "activity_history",
+] as const;
+
+/** 밀리초 시간값이라 BIGINT 여야 하는 컬럼 (진단용) */
+export const BIGINT_COLUMNS: ReadonlyArray<readonly [string, string]> = [
+  ["users", "created_at"],
+  ["push_subscriptions", "created_at"],
+  ["push_subscriptions", "last_success_at"],
+  ["sessions", "expires_at"],
+  ["activities", "created_at"],
+  ["activities", "updated_at"],
+  ["events", "created_at"],
+  ["tasks", "created_at"],
+  ["tasks", "updated_at"],
+  ["tasks", "completed_at"],
+  ["documents", "created_at"],
+  ["submissions", "created_at"],
+  ["submissions", "updated_at"],
+  ["submission_versions", "created_at"],
+  ["retrospectives", "created_at"],
+  ["retrospectives", "updated_at"],
+  ["essay_questions", "created_at"],
+  ["essay_drafts", "created_at"],
+  ["ai_reviews", "created_at"],
+  ["ai_reviews", "completed_at"],
+  ["notifications", "created_at"],
+  ["notes", "updated_at"],
+  ["career_goals", "created_at"],
+  ["career_goals", "updated_at"],
+  ["user_skills", "created_at"],
+  ["career_evidence", "created_at"],
+  ["career_profiles", "onboarded_at"],
+  ["career_profiles", "updated_at"],
+  ["career_actions", "created_at"],
+  ["career_actions", "updated_at"],
+  ["roadmap_items", "created_at"],
+  ["score_snapshots", "created_at"],
+  ["opportunity_analyses", "created_at"],
+  ["document_blobs", "created_at"],
+  ["activity_history", "created_at"],
 ] as const;

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Trophy, Sparkles, TrendingUp } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import {
@@ -12,6 +12,8 @@ import {
   opportunityAnalyses,
 } from "@/lib/db";
 import { getCareerContext, getScoreTrend } from "@/lib/career-queries";
+import { computeOutcomeLearning } from "@/services/score/outcome";
+import { OutcomeLearningCard } from "@/components/stats/outcome-learning";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -49,6 +51,34 @@ export default async function StatsPage() {
     )
     )
     .filter((r) => r.overallScore != null && r.maxScore);
+
+  // 지원 결과 학습 — 실제 기록된 결과만 집계한다
+  const analyses = await db
+    .select({
+      activityId: opportunityAnalyses.activityId,
+      fitScore: opportunityAnalyses.fitScore,
+      recommendation: opportunityAnalyses.recommendation,
+    })
+    .from(opportunityAnalyses)
+    .where(eq(opportunityAnalyses.userId, user.id))
+    .orderBy(desc(opportunityAnalyses.createdAt));
+  const latestAnalysis = new Map<string, { fitScore: number | null; recommendation: string | null }>();
+  for (const row of analyses) {
+    if (!latestAnalysis.has(row.activityId)) {
+      latestAnalysis.set(row.activityId, { fitScore: row.fitScore, recommendation: row.recommendation });
+    }
+  }
+  const learning = computeOutcomeLearning(
+    acts.map((a) => ({
+      activityId: a.id,
+      name: a.name,
+      type: a.type,
+      status: a.status,
+      fitScore: latestAnalysis.get(a.id)?.fitScore ?? null,
+      recommendation: latestAnalysis.get(a.id)?.recommendation ?? null,
+    })),
+    ACTIVITY_TYPES,
+  );
 
   const total = acts.length;
   const ongoing = acts.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status)).length;
@@ -122,6 +152,9 @@ export default async function StatsPage() {
 
       {/* Career 지표 */}
       <CareerStatsSection userId={user.id} />
+
+      {/* 지원 결과 학습 */}
+      <OutcomeLearningCard learning={learning} />
 
       {/* 핵심 지표 */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">

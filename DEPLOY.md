@@ -371,7 +371,8 @@ Type 을 **Secret** 으로 두고 두 개를 추가합니다.
 | `connected: false` + `databaseUrl.issues` | 접속 문자열 값 자체가 잘못됨 | issues 에 적힌 대로 수정 (따옴표·`psql ` 접두사·줄바꿈은 자동으로 걷어냄) |
 | `connected: false` (issues 없음) | 주소는 정상이나 접속 실패 | 비밀번호·호스트·DB 이름 확인 |
 | `missingTables` 에 목록 | 스키마 미적용 | `schema.sql` 을 SQL 콘솔에서 실행 |
-| `missingColumns` 에 목록 | 나중에 추가된 컬럼이 없음 | `migrations/` 의 해당 SQL 을 실행 (구글 로그인 실패의 주원인) |
+| `missingColumns` 에 목록 | 나중에 추가된 컬럼이 없음 | `migrations/` 의 해당 SQL 을 실행 |
+| `narrowColumns` 에 목록 | 시간 컬럼이 INTEGER 로 만들어짐 | `migrations/006-bigint-epoch.sql` 실행 (`out of range for type integer` 오류의 원인) |
 | `notices` 에 문구 | 문제는 아니고 알림 | 예: API 키가 없어 AI 가 mock 으로 동작 중 |
 
 `databaseUrl` 항목은 스킴·호스트 뒤 두 마디·자격증명 유무만 보여주며 비밀번호는 노출하지 않습니다.

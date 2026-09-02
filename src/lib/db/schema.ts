@@ -218,6 +218,26 @@ export const submissionVersions = pgTable(
 );
 
 /** 자기소개서 문항 (지원서 항목 단위) */
+/** 활동 회고 (STAR). 자소서 재료이자 스킬 근거가 된다 */
+export const retrospectives = pgTable(
+  "retrospectives",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    activityId: text("activity_id").notNull().unique(),
+    situation: text("situation"),
+    task: text("task"),
+    action: text("action"),
+    result: text("result"),
+    learned: text("learned"),
+    /** 이 활동으로 증명한 스킬 (JSON string[]) */
+    skills: text("skills"),
+    createdAt: epochMs("created_at").notNull(),
+    updatedAt: epochMs("updated_at").notNull(),
+  },
+  (t) => [index("idx_retro_user").on(t.userId)],
+);
+
 export const essayQuestions = pgTable(
   "essay_questions",
   {
