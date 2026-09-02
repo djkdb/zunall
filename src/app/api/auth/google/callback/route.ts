@@ -13,6 +13,15 @@ import { newId } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+/** 오류 메시지에서 비밀값이 될 수 있는 부분을 지우고 한 줄로 줄인다 */
+function firstLine(message: string): string {
+  return message
+    .split("\n")[0]
+    .replace(/[a-z]+:\/\/[^\s]+/gi, "<주소>")
+    .replace(/[\w.+-]+@[\w.-]+/g, "<이메일>")
+    .slice(0, 140);
+}
+
 /** 구글 콜백 — 코드를 프로필로 교환하고 계정을 만들거나 연결한 뒤 로그인시킨다. */
 export async function GET(request: NextRequest) {
   const fail = (reason: string, detail?: string) =>
@@ -90,8 +99,10 @@ export async function GET(request: NextRequest) {
     console.error("google oauth callback failed:", message);
     // users 테이블에 google_id / avatar_url 이 없으면 여기서 걸린다
     if (/column .*(google_id|avatar_url)|does not exist/i.test(message)) {
-      return fail("google_db");
+      return fail("google_db", firstLine(message));
     }
-    return fail("google_failed");
+    // 원인을 알 수 없는 실패는 화면에서 바로 볼 수 있게 요약을 함께 넘긴다
+    // (접속 문자열·토큰이 섞여 들어가지 않도록 URL·이메일은 지운다)
+    return fail("google_failed", firstLine(message));
   }
 }

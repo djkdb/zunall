@@ -12,7 +12,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cavero",
-  "main": ".open-next/worker.js",
+  "main": "cf/worker.ts",
   "compatibility_date": "2026-04-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
@@ -20,6 +20,8 @@
     "binding": "ASSETS"
   },
   // "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "cavero-uploads" }],
+  // 매일 08:00 KST (23:00 UTC) 에 마감 알림을 보낸다
+  "triggers": { "crons": ["0 23 * * *"] },
   "vars": {
     "AI_PROVIDER": "anthropic",
     "ANTHROPIC_MODEL": "claude-opus-5"

@@ -258,6 +258,40 @@ import pdfParse from "pdf-parse/lib/pdf-parse.js";
 
 ---
 
+## 브라우저 알림 켜기 (선택)
+
+앱을 열지 않아도 마감 알림이 오게 하려면 세 가지를 등록합니다. **무료입니다.**
+
+### 1. 키 만들기
+
+```bash
+npm run vapid
+```
+
+출력된 `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` 를 시크릿으로 등록합니다.
+
+### 2. Cloudflare 시크릿·변수
+
+| 이름 | 종류 | 값 |
+| --- | --- | --- |
+| `VAPID_PUBLIC_KEY` | Secret | 위에서 만든 공개키 |
+| `VAPID_PRIVATE_KEY` | Secret | 위에서 만든 개인키 |
+| `CRON_KEY` | Secret | 아무 긴 문자열 (크론 엔드포인트 보호용) |
+| `APP_URL` | Variable | `https://<내-워커-주소>` |
+
+### 3. DB 컬럼
+
+`migrations/003-push-subscriptions.sql` 을 SQL 콘솔에서 실행하세요.
+
+### 동작
+
+- `wrangler.jsonc` 의 Cron 트리거가 매일 08:00(KST)에 `/api/cron/daily` 를 호출합니다
+- 마감 D-7·D-3·D-1·당일 항목을 모아 기기로 한 번에 보냅니다
+- 사용자는 **설정 → 알림 → '이 기기에서 알림 받기'** 로 켭니다
+- iPhone 은 Safari 에서 **공유 → 홈 화면에 추가** 후에만 알림을 받을 수 있습니다 (Apple 정책)
+
+---
+
 ## 구글 로그인 켜기 (선택)
 
 이메일 회원가입은 기본으로 동작합니다. 구글 로그인은 아래를 설정하면 버튼이 나타납니다.

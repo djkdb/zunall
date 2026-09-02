@@ -39,6 +39,23 @@ export const users = pgTable("users", {
   createdAt: epochMs("created_at").notNull(),
 });
 
+/** 브라우저 푸시 구독 (기기 하나당 한 줄) */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent"),
+    createdAt: epochMs("created_at").notNull(),
+    lastSuccessAt: epochMs("last_success_at"),
+    failureCount: integer("failure_count").notNull().default(0),
+  },
+  (t) => [index("idx_push_user").on(t.userId)],
+);
+
 export const sessions = pgTable("sessions", {
   token: text("token").primaryKey(),
   userId: text("user_id").notNull(),

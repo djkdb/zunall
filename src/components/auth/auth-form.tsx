@@ -77,7 +77,7 @@ export function AuthForm({
             <p className="text-center">{OAUTH_ERRORS[errorCode]}</p>
             {errorReason && (
               <p className="text-center opacity-90">
-                {GOOGLE_REASONS[errorReason] ?? `구글이 알려준 사유: ${errorReason}`}
+                {GOOGLE_REASONS[errorReason] ?? `서버 오류: ${errorReason}`}
               </p>
             )}
           </div>
