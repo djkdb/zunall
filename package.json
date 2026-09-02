@@ -1,8 +1,8 @@
 {
-  "name": "zunall",
+  "name": "cavero",
   "version": "0.1.0",
   "private": true,
-  "description": "대외활동 통합 관리 + AI 평가 웹앱",
+  "description": "Cavero — 대외활동 통합 관리 + AI Career OS",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -1,7 +1,7 @@
 /**
  * 데모 데이터 시드 스크립트 (PostgreSQL).
  * 실행: npm run seed
- * 계정: demo@zunall.app / demo1234!
+ * 계정: demo@cavero.app / demo1234!
  *
  * DATABASE_URL 이 있으면 해당 Postgres(Supabase 등), 없으면 로컬 PGlite에 넣는다.
  */
@@ -118,17 +118,17 @@ const seedActivities: SeedActivity[] = [
 
 async function main() {
   const existing = (
-    await db.select({ id: users.id }).from(users).where(eq(users.email, "demo@zunall.app")).limit(1)
+    await db.select({ id: users.id }).from(users).where(eq(users.email, "demo@cavero.app")).limit(1)
   )[0];
   if (existing) {
-    console.log("데모 계정이 이미 존재합니다. (demo@zunall.app)");
+    console.log("데모 계정이 이미 존재합니다. (demo@cavero.app)");
     return;
   }
 
   const userId = id();
   await db.insert(users).values({
     id: userId,
-    email: "demo@zunall.app",
+    email: "demo@cavero.app",
     name: "김준하",
     passwordHash: hashPassword("demo1234!"),
     createdAt: now,
@@ -326,7 +326,7 @@ async function main() {
   });
 
   console.log("✅ 시드 완료");
-  console.log("   계정: demo@zunall.app / demo1234!");
+  console.log("   계정: demo@cavero.app / demo1234!");
   console.log(`   활동 ${seedActivities.length}개, 데모 일정/작업/평가기준 생성됨`);
 }
 

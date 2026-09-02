@@ -1,9 +1,11 @@
--- Zunall schema (generated from src/lib/db/ddl.ts)
+-- Cavero schema (generated from src/lib/db/ddl.ts)
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
-  password_hash TEXT NOT NULL,
+  password_hash TEXT,
+  google_id TEXT,
+  avatar_url TEXT,
   created_at BIGINT NOT NULL
 );
 
@@ -38,6 +40,7 @@ CREATE TABLE IF NOT EXISTS activities (
   created_at BIGINT NOT NULL,
   updated_at BIGINT NOT NULL
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
 CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 
 CREATE TABLE IF NOT EXISTS tags (

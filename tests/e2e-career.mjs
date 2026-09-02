@@ -130,7 +130,7 @@ try {
 
   // ── 3. 근거 추가 → 점수 상승
   await page.getByRole("button", { name: "근거 추가" }).click();
-  await page.getByLabel("제목 *").fill("Zunall — AI 문서 평가 웹앱 개발");
+  await page.getByLabel("제목 *").fill("Cavero — AI 문서 평가 웹앱 개발");
   await page.getByLabel("이 근거가 증명하는 스킬 (쉼표 구분) *").fill("AI 활용, Frontend, Backend");
   await page.getByLabel("설명").fill("Next.js + Claude 기반 대외활동 관리 서비스를 설계하고 배포함");
   await page.getByRole("button", { name: "추가", exact: true }).click();
@@ -149,7 +149,7 @@ try {
   await aiSkillRow.click();
   await page.waitForTimeout(300);
   text = await page.locator("main").textContent();
-  step("스킬 점수 옆 근거 내역 표시", text.includes("Zunall") && text.includes("근거"));
+  step("스킬 점수 옆 근거 내역 표시", text.includes("Cavero") && text.includes("근거"));
 
   // ── 4. Gap 분석
   await page.goto(`${BASE}/career/gaps`);

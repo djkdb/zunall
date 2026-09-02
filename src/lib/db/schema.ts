@@ -29,7 +29,11 @@ export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
-  passwordHash: text("password_hash").notNull(),
+  /** 구글 로그인만 쓰는 계정은 비밀번호가 없다 */
+  passwordHash: text("password_hash"),
+  /** 구글 계정 고유 ID(sub). 이메일이 바뀌어도 유지된다 */
+  googleId: text("google_id"),
+  avatarUrl: text("avatar_url"),
   createdAt: epochMs("created_at").notNull(),
 });
 

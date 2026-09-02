@@ -1,6 +1,6 @@
 # 배포 가이드 — 무료로 올리기
 
-Zunall은 **PostgreSQL 하나만 있으면** 전부 동작합니다.
+Cavero은 **PostgreSQL 하나만 있으면** 전부 동작합니다.
 파일도 기본적으로 DB에 저장되므로 오브젝트 스토리지(S3/R2/Supabase Storage)가 **필요 없습니다**.
 
 | 레이어 | 로컬 개발 | 배포 |
@@ -31,13 +31,13 @@ Zunall은 **PostgreSQL 하나만 있으면** 전부 동작합니다.
 | 성공했는데 아무 메시지도 없음 | 정상입니다. 터미널은 성공하면 조용합니다 |
 
 **가장 흔한 실수는 "폴더를 안 옮긴 것"입니다.** `npm` 으로 시작하는 명령은 전부
-`zunall` 폴더 안에서 쳐야 하고, 아니면 `npm ERR! Could not read package.json` 이 납니다.
+`cavero` 폴더 안에서 쳐야 하고, 아니면 `npm ERR! Could not read package.json` 이 납니다.
 
 ```bash
 pwd
 ```
-끝이 `/zunall` 이면 정상. 아니면 `cd ~/zunall` 로 이동하세요.
-터미널을 껐다 켜면 위치가 초기화되므로 매번 `cd ~/zunall` 부터 시작합니다.
+끝이 `/cavero` 이면 정상. 아니면 `cd ~/cavero` 로 이동하세요.
+터미널을 껐다 켜면 위치가 초기화되므로 매번 `cd ~/cavero` 부터 시작합니다.
 
 ### `DATABASE_URL="..." npm run seed` 형태의 명령
 
@@ -67,12 +67,12 @@ node -v
 cd ~
 ```
 ```bash
-git clone https://github.com/djkdb/zunall.git
+git clone https://github.com/djkdb/cavero.git
 ```
 → `Resolving deltas: 100% ... done.` 이 나오면 성공
 
 ```bash
-cd zunall
+cd cavero
 ```
 → 이제부터 모든 명령은 이 폴더 안에서 실행합니다
 
@@ -169,7 +169,7 @@ npx wrangler secret put ANTHROPIC_API_KEY
 npm run deploy:cf
 ```
 배포 전 설정을 자동 점검한 뒤(누락 시 무엇을 해야 하는지 알려줍니다) 빌드·배포합니다.
-완료되면 `https://zunall.<서브도메인>.workers.dev` 주소가 출력됩니다.
+완료되면 `https://cavero.<서브도메인>.workers.dev` 주소가 출력됩니다.
 
 점검만 따로 돌리려면 `npm run preflight:cf` 입니다.
 
@@ -185,8 +185,8 @@ Cloudflare 쪽 서버에서 빌드하고 배포까지 합니다. 내 컴퓨터�
 ### 1. 대시보드에서 저장소 연결
 
 [dash.cloudflare.com](https://dash.cloudflare.com) → **Compute (Workers)** → 이미 만들어둔
-`zunall` Worker 선택 → **Settings → Build** → **Connect** → GitHub 인증 →
-저장소 `djkdb/zunall` 선택.
+`cavero` Worker 선택 → **Settings → Build** → **Connect** → GitHub 인증 →
+저장소 `djkdb/cavero` 선택.
 
 (아직 Worker가 없다면 **Create → Workers → Import a repository** 로 시작해도 됩니다)
 
@@ -258,6 +258,78 @@ import pdfParse from "pdf-parse/lib/pdf-parse.js";
 
 ---
 
+## 구글 로그인 켜기 (선택)
+
+이메일 회원가입은 기본으로 동작합니다. 구글 로그인은 아래를 설정하면 버튼이 나타납니다.
+**설정하지 않으면 버튼이 아예 보이지 않으므로**, 안 쓸 거면 그냥 두면 됩니다.
+
+### 1. Google Cloud Console 에서 클라이언트 만들기
+
+[console.cloud.google.com](https://console.cloud.google.com) → 프로젝트 생성 →
+**API 및 서비스 → OAuth 동의 화면** 을 먼저 구성(외부, 앱 이름 `Cavero`, 이메일 입력)한 뒤
+**사용자 인증 정보 → 사용자 인증 정보 만들기 → OAuth 클라이언트 ID → 웹 애플리케이션**.
+
+**승인된 리디렉션 URI** 에 배포 주소를 정확히 넣습니다(끝의 경로까지 그대로).
+
+```
+https://<내-워커-주소>/api/auth/google/callback
+```
+
+로컬에서도 쓰려면 한 줄 더 추가합니다.
+
+```
+http://localhost:3000/api/auth/google/callback
+```
+
+만들고 나면 **클라이언트 ID** 와 **클라이언트 보안 비밀번호** 가 나옵니다.
+
+### 2. Cloudflare 에 시크릿 등록
+
+대시보드 → 해당 Worker → **Settings → Variables and Secrets → Add** 에서
+Type 을 **Secret** 으로 두고 두 개를 추가합니다.
+
+| 이름 | 값 |
+| --- | --- |
+| `GOOGLE_CLIENT_ID` | 클라이언트 ID |
+| `GOOGLE_CLIENT_SECRET` | 클라이언트 보안 비밀번호 |
+
+터미널을 쓴다면 `npx wrangler secret put GOOGLE_CLIENT_ID` 로도 됩니다.
+
+### 3. DB에 컬럼 추가
+
+이미 만들어둔 DB라면 구글 계정용 컬럼이 없습니다. `migrations/001-google-login.sql` 을
+복사해 SQL 콘솔에서 실행하세요(여러 번 실행해도 안전).
+
+새로 만드는 DB라면 `schema.sql` 에 이미 포함돼 있어 따로 할 일이 없습니다.
+
+### 동작 방식
+
+- 같은 이메일로 이미 이메일 가입을 했다면, 구글 로그인 시 **기존 계정에 연결**됩니다
+- 구글로만 가입한 계정으로 비밀번호 로그인을 시도하면 구글 버튼을 쓰라고 안내합니다
+- 구글 계정의 이메일이 미인증 상태면 로그인을 거부합니다
+
+---
+
+## 배포가 이상할 때 — /api/health
+
+브라우저에서 `https://<내-워커-주소>/api/health` 를 열면 상태가 JSON 으로 나옵니다.
+
+```json
+{ "ok": true, "runtime": "cloudflare-workers", "database": "Neon (neon-http)",
+  "connected": true, "missingTables": [], "storage": "db", "problems": [] }
+```
+
+| 증상 | 의미 | 해결 |
+| --- | --- | --- |
+| `databaseUrlSet: false` | 이 Worker에 DATABASE_URL 시크릿이 없음 | 대시보드 → Settings → Variables and Secrets 에 Secret 으로 추가 |
+| `connected: false` | DB 주소는 있으나 접속 실패 | 연결 문자열·비밀번호 확인 |
+| `missingTables` 에 목록 | 스키마 미적용 | `schema.sql` 을 SQL 콘솔에서 실행 |
+
+**Worker 이름을 바꾸거나 새로 만들면 시크릿은 따라오지 않습니다.** 새 Worker에 다시
+등록해야 하며, 이때 `Application error` 대신 위 안내 문구가 화면에 표시됩니다.
+
+---
+
 ## 파일 저장 위치 바꾸기 (선택)
 
 기본값은 **DB 저장**이라 아무 설정도 필요 없습니다. 파일이 많아지면 아래로 전환하세요.
@@ -265,7 +337,7 @@ import pdfParse from "pdf-parse/lib/pdf-parse.js";
 | 백엔드 | 켜는 법 |
 | --- | --- |
 | **db** (기본) | 설정 불필요. `document_blobs` 테이블에 저장 |
-| **r2** | `wrangler.jsonc` 의 `r2_buckets` 주석 해제 + `npx wrangler r2 bucket create zunall-uploads` |
+| **r2** | `wrangler.jsonc` 의 `r2_buckets` 주석 해제 + `npx wrangler r2 bucket create cavero-uploads` |
 | **supabase** | `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` secret 등록 |
 | **local** | `STORAGE_BACKEND=local` (Node 환경 전용, `data/uploads` 에 저장) |
 
@@ -284,8 +356,9 @@ DB 저장은 20MB 제한 기준 개인 사용에 충분하지만, Neon 무료 0.
 | wrangler 실행 시 Node 버전 오류 | Node 22 미만 → `nvm install 22 && nvm use 22` |
 | `Authentication error [code: 10000]` | 로그인 만료 → `npx wrangler logout` 후 다시 `npx wrangler login` |
 | `relation "users" does not exist` | 1-2 단계(schema.sql)를 DB에 적용하지 않음 |
+| `Application error: a server-side exception` | 대부분 DATABASE_URL 시크릿 누락 → `/api/health` 로 확인 |
 | `password authentication failed` | 연결 문자열의 비밀번호 자리를 실제 값으로 바꾸지 않음 |
-| `npm ERR! Could not read package.json` | zunall 폴더 밖에서 실행 → `cd ~/zunall` |
+| `npm ERR! Could not read package.json` | cavero 폴더 밖에서 실행 → `cd ~/cavero` |
 | `command not found: npm` | Node.js 미설치 → nodejs.org 에서 LTS 설치 후 터미널 재시작 |
 | `zsh: parse error` / 따옴표 오류 | 스마트 따옴표(`“ ”`) 사용 → 터미널에서 `"` 직접 입력 |
 | `exceeded the size limit of 3 MiB` | 번들이 무료 한도 초과 → 위 "Worker 크기 제한" 절 참고 (`npm run size:cf` 로 확인) |
@@ -299,10 +372,10 @@ DB 저장은 20MB 제한 기준 개인 사용에 충분하지만, Neon 무료 0.
 ## 배포 후 — 확인과 운영
 
 ### 첫 접속
-출력된 `https://zunall.<서브도메인>.workers.dev` 로 들어가 **회원가입**하면 됩니다.
+출력된 `https://cavero.<서브도메인>.workers.dev` 로 들어가 **회원가입**하면 됩니다.
 로그인 후 온보딩(목표 직무 선택)까지 마치면 Career Score가 계산됩니다.
 데모 계정이 필요하면 로컬에서 `DATABASE_URL="배포용 주소" npm run seed` 를 돌리면
-`demo@zunall.app / demo1234!` 가 생깁니다.
+`demo@cavero.app / demo1234!` 가 생깁니다.
 
 ### 실시간 로그 보기
 ```bash
@@ -338,8 +411,8 @@ npx wrangler secret delete ANTHROPIC_API_KEY
 
 ### 내 도메인 붙이기
 도메인이 Cloudflare에 등록돼 있어야 합니다.
-Cloudflare 대시보드 → **Workers & Pages → zunall → Settings → Domains & Routes → Add → Custom domain**
-에서 `zunall.내도메인.com` 을 입력하면 인증서까지 자동으로 붙습니다.
+Cloudflare 대시보드 → **Workers & Pages → cavero → Settings → Domains & Routes → Add → Custom domain**
+에서 `cavero.내도메인.com` 을 입력하면 인증서까지 자동으로 붙습니다.
 
 ### 무료 한도 감각
 - Workers 무료: 하루 100,000 요청 (개인 사용에 충분)
@@ -358,7 +431,7 @@ npx wrangler delete
 ```bash
 npm install
 npm run dev     # DATABASE_URL 없으면 PGlite 자동 사용 (설치 불필요)
-npm run seed    # 데모 데이터 (demo@zunall.app / demo1234!)
+npm run seed    # 데모 데이터 (demo@cavero.app / demo1234!)
 ```
 
 실제 Postgres로 개발하려면 `DATABASE_URL` 만 지정하면 됩니다.
@@ -372,11 +445,11 @@ npm run seed    # 데모 데이터 (demo@zunall.app / demo1234!)
 Cloudflare 대신 Node가 그대로 도는 환경(Railway, Fly.io, VPS)에도 올릴 수 있습니다.
 
 ```bash
-docker build -t zunall .
+docker build -t cavero .
 docker run -d -p 3000:3000 \
   -e DATABASE_URL="postgresql://..." \
   -e AI_PROVIDER=anthropic -e ANTHROPIC_API_KEY="sk-ant-..." \
-  zunall
+  cavero
 ```
 
 DB까지 직접 띄우고 싶다면 Postgres 컨테이너를 함께 실행하고 `DATABASE_URL` 을 가리키면 됩니다.

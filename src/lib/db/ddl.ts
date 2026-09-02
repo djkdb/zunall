@@ -8,7 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
-  password_hash TEXT NOT NULL,
+  password_hash TEXT,
+  google_id TEXT,
+  avatar_url TEXT,
   created_at BIGINT NOT NULL
 );
 
@@ -43,6 +45,7 @@ CREATE TABLE IF NOT EXISTS activities (
   created_at BIGINT NOT NULL,
   updated_at BIGINT NOT NULL
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
 CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 
 CREATE TABLE IF NOT EXISTS tags (
@@ -332,3 +335,32 @@ CREATE TABLE IF NOT EXISTS activity_history (
 );
 CREATE INDEX IF NOT EXISTS idx_history_activity ON activity_history(activity_id);
 `;
+
+/** 앱이 요구하는 테이블 목록 (진단용) */
+export const REQUIRED_TABLES = [
+  "users",
+  "sessions",
+  "activities",
+  "tags",
+  "activity_tags",
+  "events",
+  "tasks",
+  "documents",
+  "submissions",
+  "submission_versions",
+  "evaluation_criteria",
+  "ai_reviews",
+  "ai_review_items",
+  "notifications",
+  "notes",
+  "career_goals",
+  "user_skills",
+  "career_evidence",
+  "career_profiles",
+  "career_actions",
+  "roadmap_items",
+  "score_snapshots",
+  "opportunity_analyses",
+  "document_blobs",
+  "activity_history",
+] as const;

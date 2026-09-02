@@ -11,7 +11,7 @@
 // R2 를 쓰고 싶으면 아래 r2_buckets 주석을 해제하고 버킷을 만들면 자동 전환된다.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "zunall",
+  "name": "cavero",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-04-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -19,7 +19,7 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  // "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "zunall-uploads" }],
+  // "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "cavero-uploads" }],
   "vars": {
     "AI_PROVIDER": "anthropic",
     "ANTHROPIC_MODEL": "claude-opus-5"

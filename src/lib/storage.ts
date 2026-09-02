@@ -51,7 +51,7 @@ function supabaseConfig(): SupabaseConfig | null {
   return {
     url: url.replace(/\/+$/, ""),
     key,
-    bucket: process.env.SUPABASE_STORAGE_BUCKET || "zunall-uploads",
+    bucket: process.env.SUPABASE_STORAGE_BUCKET || "cavero-uploads",
   };
 }
 

@@ -6,28 +6,54 @@ import { and, eq, gt, lt } from "drizzle-orm";
 import { cache } from "react";
 import { db, sessions, users, type UserRow } from "@/lib/db";
 
-const COOKIE_NAME = "zunall_session";
+const COOKIE_NAME = "cavero_session";
 
 function sessionDays(): number {
   const n = Number(process.env.SESSION_DAYS);
   return Number.isFinite(n) && n > 0 ? n : 30;
 }
 
-export async function createSession(userId: string): Promise<void> {
+export interface SessionCookie {
+  name: string;
+  value: string;
+  options: {
+    httpOnly: true;
+    sameSite: "lax";
+    secure: boolean;
+    path: string;
+    maxAge: number;
+  };
+}
+
+/**
+ * 세션 행을 만들고 심어야 할 쿠키 정보를 돌려준다.
+ * Route Handler 처럼 응답 객체에 직접 쿠키를 붙여야 하는 곳에서 쓴다.
+ */
+export async function issueSession(userId: string): Promise<SessionCookie> {
   const token = randomBytes(32).toString("hex");
   const expiresAt = Date.now() + sessionDays() * 86400000;
   await db.insert(sessions).values({ token, userId, expiresAt });
   // 만료된 세션 정리 (부수 작업)
   await db.delete(sessions).where(lt(sessions.expiresAt, Date.now()));
 
+  return {
+    name: COOKIE_NAME,
+    value: token,
+    options: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: sessionDays() * 86400,
+    },
+  };
+}
+
+/** Server Action / Server Component 에서 쓰는 세션 발급 */
+export async function createSession(userId: string): Promise<void> {
+  const cookie = await issueSession(userId);
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: sessionDays() * 86400,
-  });
+  cookieStore.set(cookie.name, cookie.value, cookie.options);
 }
 
 export async function destroySession(): Promise<void> {

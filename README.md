@@ -1,4 +1,4 @@
-# Zunall — AI Career OS
+# Cavero — AI Career OS
 
 **스펙을 관리하는 서비스가 아닙니다.**
 내가 원하는 직무와 목표를 기준으로 현재 나의 경험을 분석하고, 부족한 부분을 찾고,
@@ -38,6 +38,7 @@
 | Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
 | Backend | Server Actions + Route Handlers |
 | DB | **PostgreSQL** (Drizzle) — 배포는 무료 Postgres(Neon 등), 로컬은 PGlite(설치 불필요) 자동 폴백 |
+| 인증 | 이메일+비밀번호(scrypt) / **구글 로그인**(선택, 환경변수로 켜짐) |
 | 문서 파싱 | PDF·DOCX·PPTX·TXT 텍스트 추출 (Cloudflare 무료 플랜에서는 PDF 제외 — DEPLOY.md 참고) |
 | 스토리지 | **DB 저장이 기본** — 필요 시 R2 / Supabase Storage / 로컬로 환경변수 전환 |
 | 호스팅 | **Cloudflare Workers** (OpenNext) 또는 Docker/VM |
@@ -50,7 +51,7 @@
 ```bash
 npm install
 npm run dev            # http://localhost:3000 (AI_PROVIDER=mock 기본)
-npm run seed           # 데모 데이터 (demo@zunall.app / demo1234!)
+npm run seed           # 데모 데이터 (demo@cavero.app / demo1234!)
 ```
 
 `DATABASE_URL` 이 없으면 내장 PGlite로 동작하므로 DB 설치가 필요 없습니다.

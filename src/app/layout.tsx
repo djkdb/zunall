@@ -4,11 +4,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Zunall — 대외활동 OS",
-    template: "%s · Zunall",
+    default: "Cavero — AI Career OS",
+    template: "%s · Cavero",
   },
   description:
-    "공모전·대외활동·해커톤을 프로젝트 단위로 관리하고, AI가 제출물을 평가 기준에 맞춰 분석해주는 개인용 대외활동 OS",
+    "공모전·대외활동·인턴을 한 흐름으로 관리하고, 목표 직무 기준으로 다음에 무엇을 할지 설계해주는 AI Career OS",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

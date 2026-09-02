@@ -23,8 +23,8 @@ import { BOOTSTRAP_DDL } from "./ddl";
 export type AppDb = PostgresJsDatabase<typeof schema>;
 
 const globalForDb = globalThis as unknown as {
-  __zunallDb?: AppDb;
-  __zunallReady?: Promise<void>;
+  __caveroDb?: AppDb;
+  __caveroReady?: Promise<void>;
 };
 
 function isCloudflareWorkers(): boolean {
@@ -92,14 +92,23 @@ const requestScopedDb = cache((): AppDb => {
 function resolveDb(): AppDb {
   const url = process.env.DATABASE_URL;
 
-  if (url && isCloudflareWorkers()) {
+  if (isCloudflareWorkers()) {
+    if (!url) {
+      // PGlite는 Workers에서 동작하지 않으므로, 원인을 알 수 없는 크래시 대신
+      // 무엇을 해야 하는지 알려주고 멈춘다.
+      throw new Error(
+        "DATABASE_URL 시크릿이 설정되지 않았습니다. Cloudflare 대시보드 → 해당 Worker → " +
+          "Settings → Variables and Secrets 에서 Secret 으로 추가한 뒤 다시 시도하세요. " +
+          "(상태 확인: /api/health)",
+      );
+    }
     return requestScopedDb();
   }
 
-  if (!globalForDb.__zunallDb) {
-    globalForDb.__zunallDb = url ? createPostgresDb(url, false) : createPgliteDb();
+  if (!globalForDb.__caveroDb) {
+    globalForDb.__caveroDb = url ? createPostgresDb(url, false) : createPgliteDb();
   }
-  return globalForDb.__zunallDb;
+  return globalForDb.__caveroDb;
 }
 
 /**
@@ -122,14 +131,14 @@ async function ensureSchema(): Promise<void> {
 
 /** 첫 쿼리 전에 스키마를 보장한다 (프로세스당 1회). */
 function ready(): Promise<void> {
-  if (!globalForDb.__zunallReady) {
-    globalForDb.__zunallReady = ensureSchema().catch((error) => {
+  if (!globalForDb.__caveroReady) {
+    globalForDb.__caveroReady = ensureSchema().catch((error) => {
       // 실패해도 다음 요청에서 다시 시도할 수 있도록 캐시를 비운다.
-      globalForDb.__zunallReady = undefined;
+      globalForDb.__caveroReady = undefined;
       throw error;
     });
   }
-  return globalForDb.__zunallReady;
+  return globalForDb.__caveroReady;
 }
 
 /**

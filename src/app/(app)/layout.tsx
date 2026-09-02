@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Sparkles className="h-4 w-4" />
           </span>
-          <span className="hidden text-base font-bold tracking-tight md:inline">Zunall</span>
+          <span className="hidden text-base font-bold tracking-tight md:inline">Cavero</span>
         </Link>
 
         <SidebarNav unreadCount={unread} />
