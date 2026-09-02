@@ -80,6 +80,8 @@ export function buildPrompt(action: AIAction, ctx: AIContext): string {
       );
     case "essay_coach":
       return buildEssayPrompt(ctx);
+    case "extract_profile":
+      return buildProfilePrompt(ctx);
     case "expected_questions":
       return buildAdvicePrompt(
         ctx,
@@ -269,4 +271,35 @@ ${clip(ctx.submissionText, "답변")}
 - 숫자·역할·결과가 없는 경험 서술은 반드시 개선점으로 잡아라.
 - 글자수 제한이 있으면 초과/미달을 improvements 에 넣어라.
 - rewrites 는 실제 답변에 있는 문장만 대상으로 하고 3개 이하로 하라.`;
+}
+
+/**
+ * 이력/자기소개 텍스트에서 프로필 재료를 뽑는 프롬프트.
+ * 없는 경력을 지어내지 않는 것이 가장 중요하다 — 근거는 원문에 있는 것만.
+ */
+function buildProfilePrompt(ctx: AIContext): string {
+  return `너는 커리어 코치다. 아래 사용자가 붙여넣은 이력/자기소개 글에서 프로필 재료를 정리하라.
+
+[사용자가 붙여넣은 글]
+${clip(ctx.submissionText, "이력")}
+
+다음 JSON 형식으로만 답하라.
+{
+  "headline": "한 줄 소개 (예: 데이터로 문제를 푸는 산업공학 3학년)",
+  "summary": "2~3문장 요약",
+  "skills": ["원문에서 확인되는 역량만"],
+  "evidence": [
+    {
+      "title": "활동/프로젝트/수상 이름",
+      "description": "무엇을 했고 결과가 무엇인지 (원문 근거만)",
+      "skills": ["이 경험이 증명하는 역량"],
+      "kind": "activity|project|award|certificate|education|work"
+    }
+  ]
+}
+
+원칙:
+- 원문에 없는 경험·수치·기관을 만들어내지 마라. 확실하지 않으면 넣지 마라.
+- 한 줄짜리 나열도 근거가 될 수 있으면 evidence 로 만들어라.
+- skills 는 일반적인 역량 이름으로 표준화하라 (예: "파이썬" → "Python").`;
 }

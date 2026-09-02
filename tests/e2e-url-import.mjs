@@ -27,7 +27,7 @@ try {
 
   await page.goto(`${BASE}/activities/new`);
   await page.getByLabel("활동명 *").fill("링크로 등록한 공모전");
-  await page.getByRole("button", { name: "활동 만들기" }).click();
+  await page.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await page.waitForURL(/\/activities\/[a-z0-9]{20}$/);
   const activityUrl = page.url();
 

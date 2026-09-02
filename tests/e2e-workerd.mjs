@@ -37,7 +37,7 @@ try {
 
   await page.goto(`${BASE}/activities/new`);
   await page.getByLabel("활동명 *").fill("워커드 테스트 공고");
-  await page.getByRole("button", { name: "활동 만들기" }).click();
+  await page.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await page.waitForURL(/\/activities\/[a-z0-9]{20}$/, { timeout: 30000 });
   const url = page.url();
   step("workerd: 활동 생성", true);

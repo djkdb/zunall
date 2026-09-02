@@ -143,10 +143,29 @@ export const essayCoachSchema = z.object({
 });
 export type EssayCoachResult = z.infer<typeof essayCoachSchema>;
 
+/** 이력/자기소개 텍스트에서 뽑아낸 프로필 재료 */
+export const profileExtractSchema = z.object({
+  headline: z.string().default(""),
+  summary: z.string().default(""),
+  skills: stringArray,
+  evidence: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string().default(""),
+        skills: stringArray,
+        kind: z.enum(["activity", "project", "award", "certificate", "education", "work"]).default("activity"),
+      }),
+    )
+    .default([]),
+});
+export type ProfileExtract = z.infer<typeof profileExtractSchema>;
+
 export type AIResultData =
   | { kind: "announcement"; data: AnnouncementSummary }
   | { kind: "evaluation"; data: EvaluationResult }
   | { kind: "final_check"; data: FinalCheckResult }
   | { kind: "advice"; data: AdviceResult }
   | { kind: "opportunity"; data: OpportunityRequirements }
-  | { kind: "essay"; data: EssayCoachResult };
+  | { kind: "essay"; data: EssayCoachResult }
+  | { kind: "profile"; data: ProfileExtract };

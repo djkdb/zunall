@@ -1,5 +1,6 @@
 /** 대시보드 위젯 정의. 순서가 곧 기본 표시 순서다. */
 export const DASHBOARD_WIDGETS = {
+  guide: "시작 가이드 (완료 전까지)",
   metrics: "요약 지표 (활동·일정·작업·AI)",
   careerStart: "커리어 시작 안내 / Career Score",
   mission: "오늘의 커리어 미션",
@@ -12,6 +13,7 @@ export const DASHBOARD_WIDGETS = {
 export type WidgetKey = keyof typeof DASHBOARD_WIDGETS;
 
 export const DEFAULT_WIDGETS: WidgetKey[] = [
+  "guide",
   "metrics",
   "careerStart",
   "mission",

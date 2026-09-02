@@ -21,7 +21,7 @@ try {
   await a.getByLabel("메모").fill("백업 확인용 메모");
   await a.getByLabel("태그 (쉼표로 구분)").fill("백업태그");
   await a.getByLabel("접수(지원) 마감일").fill("2026-12-01");
-  await a.getByRole("button", { name: "활동 만들기" }).click();
+  await a.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await a.waitForURL(/\/activities\/[a-z0-9]{20}$/);
   const activityUrl = a.url();
 

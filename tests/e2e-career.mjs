@@ -76,7 +76,7 @@ async function createActivityWithNotice(page, name, type, noticePath) {
   await page.getByLabel("활동명 *").fill(name);
   await page.getByLabel("활동 종류").selectOption(type);
   await page.getByLabel("상태").selectOption("planned");
-  await page.getByRole("button", { name: "활동 만들기" }).click();
+  await page.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await page.waitForURL(/\/activities\/[a-z0-9]{20}$/, { timeout: 30000 });
   const url = page.url();
   await page.goto(`${url}?tab=documents`);

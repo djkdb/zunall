@@ -19,7 +19,7 @@ try {
   await p.goto(`${BASE}/activities/new`);
   await p.getByLabel("활동명 *").fill("검색용 공모전");
   await p.getByLabel("메모").fill("이 활동의 메모에는 특수단어 오로라캠페인 이 들어있다.");
-  await p.getByRole("button", { name: "활동 만들기" }).click();
+  await p.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await p.waitForURL(/\/activities\/[a-z0-9]{20}$/);
   const url = p.url();
 

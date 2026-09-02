@@ -99,7 +99,7 @@ try {
   await page.getByLabel("활동 종류").selectOption("contest");
   await page.getByLabel("상태").selectOption("active");
   await page.getByLabel("결과물 제출 마감일").fill("2026-10-02");
-  await page.getByRole("button", { name: "활동 만들기" }).click();
+  await page.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await page.waitForURL(/\/activities\/[a-z0-9]{20}$/, { timeout: 30000 });
   const activityUrl = page.url();
   step("활동 생성 → 상세 페이지", true, activityUrl.split("/").pop());

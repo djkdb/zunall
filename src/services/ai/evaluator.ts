@@ -24,6 +24,7 @@ import {
   evaluationResultSchema,
   finalCheckSchema,
   essayCoachSchema,
+  profileExtractSchema,
   adviceResultSchema,
   opportunityRequirementsSchema,
   type AIResultData,
@@ -264,6 +265,8 @@ function schemaFor(action: AIAction) {
       return { kind: "final_check" as const, schema: finalCheckSchema };
     case "essay_coach":
       return { kind: "essay" as const, schema: essayCoachSchema };
+    case "extract_profile":
+      return { kind: "profile" as const, schema: profileExtractSchema };
     default:
       return { kind: "advice" as const, schema: adviceResultSchema };
   }

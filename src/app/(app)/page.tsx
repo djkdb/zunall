@@ -15,6 +15,7 @@ import {
 import { requireUser } from "@/lib/auth/session";
 import { parseWidgets, type WidgetKey } from "@/lib/dashboard-widgets";
 import { DashboardSettingsButton } from "@/components/dashboard/settings-button";
+import { GuideCard } from "@/components/dashboard/guide-card";
 import {
   db,
   events,
@@ -25,6 +26,7 @@ import {
   aiReviews,
   opportunityAnalyses,
   userSettings,
+  retrospectives,
 } from "@/lib/db";
 import { getActivitiesWithMeta } from "@/lib/queries";
 import { getCareerContext, getScoreTrend } from "@/lib/career-queries";
@@ -69,6 +71,7 @@ export default async function DashboardPage() {
     await db.select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1)
   )[0];
   const widgets = parseWidgets(settings?.dashboardWidgets);
+
   const show = (key: WidgetKey) => widgets.includes(key);
   const today = todayStr();
   const weekEnd = toDateStr(new Date(Date.now() + 7 * 86400000));
@@ -155,6 +158,17 @@ export default async function DashboardPage() {
       : null;
 
   // AI 평균 점수
+  const aiReviewCount = (
+    await db
+      .select({ id: aiReviews.id })
+      .from(aiReviews)
+      .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.status, "done")))
+  ).length;
+
+  const retroCount = (
+    await db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id))
+  ).length;
+
   const evalReviews = (await db
     .select()
     .from(aiReviews)
@@ -221,6 +235,18 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {show("guide") && (
+        <GuideCard
+          status={{
+            hasGoal: Boolean(careerCtx.goal),
+            hasEvidence: careerCtx.evidence.length >= 3,
+            hasActivity: allActivities.length > 0,
+            hasReview: aiReviewCount > 0,
+            hasRetro: retroCount > 0,
+          }}
+        />
+      )}
 
       {/* Career OS 영역 */}
       {show("careerStart") && (careerCtx.onboarded ? (

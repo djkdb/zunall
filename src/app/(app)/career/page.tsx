@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink, Target, ArrowRight, BookMarked } from "lucide-react";
+import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/session";
+import { db, retrospectives, activities } from "@/lib/db";
 import { getCareerContext, getScoreTrend } from "@/lib/career-queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { OnboardingWizard } from "@/components/career/onboarding-wizard";
+import { ProfileImport } from "@/components/career/profile-import";
+import { ProfileCompleteness } from "@/components/career/profile-completeness";
 import { ReadinessCard } from "@/components/career/readiness-card";
 import { SkillList } from "@/components/career/skill-list";
 import { MissionCard } from "@/components/career/mission-card";
@@ -30,6 +34,12 @@ export default async function CareerPage() {
   }
 
   const trend = await getScoreTrend(user.id);
+  const activityCount = (
+    await db.select({ id: activities.id }).from(activities).where(eq(activities.userId, user.id))
+  ).length;
+  const retrospectiveCount = (
+    await db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id))
+  ).length;
   const goalRoles = safeJsonParse<string[]>(ctx.goal?.targetRoles, []);
   const goalCompanies = safeJsonParse<string[]>(ctx.goal?.targetCompanies, []);
   const desiredRoles = safeJsonParse<string[]>(ctx.profile?.desiredRoles, []);
@@ -105,6 +115,8 @@ export default async function CareerPage() {
             </CardContent>
           </Card>
 
+          <ProfileImport />
+
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-1.5">
@@ -173,6 +185,16 @@ export default async function CareerPage() {
 
         {/* 오른쪽: 점수 + 미션 + Gap 미리보기 */}
         <div className="space-y-4">
+          <ProfileCompleteness
+            hasGoal={Boolean(ctx.goal)}
+            hasHeadline={Boolean(ctx.profile?.headline)}
+            hasSummary={Boolean(ctx.profile?.summary)}
+            skillCount={ctx.skillScores.length}
+            evidenceCount={ctx.evidence.length}
+            activityCount={activityCount}
+            retrospectiveCount={retrospectiveCount}
+            readiness={ctx.readiness}
+          />
           <ReadinessCard
             readiness={ctx.readiness}
             templateLabel={ctx.template.label}

@@ -18,7 +18,7 @@ try {
   await p.getByLabel("활동명 *").fill("아이캘 공모전, 본선");
   await p.getByLabel("접수(지원) 마감일").fill("2026-10-20");
   await p.getByLabel("발표일").fill("2026-11-20");
-  await p.getByRole("button", { name: "활동 만들기" }).click();
+  await p.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await p.waitForURL(/\/activities\/[a-z0-9]{20}$/);
 
   await p.goto(`${BASE}/calendar`);

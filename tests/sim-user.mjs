@@ -146,7 +146,7 @@ try {
 
   // ───────────────────────────── 장면 3. 활동 생성 (실수 포함)
   await page.goto(`${BASE}/activities/new`);
-  await page.getByRole("button", { name: "활동 만들기" }).click();
+  await page.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await page.waitForTimeout(600);
   text = await page.locator("main").textContent();
   note("활동명 없이 제출 → 검증 에러", text.includes("활동명을 입력해주세요"));
@@ -158,7 +158,7 @@ try {
   await page.getByLabel("중요도").selectOption("high");
   await page.getByLabel("태그 (쉼표로 구분)").fill("소셜벤처, 공모전, 수상도전");
   await page.getByLabel("메모").fill("팀원: 수빈, 도윤. 환경 주제로 도전.");
-  await page.getByRole("button", { name: "활동 만들기" }).click();
+  await page.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await page.waitForURL(/\/activities\/[a-z0-9]{20}$/, { timeout: 30000 });
   const activityUrl = page.url();
   note("활동 생성(마감일은 아직 모름) → 상세 진입", true);
@@ -365,7 +365,7 @@ try {
     text.includes("생성") && text.includes("상태 변경") && text.includes("Final 업로드"),
   );
   await page.getByLabel("나의 역할").fill("팀장 · 기획 총괄");
-  await page.getByLabel("배운 점").fill("AI 피드백으로 근거 보강의 중요성을 배웠다.");
+  await page.locator("#pf-learned").fill("AI 피드백으로 근거 보강의 중요성을 배웠다.");
   await page.getByRole("button", { name: "기록 저장" }).click();
   await page.waitForSelector("text=저장됨");
   note("포트폴리오 기록 저장", true);

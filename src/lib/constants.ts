@@ -140,6 +140,7 @@ export const AI_ACTIONS = {
   expected_questions: "예상 질문 생성",
   final_check: "제출 전 최종 검토",
   essay_coach: "자기소개서 첨삭",
+  extract_profile: "내 이력 분석",
 } as const;
 export type AIAction = keyof typeof AI_ACTIONS;
 

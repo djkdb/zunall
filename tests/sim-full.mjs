@@ -47,7 +47,7 @@ async function createActivity(page, name, deadline) {
     const field = page.getByLabel("지원 마감일");
     if (await field.count()) await field.fill(deadline);
   }
-  await page.getByRole("button", { name: "활동 만들기" }).click();
+  await page.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await page.waitForURL(/\/activities\/[a-z0-9]{20}$/);
   return page.url();
 }
@@ -211,7 +211,7 @@ await scene("마감 알림", async () => {
     await n.getByLabel("활동명 *").fill(name);
     await n.getByLabel("상태").selectOption("planned");
     await n.getByLabel("접수(지원) 마감일").fill(dday(days));
-    await n.getByRole("button", { name: "활동 만들기" }).click();
+    await n.getByRole("button", { name: "활동 만들기", exact: true }).click();
     await n.waitForURL(/\/activities\/[a-z0-9]{20}$/);
   }
   await n.goto(BASE);

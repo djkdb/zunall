@@ -21,7 +21,7 @@ try {
   await p.getByLabel("활동명 *").fill("교내 데이터 분석 공모전");
   await p.getByLabel("주최기관").fill("컴퓨터공학과");
   await p.getByLabel("상태").selectOption("won");
-  await p.getByRole("button", { name: "활동 만들기" }).click();
+  await p.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await p.waitForURL(/\/activities\/[a-z0-9]{20}$/);
   const url = p.url();
 

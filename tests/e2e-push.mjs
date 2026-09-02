@@ -42,7 +42,7 @@ try {
   await page.getByLabel("활동명 *").fill("푸시 테스트 공모전");
   await page.getByLabel("상태").selectOption("planned");
   await page.getByLabel("접수(지원) 마감일").fill(dday(1));
-  await page.getByRole("button", { name: "활동 만들기" }).click();
+  await page.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await page.waitForURL(/\/activities\/[a-z0-9]{20}$/);
 
   await page.goto(`${BASE}/settings`);

@@ -87,3 +87,7 @@ jobs:
         run: node tests/e2e-widgets.mjs
       - name: 빠른 등록 E2E
         run: node tests/e2e-quick-create.mjs
+      - name: 이력 채우기 E2E
+        run: node tests/e2e-profile-import.mjs
+      - name: 시작 가이드 E2E
+        run: node tests/e2e-guide.mjs

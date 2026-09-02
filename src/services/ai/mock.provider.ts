@@ -42,6 +42,8 @@ export class MockProvider implements AIProvider {
         return JSON.stringify(expectedQuestions(ctx));
       case "essay_coach":
         return JSON.stringify(essayCoach(ctx));
+      case "extract_profile":
+        return JSON.stringify(extractProfile(ctx));
       default:
         return JSON.stringify(improvements(ctx));
     }
@@ -742,4 +744,57 @@ function essayCoach(ctx: AIContext): Record<string, unknown> {
     improvements,
     rewrites,
   };
+}
+
+/**
+ * 이력 텍스트에서 프로필 재료 추출 (mock).
+ * 줄 단위로 훑어 '경험처럼 보이는 줄'을 근거로 만들고, 문장에서 스킬을 감지한다.
+ * AI 없이도 붙여넣기 한 번으로 점수 근거가 쌓이도록 하는 것이 목적이다.
+ */
+function extractProfile(ctx: AIContext): Record<string, unknown> {
+  const text = ctx.submissionText;
+  const lines = text
+    .split(/\n+/)
+    .map((line) => line.replace(/^[\s•·\-*▪◦\d.)]+/, "").trim())
+    .filter((line) => line.length >= 6);
+
+  const skills = detectSkills(text, 12);
+
+  const KIND_RULES: Array<[RegExp, string]> = [
+    [/수상|입상|대상|최우수|우수상|장려상|1위|우승/, "award"],
+    [/자격증|기사|산업기사|토익|TOEIC|OPIc|자격 취득/i, "certificate"],
+    [/인턴|근무|재직|회사|사원|팀에서/, "work"],
+    [/학과|전공|대학교|졸업|이수|부트캠프|교육/, "education"],
+    [/프로젝트|개발|제작|구축|설계/, "project"],
+  ];
+
+  const evidence: Array<Record<string, unknown>> = [];
+  for (const line of lines) {
+    if (evidence.length >= 12) break;
+    // 소개 문장이 아니라 '한 일'로 보이는 줄만 근거로 삼는다
+    const looksLikeExperience =
+      /\d{4}|공모전|프로젝트|인턴|동아리|학회|대회|봉사|수상|자격|교육|운영|개발|기획|분석|설계|제작/.test(
+        line,
+      );
+    if (!looksLikeExperience) continue;
+
+    const lineSkills = detectSkills(line, 4);
+    const kind = KIND_RULES.find(([pattern]) => pattern.test(line))?.[1] ?? "activity";
+    // 제목과 설명을 나눈다 (구분자가 있으면 앞부분을 제목으로)
+    const [head, ...rest] = line.split(/\s[-–—:|]\s|\s{2,}/);
+    evidence.push({
+      title: head.slice(0, 80),
+      description: rest.join(" ").slice(0, 300),
+      skills: lineSkills.length > 0 ? lineSkills : skills.slice(0, 2),
+      kind,
+    });
+  }
+
+  const first = lines[0] ?? "";
+  const headline = first.length <= 60 ? first : first.slice(0, 57) + "…";
+  const summary =
+    lines.slice(0, 3).join(" ").slice(0, 300) ||
+    "붙여넣은 글에서 요약할 문장을 찾지 못했습니다.";
+
+  return { headline, summary, skills, evidence };
 }

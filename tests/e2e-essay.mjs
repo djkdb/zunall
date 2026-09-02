@@ -19,7 +19,7 @@ try {
 
   await p.goto(`${BASE}/activities/new`);
   await p.getByLabel("활동명 *").fill("자소서 테스트 인턴");
-  await p.getByRole("button", { name: "활동 만들기" }).click();
+  await p.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await p.waitForURL(/\/activities\/[a-z0-9]{20}$/);
   const url = p.url();
 
