@@ -6,6 +6,7 @@ import { neon } from "@neondatabase/serverless";
 import { cache } from "react";
 import * as schema from "./schema";
 import { BOOTSTRAP_DDL } from "./ddl";
+import { normalizeDatabaseUrl } from "./url";
 
 /**
  * PostgreSQL 단일 다이얼렉트 DB 레이어.
@@ -26,6 +27,14 @@ const globalForDb = globalThis as unknown as {
   __caveroDb?: AppDb;
   __caveroReady?: Promise<void>;
 };
+
+/** 앞뒤 군더더기를 걷어낸 접속 문자열. 미설정이면 undefined */
+export function databaseUrl(): string | undefined {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) return undefined;
+  const normalized = normalizeDatabaseUrl(raw);
+  return normalized || undefined;
+}
 
 function isCloudflareWorkers(): boolean {
   const nav = (globalThis as { navigator?: { userAgent?: string } }).navigator;
@@ -83,14 +92,14 @@ function createPgliteDb(): AppDb {
  * 요청이 끝나면 인스턴스가 버려진다 = 요청 간 소켓 재사용이 발생하지 않는다.
  */
 const requestScopedDb = cache((): AppDb => {
-  const url = process.env.DATABASE_URL!;
+  const url = databaseUrl()!;
   // HTTP 드라이버는 상태를 갖지 않으므로 요청 간 재사용 문제가 없지만,
   // 일관성을 위해 동일한 요청 범위 경로를 사용한다.
   return useNeonHttp(url, true) ? createNeonHttpDb(url) : createPostgresDb(url, true);
 });
 
 function resolveDb(): AppDb {
-  const url = process.env.DATABASE_URL;
+  const url = databaseUrl();
 
   if (isCloudflareWorkers()) {
     if (!url) {
@@ -118,7 +127,7 @@ function resolveDb(): AppDb {
  *   자동 실행하지 않는다. 로컬 개발/테스트 편의를 위해 DB_AUTO_MIGRATE=1 일 때만 실행.
  */
 async function ensureSchema(): Promise<void> {
-  const url = process.env.DATABASE_URL;
+  const url = databaseUrl();
   const shouldRun = !url || process.env.DB_AUTO_MIGRATE === "1";
   if (!shouldRun) return;
   const database = resolveDb();

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { databaseKind } from "@/lib/db/info";
 import { storageBackend } from "@/lib/storage";
 import { REQUIRED_TABLES } from "@/lib/db/ddl";
+import { inspectDatabaseUrl } from "@/lib/db/url";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,13 @@ export async function GET() {
     database: string;
     databaseUrlSet: boolean;
     connected: boolean;
+    databaseUrl?: {
+      scheme: string | null;
+      hostSuffix: string | null;
+      hasCredentials: boolean;
+      cleaned: boolean;
+      issues: string[];
+    };
     missingTables: string[];
     storage: string;
     aiProvider: string;
@@ -39,6 +47,17 @@ export async function GET() {
     aiProvider: process.env.AI_PROVIDER || "mock",
     problems: [],
   };
+
+  if (configured) {
+    const inspection = inspectDatabaseUrl(process.env.DATABASE_URL!);
+    report.databaseUrl = inspection;
+    if (inspection.issues.length > 0) {
+      report.problems.push(
+        `DATABASE_URL 값에 문제가 있습니다: ${inspection.issues.join(" / ")}`,
+      );
+      return NextResponse.json(report, { status: 503 });
+    }
+  }
 
   if (!configured && onWorkers) {
     report.problems.push(

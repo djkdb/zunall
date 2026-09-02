@@ -322,8 +322,11 @@ Type 을 **Secret** 으로 두고 두 개를 추가합니다.
 | 증상 | 의미 | 해결 |
 | --- | --- | --- |
 | `databaseUrlSet: false` | 이 Worker에 DATABASE_URL 시크릿이 없음 | 대시보드 → Settings → Variables and Secrets 에 Secret 으로 추가 |
-| `connected: false` | DB 주소는 있으나 접속 실패 | 연결 문자열·비밀번호 확인 |
+| `connected: false` + `databaseUrl.issues` | 접속 문자열 값 자체가 잘못됨 | issues 에 적힌 대로 수정 (따옴표·`psql ` 접두사·줄바꿈은 자동으로 걷어냄) |
+| `connected: false` (issues 없음) | 주소는 정상이나 접속 실패 | 비밀번호·호스트·DB 이름 확인 |
 | `missingTables` 에 목록 | 스키마 미적용 | `schema.sql` 을 SQL 콘솔에서 실행 |
+
+`databaseUrl` 항목은 스킴·호스트 뒤 두 마디·자격증명 유무만 보여주며 비밀번호는 노출하지 않습니다.
 
 **Worker 이름을 바꾸거나 새로 만들면 시크릿은 따라오지 않습니다.** 새 Worker에 다시
 등록해야 하며, 이때 `Application error` 대신 위 안내 문구가 화면에 표시됩니다.

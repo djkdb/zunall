@@ -14,7 +14,8 @@
     "build:cf": "opennextjs-cloudflare build",
     "deploy:cf": "tsx scripts/preflight-cf.ts && opennextjs-cloudflare build && tsx scripts/check-worker-size.ts && wrangler deploy",
     "preflight:cf": "tsx scripts/preflight-cf.ts",
-    "size:cf": "tsx scripts/check-worker-size.ts"
+    "size:cf": "tsx scripts/check-worker-size.ts",
+    "test:url": "tsx tests/db-url.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
