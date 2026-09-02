@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
-import { Sparkles, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { CaveroMark } from "@/components/brand/logo";
 import { requireUser } from "@/lib/auth/session";
 import { db, notifications } from "@/lib/db";
 import { logout } from "@/actions/auth";
@@ -23,10 +24,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen">
       <aside className="fixed inset-y-0 left-0 z-40 flex w-14 flex-col border-r bg-card px-2 py-4 md:w-56 md:px-3">
         <Link href="/" className="flex items-center gap-2 px-2 py-1">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Sparkles className="h-4 w-4" />
-          </span>
-          <span className="hidden text-base font-bold tracking-tight md:inline">Cavero</span>
+          <CaveroMark className="h-7 w-7 text-[#0F2338] dark:text-foreground" />
+          <span className="hidden text-base font-bold tracking-[0.18em] md:inline">CAVERO</span>
         </Link>
 
         <SidebarNav unreadCount={unread} />

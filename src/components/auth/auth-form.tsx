@@ -3,8 +3,9 @@
 import * as React from "react";
 import { useActionState } from "react";
 import Link from "next/link";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { login, signup, type AuthFormState } from "@/actions/auth";
+import { CaveroMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,10 +49,8 @@ export function AuthForm({
     <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 dark:bg-background">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Sparkles className="h-5 w-5" />
-          </span>
-          <h1 className="text-xl font-bold tracking-tight">Cavero</h1>
+          <CaveroMark className="h-12 w-12 text-[#0F2338] dark:text-foreground" />
+          <h1 className="text-xl font-bold tracking-[0.3em]">CAVERO</h1>
           <p className="text-center text-sm text-muted-foreground">
             스펙을 쌓는 게 아니라, 다음 합격을 설계합니다
           </p>
