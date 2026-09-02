@@ -15,6 +15,10 @@ const OAUTH_ERRORS: Record<string, string> = {
   google_cancelled: "구글 로그인을 취소했습니다.",
   google_state: "보안 확인에 실패했습니다. 다시 시도해주세요.",
   google_unverified: "이메일이 확인되지 않은 구글 계정입니다.",
+  google_token:
+    "구글 인증 정보가 맞지 않습니다. GOOGLE_CLIENT_ID·SECRET 과 콘솔의 리디렉션 URI 를 확인해주세요.",
+  google_db:
+    "데이터베이스에 구글 로그인용 컬럼이 없습니다. migrations/001-google-login.sql 을 실행해주세요.",
   google_failed: "구글 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.",
 };
 

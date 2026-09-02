@@ -24,9 +24,17 @@ export async function GET(request: NextRequest) {
     return fail("google_state");
   }
 
+  let profile;
   try {
-    const profile = await exchangeCode(code, callbackUrl(request.url, request.headers));
-    if (!profile.emailVerified) return fail("google_unverified");
+    profile = await exchangeCode(code, callbackUrl(request.url, request.headers));
+  } catch (error) {
+    // 클라이언트 ID/시크릿이 틀렸거나 리디렉션 URI 가 콘솔 설정과 다를 때
+    console.error("google token exchange failed:", error instanceof Error ? error.message : error);
+    return fail("google_token");
+  }
+  if (!profile.emailVerified) return fail("google_unverified");
+
+  try {
 
     const byGoogle = (
       await db.select().from(users).where(eq(users.googleId, profile.googleId)).limit(1)
@@ -66,7 +74,12 @@ export async function GET(request: NextRequest) {
     response.cookies.delete(STATE_COOKIE);
     return response;
   } catch (error) {
-    console.error("google oauth callback failed:", error instanceof Error ? error.message : error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("google oauth callback failed:", message);
+    // users 테이블에 google_id / avatar_url 이 없으면 여기서 걸린다
+    if (/column .*(google_id|avatar_url)|does not exist/i.test(message)) {
+      return fail("google_db");
+    }
     return fail("google_failed");
   }
 }

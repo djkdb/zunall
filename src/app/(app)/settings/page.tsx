@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { getProviderName } from "@/services/ai/provider";
+import { getProviderName, providerFallbackReason } from "@/services/ai/provider";
 import { storageBackend } from "@/lib/storage";
 import { databaseKind } from "@/lib/db/info";
 import { NOTIFY_THRESHOLDS } from "@/lib/constants";
@@ -20,6 +20,7 @@ export const metadata: Metadata = { title: "설정" };
 export default async function SettingsPage() {
   const user = await requireUser();
   const provider = getProviderName();
+  const providerNotice = providerFallbackReason();
   const storage = storageBackend();
   const database = databaseKind();
 
@@ -64,6 +65,11 @@ export default async function SettingsPage() {
             <span className="text-muted-foreground">현재 AI Provider</span>
             <Badge variant={provider === "claude" ? "default" : "secondary"}>{provider}</Badge>
           </div>
+          {providerNotice && (
+            <p className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground">
+              {providerNotice}
+            </p>
+          )}
           <p className="text-xs leading-relaxed text-muted-foreground">
             서버 환경변수 <code className="rounded bg-secondary px-1">AI_PROVIDER</code>로
             설정합니다. <code className="rounded bg-secondary px-1">mock</code>은 Claude 없이

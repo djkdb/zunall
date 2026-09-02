@@ -7,6 +7,7 @@ import { cache } from "react";
 import * as schema from "./schema";
 import { BOOTSTRAP_DDL } from "./ddl";
 import { normalizeDatabaseUrl } from "./url";
+import { isCloudflareWorkers } from "@/lib/runtime";
 
 /**
  * PostgreSQL 단일 다이얼렉트 DB 레이어.
@@ -34,11 +35,6 @@ export function databaseUrl(): string | undefined {
   if (!raw) return undefined;
   const normalized = normalizeDatabaseUrl(raw);
   return normalized || undefined;
-}
-
-function isCloudflareWorkers(): boolean {
-  const nav = (globalThis as { navigator?: { userAgent?: string } }).navigator;
-  return nav?.userAgent === "Cloudflare-Workers";
 }
 
 /**

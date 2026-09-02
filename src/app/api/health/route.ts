@@ -5,6 +5,8 @@ import { databaseKind } from "@/lib/db/info";
 import { storageBackend } from "@/lib/storage";
 import { REQUIRED_TABLES } from "@/lib/db/ddl";
 import { inspectDatabaseUrl } from "@/lib/db/url";
+import { getProviderName, providerFallbackReason } from "@/services/ai/provider";
+import { isCloudflareWorkers } from "@/lib/runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +16,7 @@ export const dynamic = "force-dynamic";
  * 접속 문자열·키 같은 비밀값은 절대 노출하지 않는다.
  */
 export async function GET() {
-  const onWorkers =
-    (globalThis as { navigator?: { userAgent?: string } }).navigator?.userAgent ===
-    "Cloudflare-Workers";
+  const onWorkers = isCloudflareWorkers();
   const configured = Boolean(process.env.DATABASE_URL);
 
   const report: {
@@ -33,9 +33,11 @@ export async function GET() {
       issues: string[];
     };
     missingTables: string[];
+    missingColumns: string[];
     storage: string;
     aiProvider: string;
     problems: string[];
+    notices: string[];
   } = {
     ok: false,
     runtime: onWorkers ? "cloudflare-workers" : "node",
@@ -43,10 +45,15 @@ export async function GET() {
     databaseUrlSet: configured,
     connected: false,
     missingTables: [],
+    missingColumns: [],
     storage: storageBackend(),
-    aiProvider: process.env.AI_PROVIDER || "mock",
+    aiProvider: getProviderName(),
     problems: [],
+    notices: [],
   };
+
+  const aiNotice = providerFallbackReason();
+  if (aiNotice) report.notices.push(aiNotice);
 
   if (configured) {
     const inspection = inspectDatabaseUrl(process.env.DATABASE_URL!);
@@ -80,6 +87,24 @@ export async function GET() {
       report.problems.push(
         `테이블 ${report.missingTables.length}개가 없습니다. 저장소의 schema.sql 전체를 ` +
           "DB 콘솔(Neon SQL Editor 등)에 붙여넣고 실행하세요.",
+      );
+    }
+
+    // 나중에 추가된 컬럼(구글 로그인 등)은 테이블이 있어도 빠져 있을 수 있다
+    const colRows = (await db.execute(
+      sql`SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'`,
+    )) as unknown as
+      | Array<{ table_name: string; column_name: string }>
+      | { rows?: Array<{ table_name: string; column_name: string }> };
+    const colList = Array.isArray(colRows) ? colRows : (colRows.rows ?? []);
+    const columns = new Set(colList.map((c) => `${c.table_name}.${c.column_name}`));
+    const REQUIRED_COLUMNS = ["users.google_id", "users.avatar_url"];
+    report.missingColumns = REQUIRED_COLUMNS.filter((c) => !columns.has(c));
+    if (report.missingColumns.length > 0) {
+      report.problems.push(
+        `컬럼이 빠져 있습니다: ${report.missingColumns.join(", ")}. ` +
+          "저장소의 migrations/001-google-login.sql 을 DB 콘솔에서 실행하세요. " +
+          "(구글 로그인이 '실패했습니다'로 끝나는 원인입니다)",
       );
     }
   } catch (error) {
