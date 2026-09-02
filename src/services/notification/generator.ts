@@ -23,10 +23,20 @@ export async function ensureDeadlineNotifications(userId: string): Promise<void>
     .from(activities)
     .where(and(eq(activities.userId, userId), inArray(activities.status, [...ONGOING_STATUSES, "interested"])));
 
+  // 활동 마감일에서 이미 알린 (활동, 날짜)는 기억해둔다.
+  // 활동을 만들면 같은 마감일로 일정도 함께 생기므로, 그대로 두면 알림이 두 번 뜬다.
+  const notified = new Set<string>();
+  const mark = (activityId: string | null, date: string | null | undefined) => {
+    if (activityId && date) notified.add(`${activityId}:${date}`);
+  };
+
   for (const act of acts) {
-    checkDeadline(userId, act.id, act.name, "지원 마감", act.applyDeadline, `act:${act.id}:apply`);
-    checkDeadline(userId, act.id, act.name, "결과물 제출", act.submitDeadline, `act:${act.id}:submit`);
-    checkDeadline(userId, act.id, act.name, "결과 발표", act.announceDate, `act:${act.id}:announce`);
+    await checkDeadline(userId, act.id, act.name, "지원 마감", act.applyDeadline, `act:${act.id}:apply`);
+    await checkDeadline(userId, act.id, act.name, "결과물 제출", act.submitDeadline, `act:${act.id}:submit`);
+    await checkDeadline(userId, act.id, act.name, "결과 발표", act.announceDate, `act:${act.id}:announce`);
+    mark(act.id, act.applyDeadline);
+    mark(act.id, act.submitDeadline);
+    mark(act.id, act.announceDate);
   }
 
   const activityNames = new Map(acts.map((a) => [a.id, a.name]));
@@ -36,17 +46,15 @@ export async function ensureDeadlineNotifications(userId: string): Promise<void>
     .where(and(eq(events.userId, userId), inArray(events.type, DEADLINE_EVENT_TYPES)));
 
   for (const evt of evts) {
+    // 활동 마감일로 이미 알린 날짜면 건너뛴다
+    if (evt.activityId && notified.has(`${evt.activityId}:${evt.date}`)) continue;
+
     const actName = evt.activityId ? activityNames.get(evt.activityId) : undefined;
-    // 활동 마감일과 중복될 수 있으므로 일정 자체 이름으로 알림
+    // 일정 제목이 이미 활동명을 포함하면 겹쳐 쓰지 않는다
+    const subject =
+      actName && !evt.title.includes(actName) ? `${actName} · ${evt.title}` : evt.title;
     const label = `${EVENT_TYPES[evt.type as EventType] ?? evt.title}`;
-    checkDeadline(
-      userId,
-      evt.activityId,
-      actName ? `${actName} · ${evt.title}` : evt.title,
-      label,
-      evt.date,
-      `event:${evt.id}`,
-    );
+    await checkDeadline(userId, evt.activityId, subject, label, evt.date, `event:${evt.id}`);
   }
 }
 

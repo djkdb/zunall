@@ -15,7 +15,8 @@
     "deploy:cf": "tsx scripts/preflight-cf.ts && opennextjs-cloudflare build && tsx scripts/check-worker-size.ts && wrangler deploy",
     "preflight:cf": "tsx scripts/preflight-cf.ts",
     "size:cf": "tsx scripts/check-worker-size.ts",
-    "test:url": "tsx tests/db-url.test.ts"
+    "test:url": "tsx tests/db-url.test.ts",
+    "sim": "node tests/sim-user.mjs && node tests/sim-full.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
