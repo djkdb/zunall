@@ -1,5 +1,5 @@
 /** 자기소개서 문항별 코칭 E2E. 실행: node tests/e2e-essay.mjs */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 const BASE = process.env.BASE ?? "http://localhost:3000";
 const results = [];
 const step = (n, ok, d = "") => { results.push(ok); console.log(`${ok ? "✅" : "❌"} ${n}${d ? ` — ${d}` : ""}`); };
@@ -7,7 +7,7 @@ const step = (n, ok, d = "") => { results.push(ok); console.log(`${ok ? "✅" : 
 const weak = `저는 팀 프로젝트에 참여하며 최선을 다했습니다. 우리는 서비스를 만들었고 많은 것을 배웠습니다. 앞으로도 노력하겠습니다.`;
 const strong = `저는 4인 팀에서 백엔드를 맡아 결제 API를 설계했습니다. 응답 지연이 잦다는 사용자 리포트를 확인하고 쿼리 구조를 바꿔 평균 응답을 820ms에서 210ms로 줄였습니다. 그 결과 결제 이탈률이 12%에서 5%로 떨어졌고, 재구매율은 3주 만에 18% 올랐습니다. 이 과정에서 성능 문제는 감이 아니라 측정으로 접근해야 한다는 기준을 세웠습니다.`;
 
-const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const b = await launchBrowser();
 const p = await b.newPage(); p.setDefaultTimeout(30000);
 try {
   await p.goto(`${BASE}/signup`);

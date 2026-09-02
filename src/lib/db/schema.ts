@@ -56,6 +56,14 @@ export const pushSubscriptions = pgTable(
   (t) => [index("idx_push_user").on(t.userId)],
 );
 
+/** 사용자별 화면 설정 (대시보드 위젯 등) */
+export const userSettings = pgTable("user_settings", {
+  userId: text("user_id").primaryKey(),
+  /** 위젯 키 배열 (JSON). 순서가 곧 표시 순서, 목록에 없으면 숨김 */
+  dashboardWidgets: text("dashboard_widgets"),
+  updatedAt: epochMs("updated_at").notNull(),
+});
+
 export const sessions = pgTable("sessions", {
   token: text("token").primaryKey(),
   userId: text("user_id").notNull(),

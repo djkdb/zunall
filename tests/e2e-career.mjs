@@ -4,7 +4,7 @@
  * → Today's Mission → Task 완료 → 미션 완료 알림 → 로드맵 → 통계 → 기존 기능 회귀.
  * 실행: 서버(3000) 기동 후 `node tests/e2e-career.mjs`
  */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 import fs from "node:fs";
 
 const BASE = "http://localhost:3000";
@@ -90,9 +90,7 @@ async function createActivityWithNotice(page, name, type, noticePath) {
 
 let browser;
 try {
-  browser = await chromium.launch({
-    executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium",
-  });
+  browser = await launchBrowser();
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.setDefaultTimeout(25000);
   const email = `career-${Date.now()}@test.local`;
@@ -105,7 +103,7 @@ try {
   await page.getByRole("button", { name: "회원가입" }).click();
   await page.waitForURL(`${BASE}/`);
   let text = await page.locator("main").textContent();
-  step("신규 대시보드에 Career OS 시작 안내", text.includes("AI Career OS를 시작해보세요"));
+  step("신규 대시보드에 시작 안내 배너", text.includes("CAVERO 시작하기"));
 
   // ── 2. 온보딩 위저드
   await page.goto(`${BASE}/career`);

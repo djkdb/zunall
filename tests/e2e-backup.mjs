@@ -1,10 +1,10 @@
 /** 데이터 내보내기/가져오기 E2E. 실행: node tests/e2e-backup.mjs */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 const BASE = process.env.BASE ?? "http://localhost:3000";
 const results = [];
 const step = (n, ok, d = "") => { results.push(ok); console.log(`${ok ? "✅" : "❌"} ${n}${d ? ` — ${d}` : ""}`); };
 
-const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const b = await launchBrowser();
 try {
   // A 계정: 데이터 만들고 내보내기
   const a = await b.newPage(); a.setDefaultTimeout(30000);

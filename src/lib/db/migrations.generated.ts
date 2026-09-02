@@ -36,4 +36,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "007-fix-all-epoch-columns.sql",
     sql: "-- 시간(밀리초) 컬럼을 이름으로 찾아 전부 BIGINT 로 바꾼다.\n--\n-- 006 은 코드가 아는 컬럼만 고쳤다. 예전 버전 스키마로 만든 DB 에는 목록에 없는\n-- 컬럼이 남아 있을 수 있어(그 경우 \"out of range for type integer\" 가 계속 난다),\n-- 여기서는 information_schema 를 뒤져 _at 으로 끝나는 정수 컬럼을 모두 교정한다.\n-- 여러 번 실행해도 안전하다.\n\nDO $$\nDECLARE\n  target RECORD;\nBEGIN\n  FOR target IN\n    SELECT c.table_name, c.column_name\n    FROM information_schema.columns c\n    JOIN information_schema.tables t\n      ON t.table_schema = c.table_schema AND t.table_name = c.table_name\n    WHERE c.table_schema = 'public'\n      AND t.table_type = 'BASE TABLE'\n      AND c.data_type IN ('integer', 'smallint')\n      AND (c.column_name LIKE '%\\_at' OR c.column_name IN ('expires', 'timestamp'))\n  LOOP\n    EXECUTE format(\n      'ALTER TABLE public.%I ALTER COLUMN %I TYPE BIGINT',\n      target.table_name,\n      target.column_name\n    );\n    RAISE NOTICE 'BIGINT 로 변경: %.%', target.table_name, target.column_name;\n  END LOOP;\nEND\n$$;\n",
   },
+  {
+    name: "008-user-settings.sql",
+    sql: "-- 사용자별 화면 설정(대시보드 위젯 구성).\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nCREATE TABLE IF NOT EXISTS user_settings (\n  user_id TEXT PRIMARY KEY,\n  dashboard_widgets TEXT,\n  updated_at BIGINT NOT NULL\n);\n",
+  },
 ];

@@ -4,7 +4,7 @@
  * 정상 흐름뿐 아니라 실수(잘못된 로그인, 필수값 누락, 금지 파일 업로드),
  * 개선 후 재평가(점수 변화), 모바일 화면까지 확인한다.
  */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 import fs from "node:fs";
 
 const BASE = "http://localhost:3000";
@@ -109,7 +109,7 @@ fs.writeFileSync(files.exe, "MZfake-binary");
 
 let browser;
 try {
-  browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium" });
+  browser = await launchBrowser();
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   page.setDefaultTimeout(20000);
   const email = `jimin-${Date.now()}@test.local`;

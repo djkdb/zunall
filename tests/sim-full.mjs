@@ -6,7 +6,7 @@
  * 준비: 앱(3000) + 가짜 구글(8790) 기동
  * 실행: node tests/sim-full.mjs
  */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 import fs from "node:fs";
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
@@ -52,7 +52,7 @@ async function createActivity(page, name, deadline) {
   return page.url();
 }
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 1440, height: 950 } });
 page.setDefaultTimeout(25000);
 const stamp = Date.now();

@@ -13,6 +13,8 @@ import {
   Crosshair,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
+import { parseWidgets, type WidgetKey } from "@/lib/dashboard-widgets";
+import { DashboardSettingsButton } from "@/components/dashboard/settings-button";
 import {
   db,
   events,
@@ -22,6 +24,7 @@ import {
   submissionVersions,
   aiReviews,
   opportunityAnalyses,
+  userSettings,
 } from "@/lib/db";
 import { getActivitiesWithMeta } from "@/lib/queries";
 import { getCareerContext, getScoreTrend } from "@/lib/career-queries";
@@ -60,6 +63,13 @@ function greeting(): string {
 
 export default async function DashboardPage() {
   const user = await requireUser();
+
+  // 사용자가 고른 대시보드 구성 (없으면 기본값)
+  const settings = (
+    await db.select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1)
+  )[0];
+  const widgets = parseWidgets(settings?.dashboardWidgets);
+  const show = (key: WidgetKey) => widgets.includes(key);
   const today = todayStr();
   const weekEnd = toDateStr(new Date(Date.now() + 7 * 86400000));
 
@@ -202,15 +212,18 @@ export default async function DashboardPage() {
             {unreadCount > 0 && ` · 읽지 않은 알림 ${unreadCount}개`}
           </p>
         </div>
-        <Link href="/activities/new">
-          <Button size="sm">
-            <Plus className="h-4 w-4" /> 새 활동
-          </Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          <DashboardSettingsButton current={widgets} />
+          <Link href="/activities/new">
+            <Button size="sm">
+              <Plus className="h-4 w-4" /> 새 활동
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Career OS 영역 */}
-      {careerCtx.onboarded ? (
+      {show("careerStart") && (careerCtx.onboarded ? (
         <>
           <div className="grid gap-4 lg:grid-cols-3">
             <ReadinessCard
@@ -255,6 +268,7 @@ export default async function DashboardPage() {
                 </Link>
               </CardContent>
             </Card>
+            {show("mission") && (
             <MissionCard
               mission={careerCtx.mission}
               activeTask={
@@ -263,6 +277,7 @@ export default async function DashboardPage() {
                   : null
               }
             />
+            )}
           </div>
 
           {recommendedOpps.length > 0 && (
@@ -311,9 +326,10 @@ export default async function DashboardPage() {
             </Link>
           </CardContent>
         </Card>
-      )}
+      ))}
 
       {/* 통계 카드 */}
+      {show("metrics") && (
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={<FolderKanban className="h-4 w-4" />}
@@ -340,10 +356,12 @@ export default async function DashboardPage() {
           href="/stats"
         />
       </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {/* TODAY / UPCOMING */}
+          {show("deadlines") && (
           <Card>
             <CardHeader>
               <CardTitle>다가오는 마감</CardTitle>
@@ -391,6 +409,7 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* 마감 임박 활동 */}
           {imminent.length > 0 && (
@@ -405,7 +424,7 @@ export default async function DashboardPage() {
           )}
 
           {/* 최근 추가된 활동 */}
-          {recentActivities.length > 0 && imminent.length === 0 && (
+          {show("activities") && recentActivities.length > 0 && imminent.length === 0 && (
             <section>
               <h2 className="mb-2 text-sm font-semibold text-muted-foreground">최근 추가된 활동</h2>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -437,6 +456,7 @@ export default async function DashboardPage() {
 
         <div className="space-y-4">
           {/* 오늘 해야 할 일 */}
+          {show("tasks") && (
           <Card>
             <CardHeader>
               <CardTitle>해야 할 일</CardTitle>
@@ -455,6 +475,7 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* AI 평가 필요 / 제출 예정 */}
           {(needsReview.length > 0 || upcomingSubs.length > 0) && (
@@ -513,6 +534,7 @@ export default async function DashboardPage() {
           )}
 
           {/* 최근 알림 */}
+          {show("notifications") && (
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-1.5">
@@ -545,6 +567,7 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
+          )}
         </div>
       </div>
     </div>

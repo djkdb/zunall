@@ -3,7 +3,7 @@
  * 준비: 가짜 구글 서버 기동 + 앱을 GOOGLE_* 환경변수와 함께 기동
  * 실행: BASE=http://localhost:3000 node tests/e2e-google.mjs
  */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
 const results = [];
@@ -12,7 +12,7 @@ const step = (name, ok, detail = "") => {
   console.log(`${ok ? "✅" : "❌"} ${name}${detail ? ` — ${detail}` : ""}`);
 };
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const browser = await launchBrowser();
 const page = await browser.newPage();
 page.setDefaultTimeout(30000);
 

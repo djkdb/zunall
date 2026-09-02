@@ -1,10 +1,10 @@
 /** 캘린더 구독(.ics) E2E. 실행: node tests/e2e-calendar-ics.mjs */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 const BASE = process.env.BASE ?? "http://localhost:3000";
 const results = [];
 const step = (n, ok, d = "") => { results.push(ok); console.log(`${ok ? "✅" : "❌"} ${n}${d ? ` — ${d}` : ""}`); };
 
-const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const b = await launchBrowser();
 const p = await b.newPage(); p.setDefaultTimeout(30000);
 try {
   await p.goto(`${BASE}/signup`);

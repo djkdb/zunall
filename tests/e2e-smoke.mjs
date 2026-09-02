@@ -5,7 +5,7 @@
  * E2E 스모크 테스트: 회원가입 → 활동 생성 → 공고 업로드 → AI 공고 분석 →
  * 분석 결과 반영 → 제출물 생성 → 버전 업로드 → AI 평가 → 작업 생성 → 최종 검토
  */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 import fs from "node:fs";
 
 const BASE = "http://localhost:3000";
@@ -78,9 +78,7 @@ fs.writeFileSync(announcementPath, announcement);
 fs.writeFileSync(proposalPath, proposal);
 
 try {
-  browser = await chromium.launch({
-    executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium",
-  });
+  browser = await launchBrowser();
   const page = await browser.newPage();
   page.setDefaultTimeout(20000);
 

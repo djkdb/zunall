@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  check:
+    name: 타입·린트·빌드·단위 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:unit
+      - run: npm run build
+      - name: Workers 번들 빌드 + 크기 확인 (무료 플랜 3MB)
+        run: npm run build:cf && npm run size:cf
+
+  e2e:
+    name: 브라우저 E2E (실제 PostgreSQL)
+    runs-on: ubuntu-latest
+    # 브라우저가 미리 설치된 공식 이미지를 쓴다 (설치 시간·실패 요인 제거)
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cavero
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # 서비스 컨테이너는 호스트 이름으로 접근한다
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cavero
+      DB_AUTO_MIGRATE: "1"
+      AI_PROVIDER: mock
+      ALLOW_PRIVATE_FETCH: "1"
+      CRON_KEY: ci-cron-key
+      BASE: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Chromium 경로 확인
+        run: echo "CHROMIUM_PATH=$(ls -d /ms-playwright/chromium-*/chrome-linux/chrome | head -1)" >> "$GITHUB_ENV"
+      - run: npm run build
+      - name: 앱 기동
+        run: |
+          npx next start &
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:3000/login && exit 0
+            sleep 2
+          done
+          echo "앱이 뜨지 않았습니다"; exit 1
+      - name: 활동 E2E
+        run: node tests/e2e-smoke.mjs
+      - name: Career E2E
+        run: node tests/e2e-career.mjs
+      - name: 전체 기능 시뮬레이션
+        run: node tests/sim-full.mjs
+      - name: 캘린더 구독 E2E
+        run: node tests/e2e-calendar-ics.mjs
+      - name: 자소서 코칭 E2E
+        run: node tests/e2e-essay.mjs
+      - name: 회고·포트폴리오 E2E
+        run: node tests/e2e-retro-portfolio.mjs
+      - name: 검색·미리보기 E2E
+        run: node tests/e2e-search-preview.mjs
+      - name: 백업 E2E
+        run: node tests/e2e-backup.mjs
+      - name: 대시보드 위젯 E2E
+        run: node tests/e2e-widgets.mjs

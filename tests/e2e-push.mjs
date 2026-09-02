@@ -6,7 +6,7 @@
  * 준비: 가짜 푸시 서비스(8796) + 앱(VAPID_*, CRON_KEY 설정) 기동
  * 실행: node tests/e2e-push.mjs
  */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 import postgres from "../node_modules/postgres/src/index.js";
 import fs from "node:fs";
 import { webcrypto as wc } from "node:crypto";
@@ -22,7 +22,7 @@ const b64url = (b) => Buffer.from(b).toString("base64").replace(/\+/g, "-").repl
 const dday = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 
 const sql = postgres(DB, { prepare: false });
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const browser = await launchBrowser();
 const page = await browser.newPage();
 page.setDefaultTimeout(30000);
 

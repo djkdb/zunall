@@ -28,6 +28,12 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 );
 CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
 
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id TEXT PRIMARY KEY,
+  dashboard_widgets TEXT,
+  updated_at BIGINT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -394,6 +400,7 @@ CREATE INDEX IF NOT EXISTS idx_history_activity ON activity_history(activity_id)
 export const REQUIRED_TABLES = [
   "users",
   "push_subscriptions",
+  "user_settings",
   "sessions",
   "activities",
   "tags",

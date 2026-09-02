@@ -4,7 +4,7 @@
  *       && npx wrangler dev --port 8799 --var DATABASE_URL:... --var SUPABASE_URL:...
  * 실행: node tests/e2e-workerd.mjs
  */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 import fs from "node:fs";
 const BASE = process.env.BASE ?? "http://localhost:8787";
 const results = [];
@@ -12,7 +12,7 @@ const step = (n, ok, d="") => { results.push(ok); console.log(`${ok?"✅":"❌"}
 
 fs.writeFileSync("/tmp/wk-notice.txt", "AI 개발 인턴 모집\n■ 자격 요건\n- React, TypeScript, AI 서비스 개발 경험\n■ 제출물\n- 이력서\n- 포트폴리오\n");
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const browser = await launchBrowser();
 const page = await browser.newPage();
 page.setDefaultTimeout(30000);
 try {

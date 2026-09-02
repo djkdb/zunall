@@ -3,7 +3,7 @@
  * 준비: 가짜 공고 사이트(8795) + 앱을 ALLOW_PRIVATE_FETCH=1 로 기동
  * 실행: node tests/e2e-url-import.mjs
  */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
 const SITE = process.env.SITE ?? "http://127.0.0.1:8795";
@@ -13,7 +13,7 @@ const step = (name, ok, detail = "") => {
   console.log(`${ok ? "✅" : "❌"} ${name}${detail ? ` — ${detail}` : ""}`);
 };
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const browser = await launchBrowser();
 const page = await browser.newPage();
 page.setDefaultTimeout(30000);
 

@@ -1,12 +1,12 @@
 /** 전체 검색 + 첨부 미리보기 E2E. 실행: node tests/e2e-search-preview.mjs */
-import { chromium } from "playwright-core";
+import { launchBrowser } from "./browser.mjs";
 import fs from "node:fs";
 const BASE = process.env.BASE ?? "http://localhost:3000";
 const results = [];
 const step = (n, ok, d = "") => { results.push(ok); console.log(`${ok ? "✅" : "❌"} ${n}${d ? ` — ${d}` : ""}`); };
 
 fs.writeFileSync("/tmp/search-notice.txt", "2026 캐버로 공모전 안내\n주최: 캐버로랩\n심사 기준: 창의성과 실현 가능성\n제출물: 기획서\n특이 키워드: 라이트하우스프로젝트");
-const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const b = await launchBrowser();
 const p = await b.newPage(); p.setDefaultTimeout(30000);
 try {
   await p.goto(`${BASE}/signup`);
