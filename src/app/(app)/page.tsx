@@ -297,10 +297,10 @@ export default async function DashboardPage() {
           <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
             <div>
               <p className="flex items-center gap-1.5 text-sm font-bold">
-                <Compass className="h-4 w-4 text-primary" /> AI Career OS를 시작해보세요
+                <Compass className="h-4 w-4 text-primary" /> CAVERO 시작하기
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                목표를 설정하면 내 경험을 분석해 Career Score와 부족한 부분, 오늘 가장 효과적인
+                목표를 정하면 내 경험을 분석해 Career Score와 부족한 부분, 오늘 가장 효과적인
                 행동을 알려드립니다.
               </p>
             </div>

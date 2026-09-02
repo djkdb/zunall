@@ -8,6 +8,7 @@ import { storageBackend } from "@/lib/storage";
 import { databaseKind } from "@/lib/db/info";
 import { NOTIFY_THRESHOLDS } from "@/lib/constants";
 import { PushToggle } from "@/components/settings/push-toggle";
+import { BackupCard } from "@/components/settings/backup-card";
 import { getPushEnv, countPushDevices } from "@/actions/push";
 
 const STORAGE_LABEL: Record<ReturnType<typeof storageBackend>, string> = {
@@ -121,6 +122,15 @@ export default async function SettingsPage() {
             전환되며, <code className="rounded bg-secondary px-1">DB_DRIVER</code> 로 강제할 수
             있습니다.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>데이터 백업</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BackupCard />
         </CardContent>
       </Card>
 

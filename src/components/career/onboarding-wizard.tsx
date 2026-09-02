@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Target, User, Wrench, Loader2, ArrowRight, Check } from "lucide-react";
 import { saveGoal, saveProfileBasics, addSkill, completeOnboarding } from "@/actions/career";
+import { CaveroMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,10 +89,10 @@ export function OnboardingWizard({ userName }: { userName: string }) {
   return (
     <div className="mx-auto max-w-xl">
       <div className="mb-6 text-center">
-        <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Sparkles className="h-5 w-5" />
-        </span>
-        <h1 className="text-xl font-bold tracking-tight">{userName}님의 Career OS를 시작합니다</h1>
+        <CaveroMark className="mx-auto mb-3 h-11 w-11 text-[#0F2338] dark:text-foreground" />
+        <h1 className="text-xl font-bold tracking-tight">
+          {userName}님의 CAVERO를 시작합니다
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           스펙을 관리하는 게 아니라, 다음 합격을 설계합니다. 3단계면 충분해요.
         </p>
