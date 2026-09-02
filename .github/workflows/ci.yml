@@ -85,3 +85,5 @@ jobs:
         run: node tests/e2e-backup.mjs
       - name: 대시보드 위젯 E2E
         run: node tests/e2e-widgets.mjs
+      - name: 빠른 등록 E2E
+        run: node tests/e2e-quick-create.mjs

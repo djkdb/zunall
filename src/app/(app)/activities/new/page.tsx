@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth/session";
 import { ActivityForm } from "@/components/activities/activity-form";
+import { QuickCreate } from "@/components/activities/quick-create";
 
 export const metadata: Metadata = { title: "새 활동" };
 
@@ -11,9 +12,18 @@ export default async function NewActivityPage() {
       <div>
         <h1 className="text-xl font-bold tracking-tight">새 활동 만들기</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          공모전, 대외활동, 해커톤 등 참여할 활동의 정보를 입력하세요.
+          공고 링크나 공고문을 넣으면 대부분 자동으로 채워집니다. 직접 입력해도 됩니다.
         </p>
       </div>
+
+      <QuickCreate />
+
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">또는 직접 입력</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
       <ActivityForm />
     </div>
   );

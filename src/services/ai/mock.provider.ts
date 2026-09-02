@@ -182,6 +182,9 @@ function analyzeAnnouncement(ctx: AIContext): AnnouncementSummary {
 
   return {
     summary: summaryParts.join(" "),
+    title: hasText ? guessTitle(text) : null,
+    organizer: hasText ? guessOrganizer(text) : null,
+    activityType: hasText ? guessActivityType(text) : null,
     schedule,
     eligibility,
     requirements,
@@ -190,6 +193,50 @@ function analyzeAnnouncement(ctx: AIContext): AnnouncementSummary {
     prizes,
     keyDates: { applyDeadline, submitDeadline, announceDate },
   };
+}
+
+/** 공고문 첫머리에서 활동 이름으로 쓸 만한 줄을 고른다 */
+export function guessTitle(text: string): string | null {
+  const lines = text
+    .split("\n")
+    .map((line) => line.replace(/^[\s■□◆▶►●#*\-]+/, "").trim())
+    .filter(Boolean);
+
+  for (const line of lines.slice(0, 12)) {
+    if (line.length < 4 || line.length > 80) continue;
+    // 안내 문구·머리말은 제목이 아니다
+    if (/^(주최|주관|후원|문의|접수|모집 ?기간|지원 ?자격|제출|목차|home|메뉴)/.test(line)) continue;
+    if (/(공모전|대회|해커톤|서포터즈|인턴|모집|공모|캠프|프로그램|챌린지|경진대회)/.test(line)) {
+      return line.replace(/\s*[·|]\s*[^·|]{0,20}$/, "").slice(0, 80);
+    }
+  }
+  return lines[0]?.slice(0, 80) ?? null;
+}
+
+/** '주최: OO' 형태에서 기관명을 뽑는다 */
+export function guessOrganizer(text: string): string | null {
+  const match = text.match(/(?:주최|주관|주최\/주관)\s*[:：]?\s*([^\n|]{2,40})/);
+  if (!match) return null;
+  return match[1].replace(/[,(].*$/, "").trim() || null;
+}
+
+/** 공고 성격에 맞는 활동 종류를 고른다 */
+export function guessActivityType(text: string): string {
+  const rules: Array<[RegExp, string]> = [
+    [/해커톤|hackathon/i, "hackathon"],
+    [/서포터즈|기자단|앰버서더/, "supporters"],
+    [/인턴/, "intern"],
+    [/신입\s*채용|경력\s*채용|채용\s*공고/, "recruit"],
+    [/부트캠프|교육\s*과정|아카데미|캠프/, "education"],
+    [/오픈소스|open ?source|컨트리뷰션/i, "opensource"],
+    [/공모전|경진대회|아이디어\s*공모|대회/, "contest"],
+    [/대외활동|봉사|동아리/, "external"],
+    [/프로젝트/, "project"],
+  ];
+  for (const [pattern, type] of rules) {
+    if (pattern.test(text)) return type;
+  }
+  return "etc";
 }
 
 function analyzeOpportunity(ctx: AIContext): OpportunityRequirements {

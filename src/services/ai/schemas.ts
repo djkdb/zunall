@@ -9,6 +9,11 @@ const stringArray = z.array(z.string()).default([]);
 /** 공고문 분석 결과 */
 export const announcementSummarySchema = z.object({
   summary: z.string().default(""),
+  /** 공고에서 읽어낸 활동명·주최 (빠른 등록에 쓴다) */
+  title: z.string().nullable().optional(),
+  organizer: z.string().nullable().optional(),
+  /** contest | external | supporters | hackathon | project | education | intern | recruit | opensource | etc */
+  activityType: z.string().nullable().optional(),
   schedule: z
     .array(
       z.object({

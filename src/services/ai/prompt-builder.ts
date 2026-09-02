@@ -100,6 +100,9 @@ ${contextBlock(ctx)}
 
 [출력 JSON 스키마]
 {
+  "title": "공고에 적힌 활동/공모전 이름 (없으면 null)",
+  "organizer": "주최 기관 (없으면 null)",
+  "activityType": "contest|external|supporters|hackathon|project|education|intern|recruit|opensource|etc 중 하나",
   "summary": "문서 분석 요약 (2~3문장)",
   "schedule": [{"label": "지원 마감", "date": "YYYY-MM-DD 또는 null", "note": "부가설명 또는 null"}],
   "eligibility": ["지원 자격"],
