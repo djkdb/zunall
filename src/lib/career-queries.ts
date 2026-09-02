@@ -10,6 +10,7 @@ import {
   userSkills,
   scoreSnapshots,
   roadmapItems,
+  users,
   type CareerGoalRow,
   type CareerProfileRow,
   type EvidenceRow,
@@ -212,4 +213,28 @@ export async function countOngoingActivities(userId: string): Promise<number> {
     .from(activities)
     .where(eq(activities.userId, userId));
   return rows.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status)).length;
+}
+
+/** AI 프롬프트에 넣는 한 줄 프로필 (자소서 첨삭 등에서 공용) */
+export async function buildProfileText(userId: string): Promise<string> {
+  const user = (await db.select().from(users).where(eq(users.id, userId)).limit(1))[0];
+  const goal = (
+    await db
+      .select()
+      .from(careerGoals)
+      .where(and(eq(careerGoals.userId, userId), eq(careerGoals.isActive, 1)))
+      .limit(1)
+  )[0];
+  const profile = (
+    await db.select().from(careerProfiles).where(eq(careerProfiles.userId, userId)).limit(1)
+  )[0];
+
+  return [
+    `이름: ${user?.name ?? "사용자"}.`,
+    goal ? `커리어 목표: ${goal.name}.` : null,
+    profile?.headline ? `프로필: ${profile.headline}.` : null,
+    profile?.summary ? `소개: ${profile.summary}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }

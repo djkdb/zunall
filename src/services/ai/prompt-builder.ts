@@ -78,6 +78,8 @@ export function buildPrompt(action: AIAction, ctx: AIContext): string {
         "제출물에서 부족한 점을 찾아 우선순위(높음/중간/마무리)별로 개선 방법을 제시하라.",
         false,
       );
+    case "essay_coach":
+      return buildEssayPrompt(ctx);
     case "expected_questions":
       return buildAdvicePrompt(
         ctx,
@@ -223,4 +225,45 @@ export function buildRetryPrompt(originalPrompt: string, badOutput: string, pars
 이전 응답 (앞부분): ${badOutput.slice(0, 1500)}
 
 위 스키마를 정확히 따르는 유효한 JSON만 다시 출력하라. 다른 텍스트는 절대 포함하지 마라.`;
+}
+
+/**
+ * 자기소개서 문항 첨삭 프롬프트.
+ * 문항이 무엇을 묻는지, 글자수 제한을 지켰는지, 근거가 구체적인지를 본다.
+ * extraInstruction 에 "문항 / 글자수 / 현재 글자수" 가 들어온다.
+ */
+function buildEssayPrompt(ctx: AIContext): string {
+  return `너는 채용·공모전 서류를 심사해온 전문가다. 아래 자기소개서 문항의 답변을 첨삭하라.
+
+${ctx.extraInstruction ?? ""}
+
+[지원 대상]
+활동명: ${ctx.activityName}
+종류: ${ctx.activityType}
+주최: ${ctx.organizer ?? "미상"}
+
+[지원자 프로필]
+${ctx.userProfile}
+
+[공고 요약]
+${clip(ctx.announcementText, "공고문")}
+
+[작성한 답변]
+${clip(ctx.submissionText, "답변")}
+
+다음 JSON 형식으로만 답하라.
+{
+  "score": 0-100 정수,
+  "summary": "한두 문장 총평",
+  "answersQuestion": true/false (문항이 묻는 것에 답했는가),
+  "strengths": ["구체적인 강점", ...],
+  "improvements": [{"point": "무엇이 부족한가", "why": "왜 문제인가", "suggestion": "어떻게 고칠까"}],
+  "rewrites": [{"before": "원문 문장", "after": "고친 문장"}]
+}
+
+원칙:
+- 추상적인 칭찬 금지. 답변에서 근거 문장을 인용해 지적하라.
+- 숫자·역할·결과가 없는 경험 서술은 반드시 개선점으로 잡아라.
+- 글자수 제한이 있으면 초과/미달을 improvements 에 넣어라.
+- rewrites 는 실제 답변에 있는 문장만 대상으로 하고 3개 이하로 하라.`;
 }

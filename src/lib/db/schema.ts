@@ -217,6 +217,40 @@ export const submissionVersions = pgTable(
   (t) => [index("idx_subver_submission").on(t.submissionId)],
 );
 
+/** 자기소개서 문항 (지원서 항목 단위) */
+export const essayQuestions = pgTable(
+  "essay_questions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    activityId: text("activity_id").notNull(),
+    question: text("question").notNull(),
+    /** 글자수 제한 (없으면 null) */
+    charLimit: integer("char_limit"),
+    guide: text("guide"),
+    position: integer("position").notNull().default(0),
+    createdAt: epochMs("created_at").notNull(),
+  },
+  (t) => [index("idx_essayq_activity").on(t.activityId)],
+);
+
+/** 문항별 답변 초안 (버전별로 쌓인다) */
+export const essayDrafts = pgTable(
+  "essay_drafts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    questionId: text("question_id").notNull(),
+    version: integer("version").notNull().default(1),
+    content: text("content").notNull(),
+    /** AI 코칭 결과 (JSON) */
+    feedbackJson: text("feedback_json"),
+    score: doublePrecision("score"),
+    createdAt: epochMs("created_at").notNull(),
+  },
+  (t) => [index("idx_essayd_question").on(t.questionId)],
+);
+
 export const evaluationCriteria = pgTable(
   "evaluation_criteria",
   {

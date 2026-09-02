@@ -25,6 +25,7 @@ import { CalendarTab } from "@/components/activities/tabs/calendar-tab";
 import { DocumentsTab } from "@/components/activities/tabs/documents-tab";
 import { TasksTab } from "@/components/activities/tabs/tasks-tab";
 import { SubmissionsTab } from "@/components/activities/tabs/submissions-tab";
+import { EssayTab } from "@/components/activities/tabs/essay-tab";
 import { AITab } from "@/components/activities/tabs/ai-tab";
 import { NotesTab } from "@/components/activities/tabs/notes-tab";
 import { HistoryTab } from "@/components/activities/tabs/history-tab";
@@ -38,7 +39,7 @@ import { cn, ddayColorClass, ddayDotClass, ddayLabel } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "활동 상세" };
 
-const TAB_KEYS = ["overview", "fit", "calendar", "documents", "tasks", "submissions", "ai", "notes", "history"] as const;
+const TAB_KEYS = ["overview", "fit", "calendar", "documents", "tasks", "submissions", "essay", "ai", "notes", "history"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 export default async function ActivityDetailPage({
@@ -88,6 +89,7 @@ export default async function ActivityDetailPage({
     { key: "documents", label: "문서", count: counts.documents },
     { key: "tasks", label: "작업", count: counts.tasks },
     { key: "submissions", label: "제출물", count: counts.submissions },
+    { key: "essay", label: "자소서" },
     { key: "ai", label: "AI 리뷰", count: counts.ai },
     { key: "notes", label: "메모" },
     { key: "history", label: "기록", count: counts.history },
@@ -178,6 +180,7 @@ export default async function ActivityDetailPage({
         {tab === "documents" && <DocumentsTab activity={activity} userId={user.id} />}
         {tab === "tasks" && <TasksTab activity={activity} userId={user.id} />}
         {tab === "submissions" && <SubmissionsTab activity={activity} userId={user.id} />}
+        {tab === "essay" && <EssayTab activity={activity} userId={user.id} />}
         {tab === "ai" && (
           <AITab activity={activity} userId={user.id} selectedReviewId={selectedReviewId} />
         )}

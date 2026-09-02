@@ -40,6 +40,8 @@ export class MockProvider implements AIProvider {
         return JSON.stringify(improvements(ctx));
       case "expected_questions":
         return JSON.stringify(expectedQuestions(ctx));
+      case "essay_coach":
+        return JSON.stringify(essayCoach(ctx));
       default:
         return JSON.stringify(improvements(ctx));
     }
@@ -571,5 +573,126 @@ function expectedQuestions(ctx: AIContext): AdviceResult {
       { heading: "심화 질문", items: base.slice(5) },
     ],
     next_actions: ["질문별 30초 답변 스크립트 작성", "팀원과 모의 Q&A 진행"],
+  };
+}
+
+/**
+ * 자기소개서 첨삭(mock).
+ * 실제 문장을 보고 판단한다: 글자수 제한, 숫자로 된 성과, 구체적 역할,
+ * 문항 키워드 반영, 상투적 표현. AI 없이도 쓸모 있는 지적을 하도록 만든다.
+ */
+function essayCoach(ctx: AIContext): Record<string, unknown> {
+  const answer = ctx.submissionText.trim();
+  const chars = answer.replace(/\s/g, "").length;
+  const instruction = ctx.extraInstruction ?? "";
+  const limitMatch = instruction.match(/글자수 제한:\s*(\d+)/);
+  const limit = limitMatch ? Number(limitMatch[1]) : null;
+  const questionMatch = instruction.match(/문항:\s*(.+)/);
+  const question = questionMatch ? questionMatch[1].trim() : "";
+
+  const strengths: string[] = [];
+  const improvements: Array<{ point: string; why: string; suggestion: string }> = [];
+  const rewrites: Array<{ before: string; after: string }> = [];
+
+  const sentences = answer
+    .split(/(?<=[.!?。])\s+|\n+/)
+    .map((x) => x.trim())
+    .filter((x) => x.length > 5);
+
+  // 1) 분량
+  if (limit) {
+    if (chars > limit) {
+      improvements.push({
+        point: `글자수 초과 (${chars}자 / 제한 ${limit}자)`,
+        why: "제한을 넘기면 잘려서 제출되거나 감점될 수 있습니다.",
+        suggestion: `배경 설명을 줄이고 결과 중심으로 ${chars - limit}자 이상 덜어내세요.`,
+      });
+    } else if (chars < limit * 0.7) {
+      improvements.push({
+        point: `분량 부족 (${chars}자 / 권장 ${Math.round(limit * 0.8)}자 이상)`,
+        why: "주어진 분량을 크게 밑돌면 성의가 부족해 보입니다.",
+        suggestion: "경험의 과정(무엇을 어떻게 했는지)과 수치를 덧붙이세요.",
+      });
+    } else {
+      strengths.push(`분량을 적절히 채웠습니다 (${chars}자 / ${limit}자)`);
+    }
+  }
+
+  // 2) 구체적인 수치
+  const numbers = answer.match(/\d+(\.\d+)?\s*(%|명|건|회|위|점|배|개월|주|일|만원|억)/g) ?? [];
+  if (numbers.length >= 2) {
+    strengths.push(`성과를 수치로 제시했습니다 (${numbers.slice(0, 3).join(", ")})`);
+  } else {
+    improvements.push({
+      point: "성과가 수치로 드러나지 않습니다",
+      why: "심사자는 '열심히 했다'보다 '무엇이 얼마나 달라졌는지'를 봅니다.",
+      suggestion: "인원·기간·개선폭·순위 중 하나라도 숫자로 바꿔 쓰세요. 예: '참여율 40% → 72%'",
+    });
+  }
+
+  // 3) 내 역할
+  if (/(제가|내가|저는).{0,30}(맡|담당|주도|설계|개발|기획|운영)/.test(answer)) {
+    strengths.push("팀 성과 안에서 본인 역할이 드러납니다");
+  } else {
+    improvements.push({
+      point: "본인이 한 일이 팀의 일과 구분되지 않습니다",
+      why: "'우리는'으로만 서술하면 지원자의 기여를 평가할 수 없습니다.",
+      suggestion: "문장 주어를 '저는'으로 바꾸고, 직접 결정하거나 만든 것을 적으세요.",
+    });
+  }
+
+  // 4) 문항 반영
+  const keywords = question
+    .replace(/[^가-힣a-zA-Z0-9 ]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 2)
+    .slice(0, 6);
+  const covered = keywords.filter((w) => answer.includes(w));
+  const answersQuestion = keywords.length === 0 || covered.length >= Math.ceil(keywords.length / 3);
+  if (!answersQuestion) {
+    improvements.push({
+      point: "문항이 묻는 내용에 직접 답하지 않았습니다",
+      why: `문항의 핵심어(${keywords.slice(0, 3).join(", ")})가 답변에 거의 없습니다.`,
+      suggestion: "첫 문장에서 문항에 대한 결론을 먼저 제시하고 근거를 이어가세요.",
+    });
+  }
+
+  // 5) 상투적 표현 → 문장 교정 제안
+  const cliches = ["열정을 가지고", "최선을 다했습니다", "많은 것을 배웠습니다", "노력하겠습니다"];
+  for (const sentence of sentences) {
+    const hit = cliches.find((c) => sentence.includes(c));
+    if (hit && rewrites.length < 3) {
+      rewrites.push({
+        before: sentence.slice(0, 120),
+        after: sentence
+          .replace("최선을 다했습니다", "가장 먼저 문제를 정의하고 해결 순서를 정했습니다")
+          .replace("많은 것을 배웠습니다", "다음에는 어떤 기준으로 판단할지 알게 되었습니다")
+          .replace("열정을 가지고", "매주 2회씩 사용자 인터뷰를 하며")
+          .replace("노력하겠습니다", "입사 후 첫 3개월 안에 ○○를 개선하겠습니다")
+          .slice(0, 140),
+      });
+    }
+  }
+  if (rewrites.length === 0 && sentences.length > 0) {
+    strengths.push("상투적인 표현 없이 구체적으로 서술했습니다");
+  }
+
+  // 점수: 감점 방식이라 근거가 설명된다
+  let score = 85;
+  score -= improvements.length * 9;
+  score -= rewrites.length * 4;
+  score += Math.min(strengths.length * 3, 9);
+  score = Math.max(35, Math.min(96, score));
+
+  return {
+    score,
+    summary:
+      improvements.length === 0
+        ? "문항에 맞게 구체적으로 작성되었습니다. 제출 가능한 수준입니다."
+        : `보완할 점이 ${improvements.length}가지 있습니다. ${improvements[0].point}부터 고치세요.`,
+    answersQuestion,
+    strengths,
+    improvements,
+    rewrites,
   };
 }

@@ -115,9 +115,33 @@ export const opportunityRequirementsSchema = z.object({
 });
 export type OpportunityRequirements = z.infer<typeof opportunityRequirementsSchema>;
 
+/** 자기소개서 문항 첨삭 결과 */
+export const essayCoachSchema = z.object({
+  score: z.number().min(0).max(100).default(0),
+  summary: z.string().default(""),
+  /** 문항이 요구하는 것을 얼마나 답했는지 */
+  answersQuestion: z.boolean().default(true),
+  strengths: stringArray,
+  improvements: z
+    .array(
+      z.object({
+        point: z.string(),
+        why: z.string().default(""),
+        suggestion: z.string().default(""),
+      }),
+    )
+    .default([]),
+  /** 문장 단위 수정 제안 */
+  rewrites: z
+    .array(z.object({ before: z.string(), after: z.string() }))
+    .default([]),
+});
+export type EssayCoachResult = z.infer<typeof essayCoachSchema>;
+
 export type AIResultData =
   | { kind: "announcement"; data: AnnouncementSummary }
   | { kind: "evaluation"; data: EvaluationResult }
   | { kind: "final_check"; data: FinalCheckResult }
   | { kind: "advice"; data: AdviceResult }
-  | { kind: "opportunity"; data: OpportunityRequirements };
+  | { kind: "opportunity"; data: OpportunityRequirements }
+  | { kind: "essay"; data: EssayCoachResult };

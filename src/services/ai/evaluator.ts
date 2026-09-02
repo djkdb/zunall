@@ -23,6 +23,7 @@ import {
   announcementSummarySchema,
   evaluationResultSchema,
   finalCheckSchema,
+  essayCoachSchema,
   adviceResultSchema,
   opportunityRequirementsSchema,
   type AIResultData,
@@ -261,12 +262,14 @@ function schemaFor(action: AIAction) {
       return { kind: "evaluation" as const, schema: evaluationResultSchema };
     case "final_check":
       return { kind: "final_check" as const, schema: finalCheckSchema };
+    case "essay_coach":
+      return { kind: "essay" as const, schema: essayCoachSchema };
     default:
       return { kind: "advice" as const, schema: adviceResultSchema };
   }
 }
 
-async function completeWithRetry(
+export async function completeWithRetry(
   provider: Awaited<ReturnType<typeof getProvider>>,
   request: AIRequest,
 ): Promise<AIResultData> {
