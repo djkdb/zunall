@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT,
   google_id TEXT,
   avatar_url TEXT,
+  calendar_token TEXT,
   created_at BIGINT NOT NULL
 );
 
@@ -41,6 +42,7 @@ CREATE TABLE IF NOT EXISTS activities (
   updated_at BIGINT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_caltoken ON users(calendar_token);
 CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 
 CREATE TABLE IF NOT EXISTS tags (

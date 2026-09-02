@@ -297,10 +297,11 @@ Type 을 **Secret** 으로 두고 두 개를 추가합니다.
 
 ### 3. DB에 컬럼 추가
 
-이미 만들어둔 DB라면 구글 계정용 컬럼이 없습니다. `migrations/001-google-login.sql` 을
+이미 만들어둔 DB라면 구글 계정용 컬럼이 없습니다. `migrations/001-google-login.sql`, `migrations/002-calendar-token.sql` 을
 복사해 SQL 콘솔에서 실행하세요(여러 번 실행해도 안전).
 
 새로 만드는 DB라면 `schema.sql` 에 이미 포함돼 있어 따로 할 일이 없습니다.
+`migrations/` 폴더의 파일은 번호 순서대로 한 번씩 실행하면 됩니다 (여러 번 실행해도 안전).
 
 ### 동작 방식
 
@@ -313,7 +314,7 @@ Type 을 **Secret** 으로 두고 두 개를 추가합니다.
 | 문구 | 원인 |
 | --- | --- |
 | 구글 인증 정보가 맞지 않습니다 | 클라이언트 ID·시크릿 오타, 또는 콘솔의 리디렉션 URI 불일치 |
-| 데이터베이스에 구글 로그인용 컬럼이 없습니다 | `migrations/001-google-login.sql` 미실행 |
+| 데이터베이스에 구글 로그인용 컬럼이 없습니다 | `migrations/001-google-login.sql`, `migrations/002-calendar-token.sql` 미실행 |
 | 보안 확인에 실패했습니다 | state 쿠키 만료(10분) — 다시 시도 |
 
 화면에는 구글이 알려준 사유(`invalid_client`, `redirect_uri_mismatch` 등)까지 함께 표시됩니다.

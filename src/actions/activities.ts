@@ -247,6 +247,89 @@ export async function updatePortfolio(activityId: string, input: PortfolioInput)
   return { ok: true };
 }
 
+/**
+ * 활동 복제.
+ * 매년 열리는 공모전·반복되는 서포터즈는 구조가 같으므로,
+ * 뼈대(일정·작업·평가 기준·태그·메모)만 복사하고
+ * 결과물(문서·제출물·AI 리뷰·기록)은 가져오지 않는다.
+ */
+export async function duplicateActivity(activityId: string): Promise<ActionResult> {
+  const user = await requireUser();
+  const source = await getOwnedActivity(activityId, user.id);
+  if (!source) return { ok: false, error: "활동을 찾을 수 없습니다." };
+
+  const now = Date.now();
+  const newActivityId = newId();
+
+  await db.insert(activities).values({
+    ...source,
+    id: newActivityId,
+    name: `${source.name} (복사본)`.slice(0, 200),
+    status: "interested",
+    aiSummary: null,
+    // 포트폴리오 기록(성과·배운 점)은 그 회차의 결과이므로 복사하지 않는다
+    achievement: null,
+    learned: null,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // 일정: 날짜 그대로 복사 (새 회차 날짜는 사용자가 조정)
+  const srcEvents = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.activityId, activityId), eq(events.userId, user.id)));
+  for (const evt of srcEvents) {
+    await db.insert(events).values({ ...evt, id: newId(), activityId: newActivityId, createdAt: now });
+  }
+
+  // 작업: 진행 상태는 초기화해서 다시 할 일로 되돌린다
+  const srcTasks = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.activityId, activityId), eq(tasks.userId, user.id)));
+  for (const task of srcTasks) {
+    await db.insert(tasks).values({
+      ...task,
+      id: newId(),
+      activityId: newActivityId,
+      status: "todo",
+      sourceReviewId: null,
+      createdAt: now,
+      updatedAt: now,
+      completedAt: null,
+    });
+  }
+
+  // 평가 기준
+  const srcCriteria = await db
+    .select()
+    .from(evaluationCriteria)
+    .where(and(eq(evaluationCriteria.activityId, activityId), eq(evaluationCriteria.userId, user.id)));
+  for (const c of srcCriteria) {
+    await db.insert(evaluationCriteria).values({ ...c, id: newId(), activityId: newActivityId });
+  }
+
+  // 태그 연결
+  const srcTags = await db
+    .select()
+    .from(activityTags)
+    .where(eq(activityTags.activityId, activityId));
+  for (const link of srcTags) {
+    await db.insert(activityTags).values({ activityId: newActivityId, tagId: link.tagId });
+  }
+
+  await logHistory(
+    user.id,
+    newActivityId,
+    "created",
+    `활동 복제로 생성: ${source.name}`,
+  );
+
+  revalidatePath("/activities");
+  return { ok: true, id: newActivityId };
+}
+
 export async function deleteActivity(activityId: string): Promise<void> {
   const user = await requireUser();
   const activity = await getOwnedActivity(activityId, user.id);

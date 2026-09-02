@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/session";
 import { db, events, activities } from "@/lib/db";
 import { CalendarView } from "@/components/calendar/calendar-view";
+import { CalendarSubscribeCard } from "@/components/calendar/subscribe-card";
 
 export const metadata: Metadata = { title: "캘린더" };
 
@@ -29,6 +30,7 @@ export default async function CalendarPage() {
         </p>
       </div>
       <CalendarView events={allEvents} activities={activityOptions} />
+      <CalendarSubscribeCard initialToken={user.calendarToken} />
     </div>
   );
 }

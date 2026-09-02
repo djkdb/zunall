@@ -34,6 +34,8 @@ export const users = pgTable("users", {
   /** 구글 계정 고유 ID(sub). 이메일이 바뀌어도 유지된다 */
   googleId: text("google_id"),
   avatarUrl: text("avatar_url"),
+  /** 캘린더 구독(.ics) 주소에 쓰는 비밀 토큰. 발급 전에는 null */
+  calendarToken: text("calendar_token"),
   createdAt: epochMs("created_at").notNull(),
 });
 

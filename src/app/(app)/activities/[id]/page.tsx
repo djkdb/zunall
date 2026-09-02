@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { TabNav } from "@/components/ui/tab-nav";
 import { StatusSelect } from "@/components/activities/status-select";
+import { DuplicateActivityButton } from "@/components/activities/duplicate-activity-button";
 import { DeleteActivityButton } from "@/components/activities/delete-activity-button";
 import { OverviewTab } from "@/components/activities/tabs/overview-tab";
 import { FitTab } from "@/components/activities/tabs/fit-tab";
@@ -135,6 +136,7 @@ export default async function ActivityDetailPage({
             >
               <Pencil className="h-4 w-4" />
             </Link>
+            <DuplicateActivityButton activityId={activity.id} />
             <DeleteActivityButton activityId={activity.id} activityName={activity.name} />
           </div>
         </div>
