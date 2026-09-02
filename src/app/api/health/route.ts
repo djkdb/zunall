@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { databaseKind } from "@/lib/db/info";
 import { storageBackend } from "@/lib/storage";
 import { REQUIRED_TABLES, BIGINT_COLUMNS } from "@/lib/db/ddl";
+import { migrationStatus } from "@/lib/db/migrate";
 import { inspectDatabaseUrl } from "@/lib/db/url";
 import { getProviderName, providerFallbackReason } from "@/services/ai/provider";
 import { isCloudflareWorkers } from "@/lib/runtime";
@@ -37,6 +38,7 @@ export async function GET(request: Request) {
     missingColumns: string[];
     /** 밀리초 시간값을 담기에 타입이 좁은 컬럼 (INTEGER 로 만들어진 경우) */
     narrowColumns: string[];
+    migrations: { applied: string[]; pending: string[] };
     storage: string;
     aiProvider: string;
     problems: string[];
@@ -58,6 +60,7 @@ export async function GET(request: Request) {
     missingTables: [],
     missingColumns: [],
     narrowColumns: [],
+    migrations: { applied: [], pending: [] },
     storage: storageBackend(),
     aiProvider: getProviderName(),
     problems: [],
@@ -105,6 +108,12 @@ export async function GET(request: Request) {
     const list = Array.isArray(rows) ? rows : (rows.rows ?? []);
     const present = new Set(list.map((r) => r.table_name));
     report.connected = true;
+    report.migrations = await migrationStatus(db);
+    if (report.migrations.pending.length > 0) {
+      report.notices.push(
+        `아직 적용되지 않은 마이그레이션 ${report.migrations.pending.length}개가 있습니다. 다음 요청에서 자동으로 적용됩니다.`,
+      );
+    }
     report.missingTables = REQUIRED_TABLES.filter((t) => !present.has(t));
     if (report.missingTables.length > 0) {
       report.problems.push(

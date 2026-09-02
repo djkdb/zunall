@@ -335,7 +335,10 @@ Type 을 **Secret** 으로 두고 두 개를 추가합니다.
 복사해 SQL 콘솔에서 실행하세요(여러 번 실행해도 안전).
 
 새로 만드는 DB라면 `schema.sql` 에 이미 포함돼 있어 따로 할 일이 없습니다.
-`migrations/` 폴더의 파일은 번호 순서대로 한 번씩 실행하면 됩니다 (여러 번 실행해도 안전).
+**마이그레이션은 앱이 스스로 적용합니다.** 배포 후 첫 요청에서 아직 적용되지 않은
+`migrations/*.sql` 을 순서대로 실행하고 `schema_migrations` 테이블에 기록합니다.
+`/api/health` 의 `migrations` 항목에서 적용 상태를 볼 수 있고,
+자동 적용을 끄려면 `DB_AUTO_MIGRATE=0` 을 설정하세요.
 
 ### 동작 방식
 
@@ -372,7 +375,7 @@ Type 을 **Secret** 으로 두고 두 개를 추가합니다.
 | `connected: false` (issues 없음) | 주소는 정상이나 접속 실패 | 비밀번호·호스트·DB 이름 확인 |
 | `missingTables` 에 목록 | 스키마 미적용 | `schema.sql` 을 SQL 콘솔에서 실행 |
 | `missingColumns` 에 목록 | 나중에 추가된 컬럼이 없음 | `migrations/` 의 해당 SQL 을 실행 |
-| `narrowColumns` 에 목록 | 시간 컬럼이 INTEGER 로 만들어짐 | `migrations/006-bigint-epoch.sql` 실행 (`out of range for type integer` 오류의 원인) |
+| `narrowColumns` 에 목록 | 시간 컬럼이 INTEGER 로 만들어짐 | 다음 요청에서 자동 교정됩니다 (수동: `migrations/006-bigint-epoch.sql`) |
 | `notices` 에 문구 | 문제는 아니고 알림 | 예: API 키가 없어 AI 가 mock 으로 동작 중 |
 
 `databaseUrl` 항목은 스킴·호스트 뒤 두 마디·자격증명 유무만 보여주며 비밀번호는 노출하지 않습니다.

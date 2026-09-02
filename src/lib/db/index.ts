@@ -145,13 +145,30 @@ function resolveDb(): AppDb {
  */
 async function ensureSchema(): Promise<void> {
   const url = databaseUrl();
-  const shouldRun = !url || process.env.DB_AUTO_MIGRATE === "1";
-  if (!shouldRun) return;
   const database = resolveDb();
-  for (const statement of BOOTSTRAP_DDL.split(";")) {
-    const sql = statement.trim();
-    if (!sql) continue;
-    await database.execute(sql);
+
+  // 새 DB(또는 로컬 PGlite)라면 전체 스키마를 만든다.
+  // 운영 DB 는 이미 테이블이 있으므로 CREATE TABLE IF NOT EXISTS 가 사실상 무해하지만,
+  // 불필요한 DDL 을 매번 돌리지 않도록 명시적으로 켤 때만 실행한다.
+  if (!url || process.env.DB_AUTO_MIGRATE === "1") {
+    for (const statement of BOOTSTRAP_DDL.split(";")) {
+      const ddl = statement.trim();
+      if (!ddl) continue;
+      await database.execute(ddl);
+    }
+  }
+
+  // 아직 적용되지 않은 마이그레이션은 항상 스스로 적용한다.
+  // (DB_AUTO_MIGRATE=0 으로 끌 수 있다)
+  if (process.env.DB_AUTO_MIGRATE !== "0") {
+    const { runPendingMigrations } = await import("./migrate");
+    const status = await runPendingMigrations(database);
+    if (status.applied.length > 0) {
+      console.log(`DB 마이그레이션 적용: ${status.applied.join(", ")}`);
+    }
+    for (const failure of status.failed) {
+      console.error(`DB 마이그레이션 실패 (${failure.name}): ${failure.error}`);
+    }
   }
 }
 

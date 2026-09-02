@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test:score": "tsx tests/score.test.ts",
     "seed": "tsx scripts/seed.ts",
-    "build:cf": "opennextjs-cloudflare build",
+    "build:cf": "tsx scripts/gen-migrations.ts && opennextjs-cloudflare build",
     "deploy:cf": "tsx scripts/preflight-cf.ts && opennextjs-cloudflare build && tsx scripts/check-worker-size.ts && wrangler deploy",
     "preflight:cf": "tsx scripts/preflight-cf.ts",
     "size:cf": "tsx scripts/check-worker-size.ts",
@@ -20,7 +20,8 @@
     "test:url-parse": "tsx tests/fetch-url.test.ts",
     "test:ics": "tsx tests/ics.test.ts",
     "test:unit": "tsx tests/score.test.ts && tsx tests/db-url.test.ts && tsx tests/fetch-url.test.ts && tsx tests/ics.test.ts && tsx tests/webpush.test.ts && tsx tests/outcome.test.ts",
-    "vapid": "tsx scripts/gen-vapid.ts"
+    "vapid": "tsx scripts/gen-vapid.ts",
+    "gen:migrations": "tsx scripts/gen-migrations.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
