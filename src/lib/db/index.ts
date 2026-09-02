@@ -2,7 +2,7 @@ import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { drizzle as drizzleNeonHttp } from "drizzle-orm/neon-http";
-import { neon, neonConfig } from "@neondatabase/serverless";
+import { neon, neonConfig, type NeonQueryFunction } from "@neondatabase/serverless";
 import { cache } from "react";
 import * as schema from "./schema";
 import { BOOTSTRAP_DDL } from "./ddl";
@@ -55,11 +55,29 @@ function useNeonHttp(url: string, workers: boolean): boolean {
   return workers && /(^|[@.])neon\.tech/.test(url);
 }
 
+/**
+ * Neon 클라이언트를 drizzle 이 기대하는 호출 형태로 맞춘다.
+ *
+ * @neondatabase/serverless 는 1.0 에서 `sql(query, params, opts)` 형태를 없애고
+ * 태그드 템플릿과 `sql.query(...)` 만 남겼는데, drizzle 0.38 의 neon-http 세션은
+ * 옛 형태로 호출한다. 어느 버전이 설치되든 동작하도록 여기서 흡수한다.
+ * (버전이 어긋나면 런타임에 "tagged-template function" 오류로만 드러나 원인 파악이 어렵다)
+ */
+type NeonCall = (query: string, params: unknown[], opts: unknown) => Promise<unknown>;
+
+function neonQueryClient(url: string): NeonCall {
+  const sql = neon(url) as unknown as NeonCall & { query?: NeonCall };
+  return typeof sql.query === "function"
+    ? (query, params, opts) => sql.query!(query, params, opts) // v1.x
+    : (query, params, opts) => sql(query, params, opts); // v0.10.x
+}
+
 function createNeonHttpDb(url: string): AppDb {
   // 로컬 테스트에서 가짜 Neon 엔드포인트로 돌리기 위한 우회로. 운영에서는 설정하지 않는다.
   const endpoint = process.env.NEON_FETCH_ENDPOINT;
   if (endpoint) neonConfig.fetchEndpoint = endpoint;
-  return drizzleNeonHttp(neon(url), { schema }) as unknown as AppDb;
+  const client = neonQueryClient(url) as unknown as NeonQueryFunction<boolean, boolean>;
+  return drizzleNeonHttp(client, { schema }) as unknown as AppDb;
 }
 
 function createPostgresDb(url: string, workers: boolean): AppDb {
