@@ -16,7 +16,8 @@
     "preflight:cf": "tsx scripts/preflight-cf.ts",
     "size:cf": "tsx scripts/check-worker-size.ts",
     "test:url": "tsx tests/db-url.test.ts",
-    "sim": "node tests/sim-user.mjs && node tests/sim-full.mjs"
+    "sim": "node tests/sim-user.mjs && node tests/sim-full.mjs",
+    "test:url-parse": "tsx tests/fetch-url.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

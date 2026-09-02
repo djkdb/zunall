@@ -4,6 +4,7 @@ import { db, documents, type ActivityRow, type DocumentRow } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UploadDialog } from "@/components/files/upload-dialog";
+import { ImportUrlDialog } from "@/components/files/import-url-dialog";
 import { DocumentActions } from "@/components/files/document-actions";
 import { formatBytes, formatDate, getFileExtension, toDateStr } from "@/lib/utils";
 import { DOC_CATEGORIES, type DocCategory } from "@/lib/constants";
@@ -45,7 +46,10 @@ export async function DocumentsTab({ activity, userId }: { activity: ActivityRow
         <p className="text-sm text-muted-foreground">
           파일 {docs.length}개 · &lsquo;공고 / 안내&rsquo;에 올린 문서는 AI 공고 분석에 사용됩니다.
         </p>
-        <UploadDialog activityId={activity.id} pdfSupported={pdfOk} />
+        <div className="flex items-center gap-2">
+          <ImportUrlDialog activityId={activity.id} />
+          <UploadDialog activityId={activity.id} pdfSupported={pdfOk} />
+        </div>
       </div>
 
       {docs.length === 0 ? (
@@ -53,12 +57,17 @@ export async function DocumentsTab({ activity, userId }: { activity: ActivityRow
           icon={FileText}
           title="업로드된 파일이 없습니다"
           description="모집공고 PDF, 안내문, 참고자료, 작업 파일을 업로드해 활동별로 정리하세요."
-          action={<UploadDialog
-              activityId={activity.id}
-              triggerLabel="첫 파일 업로드"
-              triggerVariant="outline"
-              pdfSupported={pdfOk}
-            />}
+          action={
+            <div className="flex items-center gap-2">
+              <ImportUrlDialog activityId={activity.id} />
+              <UploadDialog
+                activityId={activity.id}
+                triggerLabel="첫 파일 업로드"
+                triggerVariant="outline"
+                pdfSupported={pdfOk}
+              />
+            </div>
+          }
         />
       ) : (
         categories.map((category) => {

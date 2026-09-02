@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/session";
 import { logHistory, pushNotification } from "@/lib/history";
 import { saveFile, validateUpload, deleteStoredFile } from "@/lib/storage";
 import { extractText, isExtractable } from "@/services/document/extract";
+import { fetchNotice } from "@/services/document/fetch-url";
 import { newId } from "@/lib/utils";
 import { DOC_CATEGORIES, type DocCategory } from "@/lib/constants";
 import type { ActionResult } from "@/actions/activities";
@@ -157,4 +158,64 @@ export async function deleteDocument(documentId: string): Promise<ActionResult> 
 
   revalidatePath(`/activities/${doc.activityId}`);
   return { ok: true };
+}
+
+/**
+ * 공고 링크를 그대로 가져와 문서로 저장한다.
+ * 페이지 본문을 텍스트로 바꿔 넣으므로, 업로드한 파일과 똑같이 AI 분석에 쓰인다.
+ */
+export async function importDocumentFromUrl(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+
+  const activityId = String(formData.get("activityId") ?? "");
+  const url = String(formData.get("url") ?? "").trim();
+  const category = String(formData.get("category") ?? "notice");
+
+  const activity = await assertOwnedActivity(activityId, user.id);
+  if (!activity) return { ok: false, error: "활동을 찾을 수 없습니다." };
+  if (!(category in DOC_CATEGORIES)) return { ok: false, error: "잘못된 분류입니다." };
+  if (!url) return { ok: false, error: "가져올 주소를 입력해주세요." };
+
+  const fetched = await fetchNotice(url);
+  if (!fetched.ok) return { ok: false, error: fetched.error ?? "페이지를 가져오지 못했습니다." };
+
+  const displayName = `${(fetched.title || activity.name).slice(0, 60)}.txt`;
+  const file = new File([fetched.text], displayName, { type: "text/plain" });
+
+  let stored: { storagePath: string; size: number };
+  try {
+    stored = await saveFile(user.id, file);
+  } catch {
+    return { ok: false, error: "가져온 내용을 저장하지 못했습니다." };
+  }
+
+  const id = newId();
+  await db.insert(documents).values({
+    id,
+    userId: user.id,
+    activityId,
+    category,
+    name: displayName,
+    originalName: displayName,
+    mime: "text/plain",
+    size: stored.size,
+    storagePath: stored.storagePath,
+    description: `링크에서 가져옴: ${url.slice(0, 300)}`,
+    version: 1,
+    groupId: id,
+    extractedText: fetched.text.slice(0, MAX_EXTRACT_CHARS),
+    createdAt: Date.now(),
+  });
+
+  await logHistory(user.id, activityId, "file", `링크로 공고 가져오기: ${displayName}`);
+  await pushNotification({
+    userId: user.id,
+    activityId,
+    type: "file",
+    title: "링크에서 공고를 가져왔습니다",
+    body: `${activity.name} — ${displayName}`,
+  });
+
+  revalidatePath(`/activities/${activityId}`);
+  return { ok: true, id };
 }
