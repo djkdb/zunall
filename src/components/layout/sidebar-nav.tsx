@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookMarked,
+  Search,
   LayoutDashboard,
   FolderKanban,
   CalendarDays,
@@ -33,6 +34,7 @@ export function SidebarNav({ unreadCount }: { unreadCount: number }) {
     { href: "/activities", label: "활동", icon: FolderKanban },
     { href: "/calendar", label: "캘린더", icon: CalendarDays },
     { href: "/notifications", label: "알림", icon: Bell, badge: unreadCount },
+    { href: "/search", label: "검색", icon: Search },
     { href: "/portfolio", label: "포트폴리오", icon: BookMarked },
     { href: "/stats", label: "통계", icon: BarChart3 },
     { href: "/settings", label: "설정", icon: Settings },

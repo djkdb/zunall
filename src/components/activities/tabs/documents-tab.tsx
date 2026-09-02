@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { UploadDialog } from "@/components/files/upload-dialog";
 import { ImportUrlDialog } from "@/components/files/import-url-dialog";
 import { DocumentActions } from "@/components/files/document-actions";
+import { PreviewDialog } from "@/components/files/preview-dialog";
 import { formatBytes, formatDate, getFileExtension, toDateStr } from "@/lib/utils";
 import { DOC_CATEGORIES, type DocCategory } from "@/lib/constants";
 import { pdfExtractionEnabled } from "@/services/document/extract";
@@ -120,6 +121,11 @@ export async function DocumentsTab({ activity, userId }: { activity: ActivityRow
                             triggerVariant="ghost"
                             triggerLabel="새 버전"
                             pdfSupported={pdfOk}
+                          />
+                          <PreviewDialog
+                            documentId={latest.id}
+                            name={latest.originalName}
+                            mime={latest.mime}
                           />
                           <DocumentActions documentId={latest.id} />
                         </div>

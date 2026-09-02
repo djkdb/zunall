@@ -1,6 +1,7 @@
 import "server-only";
 import { sql } from "drizzle-orm";
 import { MIGRATIONS } from "./migrations.generated";
+import { splitStatements } from "./sql-split";
 import type { AppDb } from "./index";
 
 /**
@@ -83,15 +84,4 @@ export async function migrationStatus(db: AppDb): Promise<{ applied: string[]; p
     applied: MIGRATIONS.filter((m) => done.has(m.name)).map((m) => m.name),
     pending: MIGRATIONS.filter((m) => !done.has(m.name)).map((m) => m.name),
   };
-}
-
-/** 주석을 제거하고 세미콜론 단위로 나눈다 */
-function splitStatements(text: string): string[] {
-  return text
-    .split("\n")
-    .filter((line) => !line.trim().startsWith("--"))
-    .join("\n")
-    .split(";")
-    .map((s) => s.trim())
-    .filter(Boolean);
 }

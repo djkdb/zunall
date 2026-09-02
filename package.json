@@ -19,7 +19,7 @@
     "sim": "node tests/sim-user.mjs && node tests/sim-full.mjs",
     "test:url-parse": "tsx tests/fetch-url.test.ts",
     "test:ics": "tsx tests/ics.test.ts",
-    "test:unit": "tsx tests/score.test.ts && tsx tests/db-url.test.ts && tsx tests/fetch-url.test.ts && tsx tests/ics.test.ts && tsx tests/webpush.test.ts && tsx tests/outcome.test.ts",
+    "test:unit": "tsx tests/score.test.ts && tsx tests/db-url.test.ts && tsx tests/fetch-url.test.ts && tsx tests/ics.test.ts && tsx tests/webpush.test.ts && tsx tests/outcome.test.ts && tsx tests/migrate-split.test.ts",
     "vapid": "tsx scripts/gen-vapid.ts",
     "gen:migrations": "tsx scripts/gen-migrations.ts"
   },

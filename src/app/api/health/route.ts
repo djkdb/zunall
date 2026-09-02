@@ -132,11 +132,17 @@ export async function GET(request: Request) {
     const columns = new Set(colList.map((c) => `${c.table_name}.${c.column_name}`));
     const types = new Map(colList.map((c) => [`${c.table_name}.${c.column_name}`, c.data_type]));
 
-    // 시간(밀리초) 컬럼이 INTEGER 면 2038년 문제가 아니라 지금 당장 저장이 실패한다
-    report.narrowColumns = BIGINT_COLUMNS.filter(([table, column]) => {
+    // 시간(밀리초) 컬럼이 INTEGER 면 2038년 문제가 아니라 지금 당장 저장이 실패한다.
+    // 코드가 아는 컬럼뿐 아니라, 이름이 _at 으로 끝나는 정수 컬럼도 모두 잡는다
+    // (예전 스키마로 만든 DB 에는 목록에 없는 컬럼이 남아 있을 수 있다)
+    const knownNarrow = BIGINT_COLUMNS.filter(([table, column]) => {
       const type = types.get(`${table}.${column}`);
       return type !== undefined && type !== "bigint";
     }).map(([table, column]) => `${table}.${column}`);
+    const namedNarrow = colList
+      .filter((c) => /_at$/.test(c.column_name) && ["integer", "smallint"].includes(c.data_type))
+      .map((c) => `${c.table_name}.${c.column_name}`);
+    report.narrowColumns = [...new Set([...knownNarrow, ...namedNarrow])];
     if (report.narrowColumns.length > 0) {
       report.problems.push(
         `시간 컬럼 ${report.narrowColumns.length}개의 타입이 좁습니다 (${report.narrowColumns.slice(0, 3).join(", ")}${report.narrowColumns.length > 3 ? " 외" : ""}). ` +
