@@ -368,6 +368,7 @@ DB 저장은 20MB 제한 기준 개인 사용에 충분하지만, Neon 무료 0.
 | `Please enable R2` | 예전 코드 사용 중 → 최신 코드를 pull 하세요 (지금은 R2 없이 동작) |
 | Workers Builds 빌드 실패 (Node 버전) | Build variables 에 `NODE_VERSION=22` 추가 |
 | 배포는 됐는데 DB 오류 | secret 미등록 → `npx wrangler secret list` 로 확인 |
+| `tagged-template function` 오류 | @neondatabase/serverless 버전이 drizzle 과 안 맞음 → `npm install` 로 최신 코드의 고정 버전(0.10.x) 설치 |
 | Workers에서 DB 연결 실패 | `npx wrangler secret put DB_DRIVER` → `neon-http` 또는 `postgres-js` 로 드라이버 강제 |
 
 ---

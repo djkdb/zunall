@@ -56,7 +56,12 @@ try {
     const res = await fetch(link.getAttribute("href"));
     return { ok: res.ok, len: (await res.arrayBuffer()).byteLength };
   });
-  step("workerd: 파일 다운로드", !!dl?.ok && dl.len > 0, `${dl?.len} bytes`);
+  const expectedBytes = fs.statSync("/tmp/wk-notice.txt").size;
+  step(
+    "workerd: 파일 다운로드 (바이트 일치)",
+    !!dl?.ok && dl.len === expectedBytes,
+    `${dl?.len} / ${expectedBytes} bytes`,
+  );
 
   await page.goto(`${url}?tab=fit`);
   await page.getByRole("button", { name: "지원 적합도 분석" }).click();

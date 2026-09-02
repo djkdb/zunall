@@ -2,7 +2,7 @@ import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { drizzle as drizzleNeonHttp } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { neon, neonConfig } from "@neondatabase/serverless";
 import { cache } from "react";
 import * as schema from "./schema";
 import { BOOTSTRAP_DDL } from "./ddl";
@@ -56,6 +56,9 @@ function useNeonHttp(url: string, workers: boolean): boolean {
 }
 
 function createNeonHttpDb(url: string): AppDb {
+  // 로컬 테스트에서 가짜 Neon 엔드포인트로 돌리기 위한 우회로. 운영에서는 설정하지 않는다.
+  const endpoint = process.env.NEON_FETCH_ENDPOINT;
+  if (endpoint) neonConfig.fetchEndpoint = endpoint;
   return drizzleNeonHttp(neon(url), { schema }) as unknown as AppDb;
 }
 
