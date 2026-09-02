@@ -91,3 +91,5 @@ jobs:
         run: node tests/e2e-profile-import.mjs
       - name: 시작 가이드 E2E
         run: node tests/e2e-guide.mjs
+      - name: 계열별 커리어 E2E
+        run: node tests/e2e-fields.mjs

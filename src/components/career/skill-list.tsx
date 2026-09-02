@@ -29,8 +29,19 @@ export function SkillList({
     );
   }
 
+  // 스킬은 골랐는데 근거가 하나도 없으면, 점수가 낮은 이유를 먼저 설명한다
+  const noEvidence = list.every((skill) => skill.evidenceCount === 0);
+
   return (
-    <ul className="space-y-1">
+    <>
+      {noEvidence && (
+        <p className="mb-2 rounded-md bg-secondary/60 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+          지금 점수가 낮은 건 실력이 부족해서가 아니라 <strong>근거가 아직 없어서</strong>입니다.
+          위의 &lsquo;내 이력으로 한 번에 채우기&rsquo;에 이력서나 활동 내역을 붙여넣으면 근거가
+          만들어지고 점수가 올라갑니다.
+        </p>
+      )}
+      <ul className="space-y-1">
       {list.map((skill) => {
         const target = targets?.get(skill.name);
         return (
@@ -84,6 +95,7 @@ export function SkillList({
           </li>
         );
       })}
-    </ul>
+      </ul>
+    </>
   );
 }
