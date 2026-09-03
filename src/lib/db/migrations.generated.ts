@@ -44,4 +44,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "009-study-field.sql",
     sql: "-- 전공 계열·학과·희망 직무를 프로필에 저장한다.\n-- 이 값으로 스킬 추천·목표 템플릿·활동 추천을 개인화한다.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE career_profiles ADD COLUMN IF NOT EXISTS study_field TEXT;\nALTER TABLE career_profiles ADD COLUMN IF NOT EXISTS major TEXT;\nALTER TABLE career_profiles ADD COLUMN IF NOT EXISTS role_key TEXT;\n",
   },
+  {
+    name: "010-account.sql",
+    sql: "-- 계정 관리: 약관 동의 시각, 비밀번호 재설정 토큰.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE users ADD COLUMN IF NOT EXISTS terms_agreed_at BIGINT;\n\nCREATE TABLE IF NOT EXISTS password_resets (\n  token TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  expires_at BIGINT NOT NULL,\n  used_at BIGINT,\n  created_at BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);\n",
+  },
 ];

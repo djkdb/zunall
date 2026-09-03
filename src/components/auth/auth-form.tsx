@@ -92,6 +92,19 @@ export function AuthForm({
               <GoogleMark />
               구글로 계속하기
             </a>
+            {mode === "signup" && (
+              <p className="text-center text-xs text-muted-foreground">
+                계속하면{" "}
+                <Link href="/terms" target="_blank" className="text-primary hover:underline">
+                  이용약관
+                </Link>
+                과{" "}
+                <Link href="/privacy" target="_blank" className="text-primary hover:underline">
+                  개인정보처리방침
+                </Link>
+                에 동의하는 것으로 봅니다.
+              </p>
+            )}
             <div className="flex items-center gap-3">
               <span className="h-px flex-1 bg-border" />
               <span className="text-xs text-muted-foreground">또는 이메일로</span>
@@ -134,6 +147,28 @@ export function AuthForm({
             />
           </div>
 
+          {mode === "signup" && (
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                name="agree"
+                value="1"
+                required
+                className="mt-0.5 h-3.5 w-3.5 accent-[hsl(var(--primary))]"
+              />
+              <span>
+                <Link href="/terms" target="_blank" className="text-primary hover:underline">
+                  이용약관
+                </Link>
+                과{" "}
+                <Link href="/privacy" target="_blank" className="text-primary hover:underline">
+                  개인정보처리방침
+                </Link>
+                에 동의합니다. (필수)
+              </span>
+            </label>
+          )}
+
           {state?.error && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {state.error}
@@ -144,6 +179,14 @@ export function AuthForm({
             {pending && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === "login" ? "로그인" : "회원가입"}
           </Button>
+
+          {mode === "login" && (
+            <p className="text-center text-xs">
+              <Link href="/forgot" className="text-muted-foreground hover:text-foreground">
+                비밀번호를 잊으셨나요?
+              </Link>
+            </p>
+          )}
         </form>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">

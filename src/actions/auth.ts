@@ -29,6 +29,8 @@ const signupSchema = z.object({
   name: z.string().trim().min(1, "이름을 입력해주세요.").max(50),
   email: z.string().trim().toLowerCase().email("올바른 이메일 형식이 아닙니다."),
   password: z.string().min(8, "비밀번호는 8자 이상이어야 합니다.").max(100),
+  // 화면의 체크박스는 required 지만, 서버에서도 한 번 더 확인한다.
+  agree: z.literal("1", { message: "이용약관과 개인정보처리방침에 동의해주세요." }),
 });
 
 export async function signup(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
@@ -36,6 +38,7 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
+    agree: formData.get("agree"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -49,7 +52,14 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
       return { error: "이미 가입된 이메일입니다." };
     }
     await db.insert(users)
-      .values({ id, email, name, passwordHash: hashPassword(password), createdAt: Date.now() });
+      .values({
+        id,
+        email,
+        name,
+        passwordHash: hashPassword(password),
+        termsAgreedAt: Date.now(),
+        createdAt: Date.now(),
+      });
     await createSession(id);
   } catch (error) {
     return { error: dbErrorMessage(error) };
@@ -66,6 +76,7 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
+    agree: formData.get("agree"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };

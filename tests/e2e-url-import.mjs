@@ -22,6 +22,7 @@ try {
   await page.getByLabel("이름").fill("링크수집");
   await page.getByLabel("이메일").fill(`url-${Date.now()}@test.local`);
   await page.getByLabel("비밀번호").fill("urlpass123!");
+  await page.locator('input[name="agree"]').check(); // 약관 동의(필수)
   await page.getByRole("button", { name: "회원가입" }).click();
   await page.waitForURL(`${BASE}/`);
 

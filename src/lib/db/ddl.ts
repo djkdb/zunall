@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   google_id TEXT,
   avatar_url TEXT,
   calendar_token TEXT,
+  terms_agreed_at BIGINT,
   created_at BIGINT NOT NULL
 );
 
@@ -66,6 +67,15 @@ CREATE TABLE IF NOT EXISTS activities (
   updated_at BIGINT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
+CREATE TABLE IF NOT EXISTS password_resets (
+  token TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  expires_at BIGINT NOT NULL,
+  used_at BIGINT,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_caltoken ON users(calendar_token);
 CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 
@@ -431,6 +441,7 @@ export const REQUIRED_TABLES = [
   "opportunity_analyses",
   "document_blobs",
   "activity_history",
+  "password_resets",
 ] as const;
 
 /** 밀리초 시간값이라 BIGINT 여야 하는 컬럼 (진단용) */

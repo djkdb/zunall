@@ -21,6 +21,7 @@ try {
   await page.getByLabel("이름").fill("워커드");
   await page.getByLabel("이메일").fill(email);
   await page.getByLabel("비밀번호").fill("worker123!");
+  await page.locator('input[name="agree"]').check(); // 약관 동의(필수)
   await page.getByRole("button", { name: "회원가입" }).click();
   await page.waitForURL(`${BASE}/`, { timeout: 30000 });
   step("workerd: 회원가입(Postgres 쓰기+scrypt+세션) → 대시보드", true);

@@ -88,6 +88,7 @@ try {
   await page.getByLabel("이름").fill("E2E 테스터");
   await page.getByLabel("이메일").fill(email);
   await page.getByLabel("비밀번호").fill("testpass123!");
+  await page.locator('input[name="agree"]').check(); // 약관 동의(필수)
   await page.getByRole("button", { name: "회원가입" }).click();
   await page.waitForURL(`${BASE}/`);
   step("회원가입 → 대시보드 진입", true);

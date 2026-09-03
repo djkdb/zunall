@@ -13,6 +13,7 @@ try {
   await a.getByLabel("이름").fill("백업A");
   await a.getByLabel("이메일").fill(emailA);
   await a.getByLabel("비밀번호").fill("bakpass123!");
+  await a.locator('input[name="agree"]').check(); // 약관 동의(필수)
   await a.getByRole("button", { name: "회원가입" }).click();
   await a.waitForURL(`${BASE}/`);
 
@@ -52,6 +53,7 @@ try {
   await c.getByLabel("이름").fill("백업B");
   await c.getByLabel("이메일").fill(`bak-b-${Date.now()}@test.local`);
   await c.getByLabel("비밀번호").fill("bakpass123!");
+  await c.locator('input[name="agree"]').check(); // 약관 동의(필수)
   await c.getByRole("button", { name: "회원가입" }).click();
   await c.waitForURL(`${BASE}/`);
 

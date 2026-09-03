@@ -11,6 +11,7 @@ try {
   await p.getByLabel("이름").fill("회고");
   await p.getByLabel("이메일").fill(`retro-${Date.now()}@test.local`);
   await p.getByLabel("비밀번호").fill("retropass123!");
+  await p.locator('input[name="agree"]').check(); // 약관 동의(필수)
   await p.getByRole("button", { name: "회원가입" }).click();
   await p.waitForURL(`${BASE}/`);
 

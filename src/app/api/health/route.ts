@@ -155,6 +155,7 @@ export async function GET(request: Request) {
       "users.avatar_url",
       "career_profiles.study_field",
       "career_profiles.role_key",
+      "users.terms_agreed_at",
     ];
     report.missingColumns = REQUIRED_COLUMNS.filter((c) => !columns.has(c));
     if (report.missingColumns.length > 0) {

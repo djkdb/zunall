@@ -84,6 +84,8 @@ export async function GET(request: NextRequest) {
           passwordHash: null,
           googleId: profile.googleId,
           avatarUrl: profile.picture,
+          // 로그인 화면에 안내한 대로, 구글로 가입하면 약관에 동의한 것으로 본다.
+          termsAgreedAt: Date.now(),
           createdAt: Date.now(),
         });
       }

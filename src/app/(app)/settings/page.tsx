@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireUser } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,8 @@ import { NOTIFY_THRESHOLDS } from "@/lib/constants";
 import { PushToggle } from "@/components/settings/push-toggle";
 import { BackupCard } from "@/components/settings/backup-card";
 import { StudyProfileCard } from "@/components/settings/study-profile-card";
+import { PasswordCard } from "@/components/settings/password-card";
+import { DangerCard } from "@/components/settings/danger-card";
 import { getPushEnv, countPushDevices } from "@/actions/push";
 import { getCareerContext } from "@/lib/career-queries";
 
@@ -52,6 +55,15 @@ export default async function SettingsPage() {
           <p>
             <span className="text-muted-foreground">이메일: </span>
             {user.email}
+          </p>
+          <p className="pt-1 text-xs text-muted-foreground">
+            <Link href="/terms" className="hover:text-foreground hover:underline">
+              이용약관
+            </Link>
+            {" · "}
+            <Link href="/privacy" className="hover:text-foreground hover:underline">
+              개인정보처리방침
+            </Link>
           </p>
         </CardContent>
       </Card>
@@ -164,6 +176,10 @@ export default async function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+
+      <PasswordCard hasPassword={!!user.passwordHash} />
+
+      <DangerCard email={user.email} />
     </div>
   );
 }

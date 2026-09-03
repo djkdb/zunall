@@ -36,8 +36,23 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   /** 캘린더 구독(.ics) 주소에 쓰는 비밀 토큰. 발급 전에는 null */
   calendarToken: text("calendar_token"),
+  /** 이용약관·개인정보처리방침에 동의한 시각 */
+  termsAgreedAt: epochMs("terms_agreed_at"),
   createdAt: epochMs("created_at").notNull(),
 });
+
+/** 비밀번호 재설정 토큰 (메일로 보낸 링크 한 번만 쓰인다) */
+export const passwordResets = pgTable(
+  "password_resets",
+  {
+    token: text("token").primaryKey(),
+    userId: text("user_id").notNull(),
+    expiresAt: epochMs("expires_at").notNull(),
+    usedAt: epochMs("used_at"),
+    createdAt: epochMs("created_at").notNull(),
+  },
+  (t) => [index("idx_password_resets_user").on(t.userId)],
+);
 
 /** 브라우저 푸시 구독 (기기 하나당 한 줄) */
 export const pushSubscriptions = pgTable(

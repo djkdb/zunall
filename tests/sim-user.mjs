@@ -128,6 +128,7 @@ try {
   await page.getByLabel("이메일").fill(email);
   await page.getByLabel("비밀번호").fill("jimin1234!");
   await shot(page, "01-signup");
+  await page.locator('input[name="agree"]').check(); // 약관 동의(필수)
   await page.getByRole("button", { name: "회원가입" }).click();
   await page.waitForURL(`${BASE}/`);
   note("회원가입 즉시 로그인 → 대시보드", true);
