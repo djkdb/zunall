@@ -1,6 +1,6 @@
 // 목표 → 역할 템플릿 매칭 (순수 함수)
 
-import { ROLE_TEMPLATES, type RoleTemplate } from "@/lib/career-constants";
+import { ROLE_TEMPLATES, type RoleTemplate, type StudyField } from "@/lib/career-constants";
 
 export interface GoalLike {
   name: string;
@@ -8,9 +8,18 @@ export interface GoalLike {
   targetRoles: string[];
 }
 
-/** 목표 이름/희망 직무 텍스트로 가장 적합한 역할 템플릿을 찾는다. */
-export function matchTemplate(goal: GoalLike | null): RoleTemplate {
+/**
+ * 역할 템플릿을 고른다.
+ * 사용자가 희망 직무를 직접 골랐다면(roleKey) 그것이 가장 정확하므로 먼저 쓰고,
+ * 없을 때만 목표 텍스트에서 추측한다.
+ */
+export function matchTemplate(goal: GoalLike | null, roleKey?: string | null): RoleTemplate {
   const general = ROLE_TEMPLATES.find((t) => t.key === "general")!;
+
+  if (roleKey) {
+    const picked = ROLE_TEMPLATES.find((t) => t.key === roleKey);
+    if (picked) return picked;
+  }
   if (!goal) return general;
 
   const haystack = [goal.name, ...goal.targetRoles].join(" ").toLowerCase();
@@ -24,4 +33,12 @@ export function matchTemplate(goal: GoalLike | null): RoleTemplate {
     }
   }
   return best?.template ?? general;
+}
+
+/** 계열에 해당하는 희망 직무 목록 (계열이 없으면 전체). general 은 항상 마지막. */
+export function templatesForField(field: StudyField | null | undefined): RoleTemplate[] {
+  const list = ROLE_TEMPLATES.filter((t) => t.key !== "general");
+  const scoped = field ? list.filter((t) => t.field === field) : list;
+  const general = ROLE_TEMPLATES.find((t) => t.key === "general")!;
+  return [...(scoped.length > 0 ? scoped : list), general];
 }

@@ -444,6 +444,9 @@ export const careerProfiles = pgTable("career_profiles", {
   desiredRoles: text("desired_roles"), // JSON string[]
   desiredCompanies: text("desired_companies"), // JSON string[]
   githubUsername: text("github_username"),
+  studyField: text("study_field"), // STUDY_FIELDS 키 (인문·상경·공학 …)
+  major: text("major"), // 학과/학부 (자유 입력)
+  roleKey: text("role_key"), // ROLE_TEMPLATES 키 — 희망 직무를 직접 고른 경우
   onboardedAt: epochMs("onboarded_at"),
   updatedAt: epochMs("updated_at").notNull(),
 });

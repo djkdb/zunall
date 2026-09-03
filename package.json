@@ -22,7 +22,7 @@
     "test:unit": "tsx tests/score.test.ts && tsx tests/db-url.test.ts && tsx tests/fetch-url.test.ts && tsx tests/ics.test.ts && tsx tests/webpush.test.ts && tsx tests/outcome.test.ts && tsx tests/migrate-split.test.ts",
     "vapid": "tsx scripts/gen-vapid.ts",
     "gen:migrations": "tsx scripts/gen-migrations.ts",
-    "test:e2e": "node tests/e2e-smoke.mjs && node tests/e2e-career.mjs && node tests/sim-full.mjs && node tests/e2e-calendar-ics.mjs && node tests/e2e-essay.mjs && node tests/e2e-retro-portfolio.mjs && node tests/e2e-search-preview.mjs && node tests/e2e-backup.mjs && node tests/e2e-widgets.mjs && node tests/e2e-quick-create.mjs && node tests/e2e-profile-import.mjs && node tests/e2e-guide.mjs && node tests/e2e-fields.mjs"
+    "test:e2e": "node tests/e2e-smoke.mjs && node tests/e2e-career.mjs && node tests/sim-full.mjs && node tests/e2e-calendar-ics.mjs && node tests/e2e-essay.mjs && node tests/e2e-retro-portfolio.mjs && node tests/e2e-search-preview.mjs && node tests/e2e-backup.mjs && node tests/e2e-widgets.mjs && node tests/e2e-quick-create.mjs && node tests/e2e-profile-import.mjs && node tests/e2e-guide.mjs && node tests/e2e-fields.mjs && node tests/e2e-study-field.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

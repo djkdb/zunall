@@ -3,7 +3,13 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Target, User, Wrench, Loader2, ArrowRight, Check } from "lucide-react";
-import { saveGoal, saveProfileBasics, addSkill, completeOnboarding } from "@/actions/career";
+import {
+  saveGoal,
+  saveProfileBasics,
+  saveStudyProfile,
+  addSkill,
+  completeOnboarding,
+} from "@/actions/career";
 import { CaveroMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +23,7 @@ import {
   ROLE_TEMPLATES,
   type StudyField,
 } from "@/lib/career-constants";
+import { templatesForField } from "@/services/career/templates";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,8 +33,10 @@ import { cn } from "@/lib/utils";
 export function OnboardingWizard({ userName }: { userName: string }) {
   const router = useRouter();
   const [step, setStep] = React.useState(0);
-  /** 전공 계열 — 스킬·목표 예시를 이 계열 위주로 보여준다 (선택하지 않아도 진행 가능) */
+  /** 전공 계열 — 스킬·목표·활동 추천의 기준이 된다 (선택하지 않아도 진행 가능) */
   const [field, setField] = React.useState<StudyField | null>(null);
+  /** 고른 희망 직무 템플릿 키 — 이 값이 있으면 목표 텍스트보다 우선한다 */
+  const [roleKey, setRoleKey] = React.useState<string | null>(null);
   const [showAllSkills, setShowAllSkills] = React.useState(false);
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -45,6 +54,16 @@ export function OnboardingWizard({ userName }: { userName: string }) {
     setPending(true);
     setError(null);
     const form = new FormData(e.currentTarget);
+    // 전공·희망 직무를 먼저 저장한다. 이후 추천이 모두 이 값을 기준으로 움직인다.
+    const study = await saveStudyProfile({
+      studyField: field,
+      major: String(form.get("major") ?? ""),
+      roleKey,
+    });
+    if (!study.ok) {
+      setPending(false);
+      return setError(study.error);
+    }
     const result = await saveGoal({
       type: (form.get("type") as "ROLE") ?? "ROLE",
       name: String(form.get("name") ?? ""),
@@ -137,15 +156,23 @@ export function OnboardingWizard({ userName }: { userName: string }) {
             <div className="space-y-1.5">
               <Label>전공 계열 (선택)</Label>
               <p className="text-xs text-muted-foreground">
-                고르면 목표 예시와 스킬 목록을 그 계열 위주로 보여드립니다. 전공과 다른 진로도
-                괜찮습니다.
+                스킬·희망 직무·추천 활동을 그 계열 기준으로 맞춰드립니다. 전공과 다른 진로도
+                괜찮고, 나중에 설정에서 바꿀 수 있습니다.
               </p>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {(Object.keys(STUDY_FIELDS) as StudyField[]).map((key) => (
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setField(field === key ? null : key)}
+                    onClick={() => {
+                      const next = field === key ? null : key;
+                      setField(next);
+                      // 계열을 바꾸면 다른 계열에서 고른 직무는 지운다.
+                      setRoleKey((current) => {
+                        const picked = ROLE_TEMPLATES.find((t) => t.key === current);
+                        return picked && next && picked.field !== next ? null : current;
+                      });
+                    }}
                     className={cn(
                       "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                       field === key
@@ -159,26 +186,44 @@ export function OnboardingWizard({ userName }: { userName: string }) {
               </div>
             </div>
 
-            {field && (
-              <div className="rounded-md bg-secondary/50 p-3">
-                <p className="text-xs font-medium">이런 목표를 많이 씁니다</p>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {ROLE_TEMPLATES.filter((t) => t.field === field).map((template) => (
+            <div className="space-y-1.5">
+              <Label htmlFor="ob-major">학과 / 학부 (선택)</Label>
+              <Input id="ob-major" name="major" maxLength={60} placeholder="예: 경영학과, 기계공학부" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>희망 직무 (선택)</Label>
+              <p className="text-xs text-muted-foreground">
+                고르면 그 직무가 요구하는 역량을 기준으로 점수·부족한 부분·추천 행동을 계산합니다.
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {templatesForField(field)
+                  .filter((t) => t.key !== "general")
+                  .map((template) => (
                     <button
                       key={template.key}
                       type="button"
-                      className="rounded-full border border-input bg-background px-2.5 py-1 text-xs hover:border-primary/50"
                       onClick={() => {
+                        const next = roleKey === template.key ? null : template.key;
+                        setRoleKey(next);
                         const input = document.getElementById("ob-goal") as HTMLInputElement | null;
-                        if (input) input.value = template.label;
+                        if (input && next) input.value = template.label;
                       }}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                        roleKey === template.key
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-input text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                      )}
                     >
                       {template.label}
                     </button>
                   ))}
-                </div>
               </div>
-            )}
+              <p className="pt-1 text-xs text-muted-foreground">
+                찾는 직무가 없으면 아래에 직접 적어도 됩니다.
+              </p>
+            </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="ob-goal">어떤 목표를 향해 가고 있나요? *</Label>
@@ -187,7 +232,7 @@ export function OnboardingWizard({ userName }: { userName: string }) {
                 name="name"
                 required
                 maxLength={120}
-                placeholder="예: AI Software Engineer, 네이버 서비스 기획자"
+                placeholder="예: 마케터, 네이버 서비스 기획자, AI 엔지니어"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">

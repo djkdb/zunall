@@ -6,19 +6,38 @@ import { Plus, X, Loader2 } from "lucide-react";
 import { addSkill, removeSkill } from "@/actions/career";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SKILL_CATALOG } from "@/lib/career-constants";
+import { SKILL_CATALOG, STUDY_FIELDS, type StudyField } from "@/lib/career-constants";
 import { cn } from "@/lib/utils";
 import type { UserSkillRow } from "@/lib/db";
 
-/** 스킬 추가/삭제 관리자: 카탈로그 칩 + 직접 입력 */
-export function SkillManager({ skills }: { skills: UserSkillRow[] }) {
+/**
+ * 스킬 추가/삭제 관리자: 카탈로그 칩 + 직접 입력.
+ * 전공 계열이 있으면 그 계열에서 쓰이는 스킬만 먼저 보여준다
+ * (48개를 한꺼번에 보여주면 자기 전공과 무관한 항목에 묻힌다).
+ */
+export function SkillManager({
+  skills,
+  studyField = null,
+}: {
+  skills: UserSkillRow[];
+  studyField?: StudyField | null;
+}) {
   const router = useRouter();
   const [pending, setPending] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [showAll, setShowAll] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
 
   const owned = new Set(skills.map((s) => s.name));
-  const suggestions = SKILL_CATALOG.filter((s) => !owned.has(s.name));
+  const suggestions = SKILL_CATALOG.filter(
+    (s) =>
+      !owned.has(s.name) &&
+      (showAll ||
+        !studyField ||
+        !s.fields ||
+        s.fields.length === 0 ||
+        s.fields.includes(studyField)),
+  );
 
   async function handleAdd(name: string) {
     setPending(name);
@@ -67,7 +86,20 @@ export function SkillManager({ skills }: { skills: UserSkillRow[] }) {
 
       {suggestions.length > 0 && (
         <div>
-          <p className="mb-1.5 text-xs font-medium text-muted-foreground">추가할 수 있는 스킬</p>
+          <div className="mb-1.5 flex flex-wrap items-center gap-2">
+            <p className="text-xs font-medium text-muted-foreground">추가할 수 있는 스킬</p>
+            {studyField && (
+              <button
+                type="button"
+                className="text-xs text-primary hover:underline"
+                onClick={() => setShowAll((v) => !v)}
+              >
+                {showAll
+                  ? `${STUDY_FIELDS[studyField]} 계열만 보기`
+                  : `${STUDY_FIELDS[studyField]} 계열 기준 — 전체 보기`}
+              </button>
+            )}
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {suggestions.map((skill) => (
               <button

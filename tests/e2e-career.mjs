@@ -123,7 +123,7 @@ try {
   text = await page.locator("main").textContent();
   const initialScore = readinessScore(text);
   step("Career Score 표시 (규칙 기반 + 근거 안내)", initialScore !== null, `${initialScore}점`);
-  step("목표 템플릿 매칭 (AI Software Engineer)", text.includes("AI Software Engineer"));
+  step("목표 템플릿 매칭 (AI 엔지니어)", text.includes("AI 엔지니어"));
   step("Today's Mission 추천 표시", text.includes("Today's Career Mission"));
 
   // ── 3. 근거 추가 → 점수 상승

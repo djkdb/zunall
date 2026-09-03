@@ -20,7 +20,12 @@ import { getCareerContext, recordScoreSnapshot } from "@/lib/career-queries";
 import { importEvidenceFromActivities } from "@/services/career/evidence-import";
 import { normalizeSkillNames } from "@/services/career/skill-detect";
 import { rankActions } from "@/services/career/mission";
-import { SKILL_CATALOG, EVIDENCE_KINDS } from "@/lib/career-constants";
+import {
+  SKILL_CATALOG,
+  EVIDENCE_KINDS,
+  STUDY_FIELDS,
+  ROLE_TEMPLATES,
+} from "@/lib/career-constants";
 import type { ActionResult } from "@/actions/activities";
 
 function revalidateCareer() {
@@ -109,6 +114,48 @@ const profileSchema = z.object({
   githubUsername: z.string().max(60).optional(),
 });
 export type ProfileInput = z.input<typeof profileSchema>;
+
+// ─── 전공 계열 · 학과 · 희망 직무 ─────────────────────────────
+// 이 세 가지가 스킬 추천·목표 템플릿·활동 추천의 기준이 된다.
+
+const studyProfileSchema = z.object({
+  studyField: z.string().max(30).nullish(),
+  major: z.string().max(60).nullish(),
+  roleKey: z.string().max(40).nullish(),
+});
+export type StudyProfileInput = z.input<typeof studyProfileSchema>;
+
+export async function saveStudyProfile(input: StudyProfileInput): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = studyProfileSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+
+  // 아는 값만 저장한다 (모르는 계열/직무 키는 버린다).
+  const field = parsed.data.studyField;
+  const studyField = field && field in STUDY_FIELDS ? field : null;
+  const roleKeyRaw = parsed.data.roleKey;
+  const roleKey =
+    roleKeyRaw && ROLE_TEMPLATES.some((t) => t.key === roleKeyRaw) ? roleKeyRaw : null;
+  const major = parsed.data.major?.trim() || null;
+
+  const existing = (await db
+    .select()
+    .from(careerProfiles)
+    .where(eq(careerProfiles.userId, user.id))
+    .limit(1))[0];
+
+  const values = { studyField, major, roleKey, updatedAt: Date.now() };
+  if (existing) {
+    await db.update(careerProfiles).set(values).where(eq(careerProfiles.id, existing.id));
+  } else {
+    await db.insert(careerProfiles).values({ id: newId(), userId: user.id, ...values });
+  }
+
+  revalidateCareer();
+  revalidatePath("/settings");
+  revalidatePath("/activities/new");
+  return { ok: true };
+}
 
 export async function saveProfileBasics(input: ProfileInput): Promise<ActionResult> {
   const user = await requireUser();

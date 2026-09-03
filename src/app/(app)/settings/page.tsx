@@ -9,7 +9,9 @@ import { databaseKind } from "@/lib/db/info";
 import { NOTIFY_THRESHOLDS } from "@/lib/constants";
 import { PushToggle } from "@/components/settings/push-toggle";
 import { BackupCard } from "@/components/settings/backup-card";
+import { StudyProfileCard } from "@/components/settings/study-profile-card";
 import { getPushEnv, countPushDevices } from "@/actions/push";
+import { getCareerContext } from "@/lib/career-queries";
 
 const STORAGE_LABEL: Record<ReturnType<typeof storageBackend>, string> = {
   db: "DB 저장 (document_blobs)",
@@ -26,8 +28,11 @@ export default async function SettingsPage() {
   const providerNotice = providerFallbackReason();
   const storage = storageBackend();
   const database = databaseKind();
-  const pushEnv = await getPushEnv();
-  const pushDevices = await countPushDevices();
+  const [pushEnv, pushDevices, careerCtx] = await Promise.all([
+    getPushEnv(),
+    countPushDevices(),
+    getCareerContext(user.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -50,6 +55,12 @@ export default async function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+
+      <StudyProfileCard
+        initialField={careerCtx.studyField}
+        initialMajor={careerCtx.profile?.major ?? null}
+        initialRoleKey={careerCtx.profile?.roleKey ?? null}
+      />
 
       <Card>
         <CardHeader>

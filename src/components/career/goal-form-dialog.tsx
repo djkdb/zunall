@@ -64,7 +64,7 @@ export function GoalFormDialog({
               required
               maxLength={120}
               defaultValue={goal?.name ?? ""}
-              placeholder="예: AI Software Engineer"
+              placeholder="예: 마케터, AI 엔지니어"
             />
           </div>
           <div className="grid grid-cols-3 gap-3">

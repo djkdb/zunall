@@ -49,7 +49,7 @@ export default async function SkillsPage() {
           <CardTitle>스킬 관리</CardTitle>
         </CardHeader>
         <CardContent>
-          <SkillManager skills={skills} />
+          <SkillManager skills={skills} studyField={ctx.studyField} />
         </CardContent>
       </Card>
     </div>

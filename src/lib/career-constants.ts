@@ -1,5 +1,8 @@
 // Career OS 도메인 상수: 목표 유형, 스킬 카탈로그, 근거 종류, 역할 템플릿.
+// (활동 유형 키는 lib/constants 의 ACTIVITY_TYPES 를 그대로 쓴다)
 // 점수는 services/score/* 의 규칙 기반 레이어에서만 계산한다.
+
+import type { ActivityType } from "@/lib/constants";
 
 export const GOAL_TYPES = {
   ROLE: "직무 목표",
@@ -177,7 +180,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
   {
     key: "ai_engineer",
     field: "engineering",
-    label: "AI Software Engineer",
+    label: "AI 엔지니어",
     keywords: ["ai engineer", "ai software", "ai 개발", "ai 엔지니어", "머신러닝", "ml engineer", "llm"],
     requirements: [
       { skill: "AI 활용", target: 80, why: "AI 제품 개발의 핵심 역량" },
@@ -192,7 +195,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
   {
     key: "frontend",
     field: "engineering",
-    label: "Frontend Engineer",
+    label: "프론트엔드 개발자",
     keywords: ["frontend", "프론트엔드", "웹 개발자", "react 개발"],
     requirements: [
       { skill: "Frontend", target: 85, why: "직무 핵심 역량" },
@@ -207,7 +210,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
   {
     key: "backend",
     field: "engineering",
-    label: "Backend Engineer",
+    label: "백엔드 개발자",
     keywords: ["backend", "백엔드", "서버 개발"],
     requirements: [
       { skill: "Backend", target: 85, why: "직무 핵심 역량" },
@@ -221,7 +224,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
   {
     key: "data",
     field: "engineering",
-    label: "Data Analyst",
+    label: "데이터 분석가",
     keywords: ["데이터 분석가", "data analyst", "데이터 사이언", "data scien"],
     requirements: [
       { skill: "데이터 분석", target: 85, why: "직무 핵심 역량" },
@@ -235,7 +238,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
   {
     key: "pm",
     field: "business",
-    label: "Product Manager",
+    label: "서비스 기획 / PM",
     keywords: ["pm", "프로덕트 매니저", "서비스 기획", "product manager", "기획자"],
     requirements: [
       { skill: "기획", target: 85, why: "직무 핵심 역량" },
@@ -249,7 +252,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
   {
     key: "marketing",
     field: "business",
-    label: "Marketer",
+    label: "마케터",
     keywords: ["마케터", "마케팅", "브랜드", "그로스"],
     requirements: [
       { skill: "마케팅", target: 85, why: "직무 핵심 역량" },
@@ -262,7 +265,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
   {
     key: "designer",
     field: "arts",
-    label: "Product Designer",
+    label: "프로덕트 디자이너",
     keywords: ["디자이너", "designer", "ux", "ui 디자인"],
     requirements: [
       { skill: "디자인", target: 85, why: "직무 핵심 역량" },
@@ -646,5 +649,60 @@ export const GAP_ACTION_TEMPLATES: Record<string, GapActionTemplate[]> = {
   ],
   모바일: [
     { title: "간단한 모바일 앱 프로토타입 만들기", minutes: 360, effect: 4, reason: "동작하는 앱이 최고의 근거입니다." },
+  ],
+};
+
+/**
+ * 계열별 추천 활동.
+ * "무엇부터 해야 할지 모르겠다"는 신규 사용자에게 자기 전공에서 흔한
+ * 공모전·대외활동·인턴 유형을 먼저 보여준다.
+ */
+export interface FieldActivityHint {
+  /** 활동 유형 (ACTIVITY_TYPES 키) */
+  type: ActivityType;
+  label: string;
+  why: string;
+}
+
+export const FIELD_ACTIVITY_HINTS: Record<StudyField, FieldActivityHint[]> = {
+  humanities: [
+    { type: "contest", label: "글쓰기·번역·에세이 공모전", why: "언어 역량을 심사받은 기록이 남습니다" },
+    { type: "external", label: "출판·문화재단 서포터즈", why: "콘텐츠 기획·편집 근거를 쌓을 수 있습니다" },
+    { type: "intern", label: "출판·미디어·홍보 인턴", why: "직무 경험이 곧 자소서 소재가 됩니다" },
+  ],
+  social: [
+    { type: "contest", label: "정책 제안·사회문제 해결 공모전", why: "문제 정의와 대안 제시를 증명합니다" },
+    { type: "external", label: "공공기관 대학생 기자단·서포터즈", why: "행정·공공 도메인 경험을 얻습니다" },
+    { type: "external", label: "학회·사회조사 프로젝트", why: "설문 설계와 데이터 해석 근거가 됩니다" },
+  ],
+  business: [
+    { type: "contest", label: "마케팅·비즈니스 아이디어 공모전", why: "기획서와 수상 실적이 가장 흔한 평가 근거입니다" },
+    { type: "external", label: "기업 서포터즈·앰배서더", why: "브랜드 실무와 콘텐츠 제작 경험" },
+    { type: "intern", label: "마케팅·영업·재무 인턴", why: "현업 지표를 다뤄본 경험이 차별점입니다" },
+  ],
+  engineering: [
+    { type: "contest", label: "해커톤·아이디어톤", why: "동작하는 결과물이 가장 강한 근거입니다" },
+    { type: "project", label: "개인/팀 개발 프로젝트 + 배포", why: "실사용자까지 도달한 경험은 희소합니다" },
+    { type: "intern", label: "개발·엔지니어링 인턴", why: "실무 코드베이스 경험" },
+  ],
+  science: [
+    { type: "external", label: "학부연구생(인턴십) · 랩 인턴", why: "실험 설계와 데이터 처리 근거" },
+    { type: "contest", label: "학술대회 포스터·논문 경진대회", why: "연구 결과를 발표한 기록이 남습니다" },
+    { type: "project", label: "데이터 분석 프로젝트", why: "통계 도구 활용을 증명합니다" },
+  ],
+  medical: [
+    { type: "external", label: "병원·보건소 봉사 및 실습", why: "임상 현장 경험이 지원 동기를 뒷받침합니다" },
+    { type: "contest", label: "보건정책·헬스케어 아이디어 공모전", why: "전공 지식을 문제 해결로 연결합니다" },
+    { type: "project", label: "건강 캠페인 기획·운영", why: "기획과 커뮤니케이션 근거" },
+  ],
+  education: [
+    { type: "external", label: "교육봉사·멘토링 프로그램", why: "지도 경험이 교직·교육기업의 핵심 근거입니다" },
+    { type: "contest", label: "수업 지도안·교육 콘텐츠 공모전", why: "교수 설계 역량을 보여줍니다" },
+    { type: "intern", label: "에듀테크·학원 교육기획 인턴", why: "교육 산업 실무 경험" },
+  ],
+  arts: [
+    { type: "contest", label: "디자인·영상·공연 공모전", why: "포트폴리오에 바로 들어가는 결과물" },
+    { type: "project", label: "개인 포트폴리오 프로젝트", why: "작업물 자체가 평가 대상입니다" },
+    { type: "external", label: "축제·전시 기획 스태프", why: "기획·운영 경험을 함께 쌓습니다" },
   ],
 };

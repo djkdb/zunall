@@ -40,4 +40,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "008-user-settings.sql",
     sql: "-- 사용자별 화면 설정(대시보드 위젯 구성).\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nCREATE TABLE IF NOT EXISTS user_settings (\n  user_id TEXT PRIMARY KEY,\n  dashboard_widgets TEXT,\n  updated_at BIGINT NOT NULL\n);\n",
   },
+  {
+    name: "009-study-field.sql",
+    sql: "-- 전공 계열·학과·희망 직무를 프로필에 저장한다.\n-- 이 값으로 스킬 추천·목표 템플릿·활동 추천을 개인화한다.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE career_profiles ADD COLUMN IF NOT EXISTS study_field TEXT;\nALTER TABLE career_profiles ADD COLUMN IF NOT EXISTS major TEXT;\nALTER TABLE career_profiles ADD COLUMN IF NOT EXISTS role_key TEXT;\n",
+  },
 ];

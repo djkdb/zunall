@@ -21,6 +21,7 @@ import {
   DeleteEvidenceButton,
 } from "@/components/career/evidence-manager";
 import { EVIDENCE_KINDS, GOAL_TYPES, type EvidenceKind, type GoalType } from "@/lib/career-constants";
+import { STUDY_FIELDS } from "@/lib/career-constants";
 import { safeJsonParse, relativeTime } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Career Profile" };
@@ -59,6 +60,30 @@ export default async function CareerPage() {
           {ctx.profile?.summary && (
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{ctx.profile.summary}</p>
           )}
+          {/* 점수와 추천이 무엇을 기준으로 계산됐는지 밝힌다. */}
+          {(() => {
+            const basis = [
+              ctx.studyField ? STUDY_FIELDS[ctx.studyField] : null,
+              ctx.profile?.major,
+              ctx.template.key === "general" ? null : ctx.template.label,
+            ].filter(Boolean);
+            return (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {basis.length > 0 ? (
+                  <>
+                    {basis.join(" · ")} 기준 ·{" "}
+                    <Link href="/settings" className="text-primary hover:underline">
+                      변경
+                    </Link>
+                  </>
+                ) : (
+                  <Link href="/settings" className="text-primary hover:underline">
+                    전공·희망 직무를 고르면 점수와 추천이 더 정확해집니다
+                  </Link>
+                )}
+              </p>
+            );
+          })()}
         </div>
         <div className="flex items-center gap-1.5">
           <ProfileFormDialog

@@ -316,6 +316,9 @@ CREATE TABLE IF NOT EXISTS career_profiles (
   desired_roles TEXT,
   desired_companies TEXT,
   github_username TEXT,
+  study_field TEXT,
+  major TEXT,
+  role_key TEXT,
   onboarded_at BIGINT,
   updated_at BIGINT NOT NULL
 );

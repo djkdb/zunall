@@ -22,7 +22,7 @@ import { computeSkillScores, type SkillScoreDetail } from "@/services/score/skil
 import { computeReadiness, type ReadinessResult } from "@/services/score/readiness";
 import { computeGaps, type GapItem } from "@/services/career/gap";
 import { pickMission, type MissionCandidate } from "@/services/career/mission";
-import type { RoleTemplate } from "@/lib/career-constants";
+import { STUDY_FIELDS, type RoleTemplate, type StudyField } from "@/lib/career-constants";
 
 export interface CareerContext {
   profile: CareerProfileRow | null;
@@ -32,10 +32,17 @@ export interface CareerContext {
   evidence: EvidenceRow[];
   readiness: ReadinessResult;
   gaps: GapItem[];
+  /** 프로필에 저장된 전공 계열 (스킬·활동 추천에 사용) */
+  studyField: StudyField | null;
   mission: MissionCandidate | null;
   /** 진행 중(accepted)인 미션 액션 */
   activeAction: typeof careerActions.$inferSelect | null;
   onboarded: boolean;
+}
+
+/** 저장된 값이 아는 계열일 때만 돌려준다 (알 수 없는 값이면 무시). */
+export function parseStudyField(value: string | null | undefined): StudyField | null {
+  return value && value in STUDY_FIELDS ? (value as StudyField) : null;
 }
 
 /** Career 화면·대시보드가 공유하는 컨텍스트를 한 번에 조립한다. */
@@ -70,6 +77,7 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
           targetRoles: safeJsonParse<string[]>(goal.targetRoles, []),
         }
       : null,
+    profile?.roleKey,
   );
 
   const skillScores = computeSkillScores(
@@ -118,6 +126,7 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
     evidence,
     readiness,
     gaps,
+    studyField: parseStudyField(profile?.studyField),
     mission,
     activeAction,
     onboarded: !!profile?.onboardedAt && !!goal,

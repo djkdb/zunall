@@ -150,7 +150,12 @@ export async function GET(request: Request) {
           "(회원가입·로그인이 'out of range for type integer' 로 실패하는 원인입니다)",
       );
     }
-    const REQUIRED_COLUMNS = ["users.google_id", "users.avatar_url"];
+    const REQUIRED_COLUMNS = [
+      "users.google_id",
+      "users.avatar_url",
+      "career_profiles.study_field",
+      "career_profiles.role_key",
+    ];
     report.missingColumns = REQUIRED_COLUMNS.filter((c) => !columns.has(c));
     if (report.missingColumns.length > 0) {
       report.problems.push(
