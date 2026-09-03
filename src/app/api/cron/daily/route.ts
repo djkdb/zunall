@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
-import { db, activities, pushSubscriptions, users } from "@/lib/db";
+import { db, activities, pushSubscriptions, users, noticeSources } from "@/lib/db";
 import { sendPush, pushConfigured } from "@/services/push/webpush";
 import { runDeadlineNotifications } from "@/services/notification/generator";
+import { collectForUser } from "@/services/notice/collect";
 import { daysUntil, ddayLabel } from "@/lib/utils";
 import { NOTIFY_THRESHOLDS, ONGOING_STATUSES } from "@/lib/constants";
 
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 /**
  * 하루 한 번 도는 알림 작업 (Cloudflare Cron 또는 외부 스케줄러가 호출).
  * - 앱 내부 알림을 생성하고
+ * - 등록한 공고 사이트에서 새 글을 찾아오고
  * - 브라우저 푸시를 구독한 기기에 오늘의 마감 요약을 보낸다
  *
  * CRON_KEY 로 보호한다. 키가 없으면 아무 일도 하지 않는다(실수로 공개되는 것 방지).
@@ -24,6 +26,17 @@ export async function GET(request: Request) {
   const provided = url.searchParams.get("key") ?? request.headers.get("x-cron-key");
   if (provided !== expected) {
     return NextResponse.json({ ok: false }, { status: 401 });
+  }
+
+  // ── 공고 수집: 사이트를 등록한 사용자만 대상으로 한다 ──────────
+  // (푸시 구독 여부와 무관하게, 등록해둔 사람은 모두 받아야 한다)
+  const sourceOwners = new Set(
+    (await db.select({ userId: noticeSources.userId }).from(noticeSources)).map((r) => r.userId),
+  );
+  let collected = 0;
+  for (const userId of sourceOwners) {
+    const result = await collectForUser(userId);
+    collected += result.found;
   }
 
   // 푸시를 구독한 사용자만 대상으로 한다
@@ -103,5 +116,13 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, users: byUser.size, notified, pushed, removed });
+  return NextResponse.json({
+    ok: true,
+    users: byUser.size,
+    notified,
+    pushed,
+    removed,
+    noticeUsers: sourceOwners.size,
+    noticesFound: collected,
+  });
 }

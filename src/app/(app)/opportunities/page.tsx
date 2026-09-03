@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Crosshair, Plus } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
-import { db, activities, opportunityAnalyses } from "@/lib/db";
+import { db, activities, opportunityAnalyses, noticeSources, noticeItems } from "@/lib/db";
 import { getCareerContext } from "@/lib/career-queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AnalyzeFitButton } from "@/components/career/analyze-fit-button";
+import { NoticeFeed } from "@/components/notices/notice-feed";
+import { TabNav } from "@/components/ui/tab-nav";
 import { nearestDeadlineOf } from "@/lib/queries";
 import {
   ACTIVITY_TYPES,
@@ -28,9 +30,16 @@ const REC_BADGES: Record<string, { label: string; className: string }> = {
   skip: { label: "지원 비추천", className: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" },
 };
 
-export default async function OpportunitiesPage() {
+export default async function OpportunitiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const user = await requireUser();
-  const [ctx, actRows, analyses] = await Promise.all([
+  const { tab: rawTab } = await searchParams;
+  const tab = rawTab === "feed" ? "feed" : "fit";
+
+  const [ctx, actRows, analyses, sources, newItems] = await Promise.all([
     getCareerContext(user.id),
     db
       .select()
@@ -38,6 +47,17 @@ export default async function OpportunitiesPage() {
       .where(eq(activities.userId, user.id))
       .orderBy(desc(activities.updatedAt)),
     db.select().from(opportunityAnalyses).where(eq(opportunityAnalyses.userId, user.id)),
+    db
+      .select()
+      .from(noticeSources)
+      .where(eq(noticeSources.userId, user.id))
+      .orderBy(desc(noticeSources.createdAt)),
+    db
+      .select()
+      .from(noticeItems)
+      .where(and(eq(noticeItems.userId, user.id), eq(noticeItems.status, "new")))
+      .orderBy(desc(noticeItems.foundAt))
+      .limit(50),
   ]);
   const acts = actRows.filter((a) => !(FINISHED_STATUSES as string[]).includes(a.status));
   const analysisByActivity = new Map(analyses.map((a) => [a.activityId, a]));
@@ -67,6 +87,19 @@ export default async function OpportunitiesPage() {
         </Link>
       </div>
 
+      <TabNav
+        tabs={[
+          { key: "fit", label: "내 활동 적합도" },
+          { key: "feed", label: "수집한 공고", count: newItems.length },
+        ]}
+        active={tab}
+        hrefPrefix="/opportunities?tab="
+      />
+
+      {tab === "feed" ? (
+        <NoticeFeed sources={sources} items={newItems} />
+      ) : (
+        <>
       {!ctx.onboarded && (
         <div className="rounded-lg border border-primary/40 bg-accent/40 p-4 text-sm">
           적합도 분석을 사용하려면 먼저{" "}
@@ -155,6 +188,8 @@ export default async function OpportunitiesPage() {
             );
           })}
         </ul>
+      )}
+        </>
       )}
     </div>
   );

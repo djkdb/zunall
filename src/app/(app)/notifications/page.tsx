@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import { Bell, CalendarClock, FileText, Sparkles, Info } from "lucide-react";
+import { Bell, CalendarClock, FileText, Sparkles, Info,
+  Megaphone,
+} from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { db, notifications, activities } from "@/lib/db";
 import { TabNav } from "@/components/ui/tab-nav";
@@ -19,6 +21,7 @@ const TYPE_ICONS: Record<NotificationType, React.ComponentType<{ className?: str
   schedule: CalendarClock,
   file: FileText,
   ai: Sparkles,
+  notice: Megaphone,
   system: Info,
 };
 
@@ -28,6 +31,7 @@ const FILTERS = [
   { key: "schedule", label: "일정" },
   { key: "file", label: "파일" },
   { key: "ai", label: "AI 평가" },
+  { key: "notice", label: "새 공고" },
 ] as const;
 
 export default async function NotificationsPage({

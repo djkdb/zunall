@@ -48,4 +48,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "010-account.sql",
     sql: "-- 계정 관리: 약관 동의 시각, 비밀번호 재설정 토큰.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE users ADD COLUMN IF NOT EXISTS terms_agreed_at BIGINT;\n\nCREATE TABLE IF NOT EXISTS password_resets (\n  token TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  expires_at BIGINT NOT NULL,\n  used_at BIGINT,\n  created_at BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);\n",
   },
+  {
+    name: "011-notice-sources.sql",
+    sql: "-- 공고 자동 수집: 관심 사이트(소스)와 거기서 찾아낸 공고 목록.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nCREATE TABLE IF NOT EXISTS notice_sources (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  name TEXT NOT NULL,\n  url TEXT NOT NULL,\n  keywords TEXT,\n  active INTEGER NOT NULL DEFAULT 1,\n  last_checked_at BIGINT,\n  last_error TEXT,\n  last_found INTEGER NOT NULL DEFAULT 0,\n  created_at BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_notice_sources_user ON notice_sources(user_id);\n\nCREATE TABLE IF NOT EXISTS notice_items (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  source_id TEXT NOT NULL,\n  url TEXT NOT NULL,\n  title TEXT NOT NULL,\n  published_at TEXT,\n  status TEXT NOT NULL DEFAULT 'new',\n  activity_id TEXT,\n  found_at BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_notice_items_user ON notice_items(user_id);\nCREATE UNIQUE INDEX IF NOT EXISTS idx_notice_items_url ON notice_items(source_id, url);\n",
+  },
 ];

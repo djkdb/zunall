@@ -17,6 +17,7 @@ import {
   Crosshair,
   Download,
   Copy,
+  Rss,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { getGuideCounts } from "@/lib/queries";
@@ -88,6 +89,7 @@ export default async function GuidePage() {
 
   const features = [
     { icon: Link2, title: "공고 링크로 등록", desc: "주소만 붙여넣으면 마감일·자격·제출물·배점을 읽어옵니다." },
+    { icon: Rss, title: "공고 자동 수집", desc: "자주 보는 사이트를 등록해두면 새 공고를 찾아 알려줍니다." },
     { icon: Crosshair, title: "지원 적합도", desc: "내 역량과 공고 요구를 비교해 지원/보류/비추천과 대안을 제시합니다." },
     { icon: PenLine, title: "자소서 문항 코칭", desc: "문항별로 저장하고 첨삭받으면 버전마다 점수 변화가 남습니다." },
     { icon: Sparkles, title: "제출물 AI 평가", desc: "공고의 평가 기준 그대로 항목별 점수와 개선점을 받습니다." },

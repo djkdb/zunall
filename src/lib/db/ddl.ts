@@ -67,6 +67,34 @@ CREATE TABLE IF NOT EXISTS activities (
   updated_at BIGINT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
+CREATE TABLE IF NOT EXISTS notice_sources (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  keywords TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  last_checked_at BIGINT,
+  last_error TEXT,
+  last_found INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_notice_sources_user ON notice_sources(user_id);
+
+CREATE TABLE IF NOT EXISTS notice_items (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  url TEXT NOT NULL,
+  title TEXT NOT NULL,
+  published_at TEXT,
+  status TEXT NOT NULL DEFAULT 'new',
+  activity_id TEXT,
+  found_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_notice_items_user ON notice_items(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notice_items_url ON notice_items(source_id, url);
+
 CREATE TABLE IF NOT EXISTS password_resets (
   token TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -442,6 +470,8 @@ export const REQUIRED_TABLES = [
   "document_blobs",
   "activity_history",
   "password_resets",
+  "notice_sources",
+  "notice_items",
 ] as const;
 
 /** 밀리초 시간값이라 BIGINT 여야 하는 컬럼 (진단용) */

@@ -6,6 +6,7 @@ import {
   doublePrecision,
   primaryKey,
   index,
+  uniqueIndex,
   customType,
 } from "drizzle-orm/pg-core";
 
@@ -551,7 +552,50 @@ export const documentBlobs = pgTable("document_blobs", {
   createdAt: epochMs("created_at").notNull(),
 });
 
+/** 공고를 주기적으로 살펴볼 사이트 (사용자가 직접 등록) */
+export const noticeSources = pgTable(
+  "notice_sources",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    /** 쉼표로 구분한 키워드. 있으면 제목에 하나라도 들어간 공고만 남긴다 */
+    keywords: text("keywords"),
+    active: integer("active").notNull().default(1),
+    lastCheckedAt: epochMs("last_checked_at"),
+    lastError: text("last_error"),
+    /** 마지막 확인에서 새로 찾은 개수 */
+    lastFound: integer("last_found").notNull().default(0),
+    createdAt: epochMs("created_at").notNull(),
+  },
+  (t) => [index("idx_notice_sources_user").on(t.userId)],
+);
+
+/** 소스에서 찾아낸 공고 한 건 (같은 소스 안에서 URL 은 한 번만) */
+export const noticeItems = pgTable(
+  "notice_items",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    sourceId: text("source_id").notNull(),
+    url: text("url").notNull(),
+    title: text("title").notNull(),
+    publishedAt: text("published_at"),
+    /** new(새 공고) | added(활동으로 등록) | dismissed(숨김) */
+    status: text("status").notNull().default("new"),
+    activityId: text("activity_id"),
+    foundAt: epochMs("found_at").notNull(),
+  },
+  (t) => [
+    index("idx_notice_items_user").on(t.userId),
+    uniqueIndex("idx_notice_items_url").on(t.sourceId, t.url),
+  ],
+);
+
 export type UserRow = typeof users.$inferSelect;
+export type NoticeSourceRow = typeof noticeSources.$inferSelect;
+export type NoticeItemRow = typeof noticeItems.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
 export type TagRow = typeof tags.$inferSelect;
 export type EventRow = typeof events.$inferSelect;

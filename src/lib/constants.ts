@@ -125,6 +125,7 @@ export const NOTIFICATION_TYPES = {
   schedule: "일정",
   file: "파일",
   ai: "AI 평가",
+  notice: "새 공고",
   system: "시스템",
 } as const;
 export type NotificationType = keyof typeof NOTIFICATION_TYPES;
