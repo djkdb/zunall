@@ -52,4 +52,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "011-notice-sources.sql",
     sql: "-- 공고 자동 수집: 관심 사이트(소스)와 거기서 찾아낸 공고 목록.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nCREATE TABLE IF NOT EXISTS notice_sources (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  name TEXT NOT NULL,\n  url TEXT NOT NULL,\n  keywords TEXT,\n  active INTEGER NOT NULL DEFAULT 1,\n  last_checked_at BIGINT,\n  last_error TEXT,\n  last_found INTEGER NOT NULL DEFAULT 0,\n  created_at BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_notice_sources_user ON notice_sources(user_id);\n\nCREATE TABLE IF NOT EXISTS notice_items (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  source_id TEXT NOT NULL,\n  url TEXT NOT NULL,\n  title TEXT NOT NULL,\n  published_at TEXT,\n  status TEXT NOT NULL DEFAULT 'new',\n  activity_id TEXT,\n  found_at BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_notice_items_user ON notice_items(user_id);\nCREATE UNIQUE INDEX IF NOT EXISTS idx_notice_items_url ON notice_items(source_id, url);\n",
   },
+  {
+    name: "012-notify-settings.sql",
+    sql: "-- 알림 세부 설정과 주간 리포트.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS notify_thresholds TEXT;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS notify_types TEXT;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS quiet_start INTEGER;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS quiet_end INTEGER;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS weekly_report INTEGER NOT NULL DEFAULT 1;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS weekly_day INTEGER NOT NULL DEFAULT 0;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS timezone_offset INTEGER NOT NULL DEFAULT 540;\n",
+  },
 ];

@@ -77,6 +77,18 @@ export const userSettings = pgTable("user_settings", {
   userId: text("user_id").primaryKey(),
   /** 위젯 키 배열 (JSON). 순서가 곧 표시 순서, 목록에 없으면 숨김 */
   dashboardWidgets: text("dashboard_widgets"),
+  /** 며칠 전에 알릴지 (JSON number[]). 없으면 기본값 */
+  notifyThresholds: text("notify_thresholds"),
+  /** 받을 알림 종류 (JSON string[]). 없으면 전부 */
+  notifyTypes: text("notify_types"),
+  /** 푸시를 보내지 않을 시간대 (0~23시). 둘 다 있어야 적용 */
+  quietStart: integer("quiet_start"),
+  quietEnd: integer("quiet_end"),
+  /** 주간 리포트 받기 (1/0)와 받을 요일 (0=일요일) */
+  weeklyReport: integer("weekly_report").notNull().default(1),
+  weeklyDay: integer("weekly_day").notNull().default(0),
+  /** 사용자 시간대 (UTC 기준 분, 한국은 540) */
+  timezoneOffset: integer("timezone_offset").notNull().default(540),
   updatedAt: epochMs("updated_at").notNull(),
 });
 
@@ -594,6 +606,7 @@ export const noticeItems = pgTable(
 );
 
 export type UserRow = typeof users.$inferSelect;
+export type UserSettingsRow = typeof userSettings.$inferSelect;
 export type NoticeSourceRow = typeof noticeSources.$inferSelect;
 export type NoticeItemRow = typeof noticeItems.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;

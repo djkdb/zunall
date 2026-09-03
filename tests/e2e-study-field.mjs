@@ -73,7 +73,7 @@ try {
   await p.getByRole("button", { name: "공학·IT" }).click();
   await p.getByLabel("학과 / 학부").fill("컴퓨터공학과");
   await p.getByRole("button", { name: "프론트엔드 개발자" }).click();
-  await p.getByRole("button", { name: "저장" }).click();
+  await p.getByRole("button", { name: "저장", exact: true }).click();
   await p.waitForTimeout(2000);
 
   await p.goto(`${BASE}/career`);

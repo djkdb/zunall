@@ -32,6 +32,13 @@ CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
 CREATE TABLE IF NOT EXISTS user_settings (
   user_id TEXT PRIMARY KEY,
   dashboard_widgets TEXT,
+  notify_thresholds TEXT,
+  notify_types TEXT,
+  quiet_start INTEGER,
+  quiet_end INTEGER,
+  weekly_report INTEGER NOT NULL DEFAULT 1,
+  weekly_day INTEGER NOT NULL DEFAULT 0,
+  timezone_offset INTEGER NOT NULL DEFAULT 540,
   updated_at BIGINT NOT NULL
 );
 

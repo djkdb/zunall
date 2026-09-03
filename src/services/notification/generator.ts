@@ -1,11 +1,11 @@
 import "server-only";
 import { and, eq, inArray } from "drizzle-orm";
-import { db, activities, events } from "@/lib/db";
+import { db, activities, events, userSettings } from "@/lib/db";
 import { pushNotification } from "@/lib/history";
 import { daysUntil, ddayLabel } from "@/lib/utils";
+import { parseNotifySettings } from "./settings";
 import {
   DEADLINE_EVENT_TYPES,
-  NOTIFY_THRESHOLDS,
   ONGOING_STATUSES,
   EVENT_TYPES,
   type EventType,
@@ -35,7 +35,8 @@ export async function ensureDeadlineNotifications(userId: string): Promise<void>
 
 /** 스로틀을 건너뛰고 즉시 실행 (크론 등에서 사용) */
 export async function runDeadlineNotifications(userId: string): Promise<void> {
-  const [acts, evts] = await Promise.all([
+  const [settingsRows, acts, evts] = await Promise.all([
+    db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1),
     db
       .select()
       .from(activities)
@@ -46,6 +47,10 @@ export async function runDeadlineNotifications(userId: string): Promise<void> {
       .where(and(eq(events.userId, userId), inArray(events.type, DEADLINE_EVENT_TYPES))),
   ]);
 
+  const settings = parseNotifySettings(settingsRows[0]);
+  // 마감 알림 자체를 껐거나 알릴 시점을 하나도 고르지 않았으면 만들지 않는다.
+  if (!settings.types.includes("schedule") || settings.thresholds.length === 0) return;
+
   // 활동 마감일에서 이미 알린 (활동, 날짜)는 기억해둔다.
   // 활동을 만들면 같은 마감일로 일정도 함께 생기므로, 그대로 두면 알림이 두 번 뜬다.
   const notified = new Set<string>();
@@ -54,9 +59,9 @@ export async function runDeadlineNotifications(userId: string): Promise<void> {
   };
 
   for (const act of acts) {
-    await checkDeadline(userId, act.id, act.name, "지원 마감", act.applyDeadline, `act:${act.id}:apply`);
-    await checkDeadline(userId, act.id, act.name, "결과물 제출", act.submitDeadline, `act:${act.id}:submit`);
-    await checkDeadline(userId, act.id, act.name, "결과 발표", act.announceDate, `act:${act.id}:announce`);
+    await checkDeadline(userId, act.id, act.name, "지원 마감", act.applyDeadline, `act:${act.id}:apply`, settings.thresholds);
+    await checkDeadline(userId, act.id, act.name, "결과물 제출", act.submitDeadline, `act:${act.id}:submit`, settings.thresholds);
+    await checkDeadline(userId, act.id, act.name, "결과 발표", act.announceDate, `act:${act.id}:announce`, settings.thresholds);
     mark(act.id, act.applyDeadline);
     mark(act.id, act.submitDeadline);
     mark(act.id, act.announceDate);
@@ -72,7 +77,7 @@ export async function runDeadlineNotifications(userId: string): Promise<void> {
     const subject =
       actName && !evt.title.includes(actName) ? `${actName} · ${evt.title}` : evt.title;
     const label = `${EVENT_TYPES[evt.type as EventType] ?? evt.title}`;
-    await checkDeadline(userId, evt.activityId, subject, label, evt.date, `event:${evt.id}`);
+    await checkDeadline(userId, evt.activityId, subject, label, evt.date, `event:${evt.id}`, settings.thresholds);
   }
 }
 
@@ -83,10 +88,11 @@ async function checkDeadline(
   what: string,
   dateStr: string | null | undefined,
   keyPrefix: string,
+  thresholds: number[],
 ): Promise<void> {
   const days = daysUntil(dateStr);
   if (days === null || days < 0) return;
-  if (!(NOTIFY_THRESHOLDS as readonly number[]).includes(days)) return;
+  if (!thresholds.includes(days)) return;
 
   const body =
     days === 0

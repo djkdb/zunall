@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
-import { db, activities, pushSubscriptions, users, noticeSources } from "@/lib/db";
+import { db, activities, pushSubscriptions, users, noticeSources, userSettings } from "@/lib/db";
 import { sendPush, pushConfigured } from "@/services/push/webpush";
 import { runDeadlineNotifications } from "@/services/notification/generator";
 import { collectForUser } from "@/services/notice/collect";
+import { runWeeklyReport } from "@/services/notification/weekly";
+import { isQuietHour, isWeeklyReportDay, parseNotifySettings } from "@/services/notification/settings";
 import { daysUntil, ddayLabel } from "@/lib/utils";
 import { NOTIFY_THRESHOLDS, ONGOING_STATUSES } from "@/lib/constants";
 
@@ -13,6 +15,7 @@ export const dynamic = "force-dynamic";
  * 하루 한 번 도는 알림 작업 (Cloudflare Cron 또는 외부 스케줄러가 호출).
  * - 앱 내부 알림을 생성하고
  * - 등록한 공고 사이트에서 새 글을 찾아오고
+ * - 설정한 요일이면 주간 리포트를 만들고
  * - 브라우저 푸시를 구독한 기기에 오늘의 마감 요약을 보낸다
  *
  * CRON_KEY 로 보호한다. 키가 없으면 아무 일도 하지 않는다(실수로 공개되는 것 방지).
@@ -48,9 +51,27 @@ export async function GET(request: Request) {
     byUser.set(sub.userId, list);
   }
 
+  // 주간 리포트: 요일은 사용자가 정한다 (설정을 저장한 사용자만 대상)
+  const settingsRows = await db.select().from(userSettings);
+  const now = Date.now();
+  let weekly = 0;
+  const weeklyPush = new Map<string, string>();
+  for (const row of settingsRows) {
+    const settings = parseNotifySettings(row);
+    if (!isWeeklyReportDay(now, settings)) continue;
+    const result = await runWeeklyReport(row.userId, now);
+    if (result.sent) {
+      weekly++;
+      if (result.push) weeklyPush.set(row.userId, result.push);
+    }
+  }
+
+  const settingsByUser = new Map(settingsRows.map((row) => [row.userId, parseNotifySettings(row)]));
+
   let notified = 0;
   let pushed = 0;
   let removed = 0;
+  let quiet = 0;
 
   for (const [userId, devices] of byUser) {
     const user = (await db.select().from(users).where(eq(users.id, userId)).limit(1))[0];
@@ -60,6 +81,14 @@ export async function GET(request: Request) {
     notified++;
 
     if (!pushConfigured()) continue;
+
+    // 사용자가 정한 조용한 시간에는 푸시를 보내지 않는다 (앱 알림은 이미 남아 있다)
+    const settings = settingsByUser.get(userId);
+    if (settings && isQuietHour(now, settings)) {
+      quiet++;
+      continue;
+    }
+    if (settings && !settings.types.includes("schedule")) continue;
 
     const acts = await db
       .select()
@@ -85,16 +114,22 @@ export async function GET(request: Request) {
         items.push({ days, text: `${ddayLabel(days)} ${act.name} ${label}` });
       }
     }
-    if (items.length === 0) continue;
+    // 주간 리포트가 있는 날이면 그것도 함께 알린다
+    const report = weeklyPush.get(userId);
+    if (items.length === 0 && !report) continue;
 
     items.sort((a, b) => a.days - b.days);
     const head = items[0];
-    const payload = {
-      title: items.length === 1 ? head.text : `오늘 챙길 일 ${items.length}건`,
-      body: items.slice(0, 3).map((i) => i.text).join("\n") + (items.length > 3 ? `\n외 ${items.length - 3}건` : ""),
-      url: "/",
-      tag: "cavero-daily",
-    };
+    const payload = report
+      ? { title: "주간 리포트", body: report, url: "/", tag: "cavero-weekly" }
+      : {
+          title: items.length === 1 ? head.text : `오늘 챙길 일 ${items.length}건`,
+          body:
+            items.slice(0, 3).map((i) => i.text).join("\n") +
+            (items.length > 3 ? `\n외 ${items.length - 3}건` : ""),
+          url: "/",
+          tag: "cavero-daily",
+        };
 
     for (const device of devices) {
       const result = await sendPush(device, payload);
@@ -124,5 +159,7 @@ export async function GET(request: Request) {
     removed,
     noticeUsers: sourceOwners.size,
     noticesFound: collected,
+    weekly,
+    quiet,
   });
 }

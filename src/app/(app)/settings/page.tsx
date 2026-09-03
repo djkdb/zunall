@@ -7,14 +7,17 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { getProviderName, providerFallbackReason } from "@/services/ai/provider";
 import { storageBackend } from "@/lib/storage";
 import { databaseKind } from "@/lib/db/info";
-import { NOTIFY_THRESHOLDS } from "@/lib/constants";
 import { PushToggle } from "@/components/settings/push-toggle";
+import { NotifySettingsCard } from "@/components/settings/notify-settings-card";
 import { BackupCard } from "@/components/settings/backup-card";
 import { StudyProfileCard } from "@/components/settings/study-profile-card";
 import { PasswordCard } from "@/components/settings/password-card";
 import { DangerCard } from "@/components/settings/danger-card";
 import { getPushEnv, countPushDevices } from "@/actions/push";
 import { getCareerContext } from "@/lib/career-queries";
+import { db, userSettings } from "@/lib/db";
+import { eq } from "drizzle-orm";
+import { parseNotifySettings } from "@/services/notification/settings";
 
 const STORAGE_LABEL: Record<ReturnType<typeof storageBackend>, string> = {
   db: "DB 저장 (document_blobs)",
@@ -31,11 +34,13 @@ export default async function SettingsPage() {
   const providerNotice = providerFallbackReason();
   const storage = storageBackend();
   const database = databaseKind();
-  const [pushEnv, pushDevices, careerCtx] = await Promise.all([
+  const [pushEnv, pushDevices, careerCtx, settingsRows] = await Promise.all([
     getPushEnv(),
     countPushDevices(),
     getCareerContext(user.id),
+    db.select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1),
   ]);
+  const notify = parseNotifySettings(settingsRows[0]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -167,13 +172,7 @@ export default async function SettingsPage() {
             publicKey={pushEnv.publicKey}
             initialDevices={pushDevices}
           />
-          <p className="border-t border-border pt-3">
-            마감일 기준{" "}
-            {NOTIFY_THRESHOLDS.map((d) => (d === 0 ? "당일" : `D-${d}`)).join(" / ")}에 앱 내부
-            알림이 자동 생성됩니다. 이메일·브라우저 푸시·카카오톡 연동은 알림 서비스 모듈(
-            <code className="rounded bg-secondary px-1">services/notification</code>)을 확장해
-            추가할 수 있도록 설계되어 있습니다.
-          </p>
+          <NotifySettingsCard initial={notify} />
         </CardContent>
       </Card>
 
