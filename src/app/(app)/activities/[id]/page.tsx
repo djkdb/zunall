@@ -1,19 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq } from "drizzle-orm";
 import { Building2, Pencil, ExternalLink } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
-import { getActivity, getActivityTagNames, nearestDeadlineOf } from "@/lib/queries";
 import {
-  db,
-  events,
-  tasks,
-  documents,
-  submissions,
-  aiReviews,
-  activityHistory,
-} from "@/lib/db";
+  getActivity,
+  getActivityTagNames,
+  getActivityTabCounts,
+  nearestDeadlineOf,
+} from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { TabNav } from "@/components/ui/tab-nav";
 import { StatusSelect } from "@/components/activities/status-select";
@@ -52,35 +47,21 @@ export default async function ActivityDetailPage({
   const user = await requireUser();
   const { id } = await params;
   const sp = await searchParams;
-  const activity = await getActivity(user.id, id);
-  if (!activity) notFound();
 
   const rawTab = typeof sp.tab === "string" ? sp.tab : "overview";
   const tab: TabKey = (TAB_KEYS as readonly string[]).includes(rawTab)
     ? (rawTab as TabKey)
     : "overview";
 
-  const tagNames = await getActivityTagNames(activity.id);
+  // 활동·태그·탭 배지를 한 번에 조회한다. 셋 다 userId 로 걸러 남의 자료는 잡히지 않는다.
+  // 탭 배지 숫자는 그중 한 번의 쿼리로 여섯 개를 모두 센다.
+  const [activity, tagNames, counts] = await Promise.all([
+    getActivity(user.id, id),
+    getActivityTagNames(user.id, id),
+    getActivityTabCounts(user.id, id),
+  ]);
+  if (!activity) notFound();
   const deadline = nearestDeadlineOf(activity);
-
-  // 탭 카운트
-  const counts = {
-    calendar: (await db.select({ id: events.id }).from(events).where(eq(events.activityId, id))).length,
-    documents: (await db.select({ id: documents.id }).from(documents).where(eq(documents.activityId, id))).length,
-    tasks: (await db
-      .select({ id: tasks.id, status: tasks.status })
-      .from(tasks)
-      .where(eq(tasks.activityId, id))
-      )
-      .filter((t) => t.status !== "done").length,
-    submissions: (await db.select({ id: submissions.id }).from(submissions).where(eq(submissions.activityId, id))).length,
-    ai: (await db
-      .select({ id: aiReviews.id })
-      .from(aiReviews)
-      .where(and(eq(aiReviews.activityId, id), eq(aiReviews.status, "done")))
-      ).length,
-    history: (await db.select({ id: activityHistory.id }).from(activityHistory).where(eq(activityHistory.activityId, id))).length,
-  };
 
   const tabs = [
     { key: "overview", label: "Overview" },

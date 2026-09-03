@@ -33,13 +33,13 @@ export default async function CareerPage() {
     return <OnboardingWizard userName={user.name} />;
   }
 
-  const trend = await getScoreTrend(user.id);
-  const activityCount = (
-    await db.select({ id: activities.id }).from(activities).where(eq(activities.userId, user.id))
-  ).length;
-  const retrospectiveCount = (
-    await db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id))
-  ).length;
+  const [trend, activityRows, retrospectiveRows] = await Promise.all([
+    getScoreTrend(user.id),
+    db.select({ id: activities.id }).from(activities).where(eq(activities.userId, user.id)),
+    db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id)),
+  ]);
+  const activityCount = activityRows.length;
+  const retrospectiveCount = retrospectiveRows.length;
   const goalRoles = safeJsonParse<string[]>(ctx.goal?.targetRoles, []);
   const goalCompanies = safeJsonParse<string[]>(ctx.goal?.targetCompanies, []);
   const desiredRoles = safeJsonParse<string[]>(ctx.profile?.desiredRoles, []);

@@ -28,29 +28,29 @@ export async function AITab({
   userId: string;
   selectedReviewId: string | null;
 }) {
-  const criteria = await db
-    .select()
-    .from(evaluationCriteria)
-    .where(eq(evaluationCriteria.activityId, activity.id))
-    .orderBy(evaluationCriteria.position);
-
-  const subs = await db
-    .select()
-    .from(submissions)
-    .where(and(eq(submissions.activityId, activity.id), eq(submissions.userId, userId)))
-    .orderBy(desc(submissions.createdAt));
-
-  const reviews = await db
-    .select()
-    .from(aiReviews)
-    .where(and(eq(aiReviews.activityId, activity.id), eq(aiReviews.userId, userId)))
-    .orderBy(desc(aiReviews.createdAt));
-
-  const noticeDocCount = (await db
-    .select({ id: documents.id })
-    .from(documents)
-    .where(and(eq(documents.activityId, activity.id), eq(documents.category, "notice")))
-    ).length;
+  // 서로 독립적인 조회 — 왕복을 줄이려고 한 번에 보낸다.
+  const [criteria, subs, reviews, noticeDocs] = await Promise.all([
+    db
+      .select()
+      .from(evaluationCriteria)
+      .where(eq(evaluationCriteria.activityId, activity.id))
+      .orderBy(evaluationCriteria.position),
+    db
+      .select()
+      .from(submissions)
+      .where(and(eq(submissions.activityId, activity.id), eq(submissions.userId, userId)))
+      .orderBy(desc(submissions.createdAt)),
+    db
+      .select()
+      .from(aiReviews)
+      .where(and(eq(aiReviews.activityId, activity.id), eq(aiReviews.userId, userId)))
+      .orderBy(desc(aiReviews.createdAt)),
+    db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(and(eq(documents.activityId, activity.id), eq(documents.category, "notice"))),
+  ]);
+  const noticeDocCount = noticeDocs.length;
 
   const selectedReview =
     (selectedReviewId ? reviews.find((r) => r.id === selectedReviewId) : null) ??

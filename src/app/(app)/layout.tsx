@@ -11,14 +11,17 @@ import { ensureDeadlineNotifications } from "@/services/notification/generator";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  // 접속 시점에 D-day 알림 생성 (중복 방지 내장)
-  await ensureDeadlineNotifications(user.id);
 
-  const unread = (await db
-    .select({ id: notifications.id })
-    .from(notifications)
-    .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0)))
-    ).length;
+  // 마감 알림 생성(10분에 한 번)과 미읽음 개수를 함께 처리한다.
+  // 화면 이동마다 순서대로 기다리면 그만큼 느려진다.
+  const [, unreadRows] = await Promise.all([
+    ensureDeadlineNotifications(user.id),
+    db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0))),
+  ]);
+  const unread = unreadRows.length;
 
   return (
     <div className="flex min-h-screen">

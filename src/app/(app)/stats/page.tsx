@@ -34,34 +34,33 @@ export const metadata: Metadata = { title: "통계" };
 export default async function StatsPage() {
   const user = await requireUser();
 
-  const acts = await db.select().from(activities).where(eq(activities.userId, user.id));
-  const allTasks = await db
-    .select({ status: tasks.status })
-    .from(tasks)
-    .where(eq(tasks.userId, user.id));
-  const evalReviews = (await db
-    .select()
-    .from(aiReviews)
-    .where(
-      and(
-        eq(aiReviews.userId, user.id),
-        eq(aiReviews.action, "evaluate_submission"),
-        eq(aiReviews.status, "done"),
+  // 통계 원본은 서로 독립적이라 한 번에 모아 온다.
+  const [acts, allTasks, doneReviews, analyses] = await Promise.all([
+    db.select().from(activities).where(eq(activities.userId, user.id)),
+    db.select({ status: tasks.status }).from(tasks).where(eq(tasks.userId, user.id)),
+    db
+      .select()
+      .from(aiReviews)
+      .where(
+        and(
+          eq(aiReviews.userId, user.id),
+          eq(aiReviews.action, "evaluate_submission"),
+          eq(aiReviews.status, "done"),
+        ),
       ),
-    )
-    )
-    .filter((r) => r.overallScore != null && r.maxScore);
+    // 지원 결과 학습 — 실제 기록된 결과만 집계한다
+    db
+      .select({
+        activityId: opportunityAnalyses.activityId,
+        fitScore: opportunityAnalyses.fitScore,
+        recommendation: opportunityAnalyses.recommendation,
+      })
+      .from(opportunityAnalyses)
+      .where(eq(opportunityAnalyses.userId, user.id))
+      .orderBy(desc(opportunityAnalyses.createdAt)),
+  ]);
+  const evalReviews = doneReviews.filter((r) => r.overallScore != null && r.maxScore);
 
-  // 지원 결과 학습 — 실제 기록된 결과만 집계한다
-  const analyses = await db
-    .select({
-      activityId: opportunityAnalyses.activityId,
-      fitScore: opportunityAnalyses.fitScore,
-      recommendation: opportunityAnalyses.recommendation,
-    })
-    .from(opportunityAnalyses)
-    .where(eq(opportunityAnalyses.userId, user.id))
-    .orderBy(desc(opportunityAnalyses.createdAt));
   const latestAnalysis = new Map<string, { fitScore: number | null; recommendation: string | null }>();
   for (const row of analyses) {
     if (!latestAnalysis.has(row.activityId)) {
@@ -256,25 +255,22 @@ async function CareerStatsSection({ userId }: { userId: string }) {
   const ctx = await getCareerContext(userId);
   if (!ctx.onboarded) return null;
 
-  const trend = await getScoreTrend(userId);
+  const [trend, actionRows, fitRows] = await Promise.all([
+    getScoreTrend(userId),
+    db.select({ status: careerActions.status }).from(careerActions).where(eq(careerActions.userId, userId)),
+    db
+      .select({ fitScore: opportunityAnalyses.fitScore })
+      .from(opportunityAnalyses)
+      .where(eq(opportunityAnalyses.userId, userId)),
+  ]);
   const monthAgo = trend.monthAgo != null ? Math.round(trend.monthAgo) : null;
   const latest = Math.round(trend.latest ?? ctx.readiness.score);
 
-  const actions = (await db
-    .select({ status: careerActions.status })
-    .from(careerActions)
-    .where(eq(careerActions.userId, userId))
-    )
-    .filter((a) => a.status === "accepted" || a.status === "done");
+  const actions = actionRows.filter((a) => a.status === "accepted" || a.status === "done");
   const doneActions = actions.filter((a) => a.status === "done").length;
   const actionRate = actions.length > 0 ? Math.round((doneActions / actions.length) * 100) : null;
 
-  const fits = (await db
-    .select({ fitScore: opportunityAnalyses.fitScore })
-    .from(opportunityAnalyses)
-    .where(eq(opportunityAnalyses.userId, userId))
-    )
-    .filter((f) => f.fitScore != null);
+  const fits = fitRows.filter((f) => f.fitScore != null);
   const avgFit =
     fits.length > 0
       ? Math.round(fits.reduce((s, f) => s + (f.fitScore ?? 0), 0) / fits.length)

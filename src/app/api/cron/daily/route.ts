@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, activities, pushSubscriptions, users } from "@/lib/db";
 import { sendPush, pushConfigured } from "@/services/push/webpush";
-import { ensureDeadlineNotifications } from "@/services/notification/generator";
+import { runDeadlineNotifications } from "@/services/notification/generator";
 import { daysUntil, ddayLabel } from "@/lib/utils";
 import { NOTIFY_THRESHOLDS, ONGOING_STATUSES } from "@/lib/constants";
 
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     const user = (await db.select().from(users).where(eq(users.id, userId)).limit(1))[0];
     if (!user) continue;
 
-    await ensureDeadlineNotifications(userId);
+    await runDeadlineNotifications(userId);
     notified++;
 
     if (!pushConfigured()) continue;

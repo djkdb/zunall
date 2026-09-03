@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
 import {
   Target,
   UserRoundPen,
@@ -20,14 +19,7 @@ import {
   Copy,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
-import {
-  db,
-  activities,
-  aiReviews,
-  careerGoals,
-  careerEvidence,
-  retrospectives,
-} from "@/lib/db";
+import { getGuideCounts } from "@/lib/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -45,26 +37,13 @@ export const metadata: Metadata = { title: "시작 가이드" };
 export default async function GuidePage() {
   const user = await requireUser();
 
-  const [goal] = await db
-    .select({ id: careerGoals.id })
-    .from(careerGoals)
-    .where(and(eq(careerGoals.userId, user.id), eq(careerGoals.isActive, 1)))
-    .limit(1);
-  const evidenceCount = (
-    await db.select({ id: careerEvidence.id }).from(careerEvidence).where(eq(careerEvidence.userId, user.id))
-  ).length;
-  const activityCount = (
-    await db.select({ id: activities.id }).from(activities).where(eq(activities.userId, user.id))
-  ).length;
-  const reviewCount = (
-    await db
-      .select({ id: aiReviews.id })
-      .from(aiReviews)
-      .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.status, "done")))
-  ).length;
-  const retroCount = (
-    await db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id))
-  ).length;
+  // 다섯 개 개수를 한 번의 쿼리로 센다.
+  const counts = await getGuideCounts(user.id);
+  const goal = counts.goals > 0;
+  const evidenceCount = counts.evidence;
+  const activityCount = counts.activities;
+  const reviewCount = counts.reviews;
+  const retroCount = counts.retrospectives;
 
   const steps = [
     {

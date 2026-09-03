@@ -51,67 +51,65 @@ export default async function SearchPage({
 
   const like = `%${query}%`;
 
-  const actRows = await db
-    .select()
-    .from(activities)
-    .where(
-      and(
-        eq(activities.userId, user.id),
-        or(
-          ilike(activities.name, like),
-          ilike(sql`coalesce(${activities.organizer}, '')`, like),
-          ilike(sql`coalesce(${activities.memo}, '')`, like),
+  // 대상별 검색은 서로 독립적이라 한 번에 보낸다.
+  const [actRows, docRows, noteRows, essayRows, nameRows] = await Promise.all([
+    db
+      .select()
+      .from(activities)
+      .where(
+        and(
+          eq(activities.userId, user.id),
+          or(
+            ilike(activities.name, like),
+            ilike(sql`coalesce(${activities.organizer}, '')`, like),
+            ilike(sql`coalesce(${activities.memo}, '')`, like),
+          ),
         ),
-      ),
-    )
-    .orderBy(desc(activities.updatedAt))
-    .limit(20);
-
-  const docRows = await db
-    .select({
-      id: documents.id,
-      activityId: documents.activityId,
-      name: documents.name,
-      text: documents.extractedText,
-    })
-    .from(documents)
-    .where(
-      and(
-        eq(documents.userId, user.id),
-        or(ilike(documents.name, like), ilike(sql`coalesce(${documents.extractedText}, '')`, like)),
-      ),
-    )
-    .orderBy(desc(documents.createdAt))
-    .limit(20);
-
-  const noteRows = await db
-    .select()
-    .from(notes)
-    .where(and(eq(notes.userId, user.id), ilike(notes.content, like)))
-    .orderBy(desc(notes.updatedAt))
-    .limit(20);
-
-  const essayRows = await db
-    .select({
-      id: essayDrafts.id,
-      content: essayDrafts.content,
-      version: essayDrafts.version,
-      question: essayQuestions.question,
-      activityId: essayQuestions.activityId,
-    })
-    .from(essayDrafts)
-    .innerJoin(essayQuestions, eq(essayDrafts.questionId, essayQuestions.id))
-    .where(and(eq(essayDrafts.userId, user.id), ilike(essayDrafts.content, like)))
-    .orderBy(desc(essayDrafts.createdAt))
-    .limit(20);
-
-  const activityNames = new Map(
-    (await db
+      )
+      .orderBy(desc(activities.updatedAt))
+      .limit(20),
+    db
+      .select({
+        id: documents.id,
+        activityId: documents.activityId,
+        name: documents.name,
+        text: documents.extractedText,
+      })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.userId, user.id),
+          or(ilike(documents.name, like), ilike(sql`coalesce(${documents.extractedText}, '')`, like)),
+        ),
+      )
+      .orderBy(desc(documents.createdAt))
+      .limit(20),
+    db
+      .select()
+      .from(notes)
+      .where(and(eq(notes.userId, user.id), ilike(notes.content, like)))
+      .orderBy(desc(notes.updatedAt))
+      .limit(20),
+    db
+      .select({
+        id: essayDrafts.id,
+        content: essayDrafts.content,
+        version: essayDrafts.version,
+        question: essayQuestions.question,
+        activityId: essayQuestions.activityId,
+      })
+      .from(essayDrafts)
+      .innerJoin(essayQuestions, eq(essayDrafts.questionId, essayQuestions.id))
+      .where(and(eq(essayDrafts.userId, user.id), ilike(essayDrafts.content, like)))
+      .orderBy(desc(essayDrafts.createdAt))
+      .limit(20),
+    db
       .select({ id: activities.id, name: activities.name })
       .from(activities)
-      .where(eq(activities.userId, user.id))
-    ).map((a) => [a.id, a.name]),
-  );
+      .where(eq(activities.userId, user.id)),
+  ]);
+
+  const activityNames = new Map(nameRows.map((a) => [a.id, a.name]));
 
   const total = actRows.length + docRows.length + noteRows.length + essayRows.length;
 

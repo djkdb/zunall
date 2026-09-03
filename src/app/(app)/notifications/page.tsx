@@ -40,11 +40,17 @@ export default async function NotificationsPage({
   const rawFilter = typeof params.filter === "string" ? params.filter : "unread";
   const filter = FILTERS.some((f) => f.key === rawFilter) ? rawFilter : "unread";
 
-  const all = await db
-    .select()
-    .from(notifications)
-    .where(eq(notifications.userId, user.id))
-    .orderBy(desc(notifications.createdAt));
+  const [all, activityRows] = await Promise.all([
+    db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, user.id))
+      .orderBy(desc(notifications.createdAt)),
+    db
+      .select({ id: activities.id, name: activities.name })
+      .from(activities)
+      .where(eq(activities.userId, user.id)),
+  ]);
 
   const unreadCount = all.filter((n) => n.read === 0).length;
 
@@ -55,10 +61,6 @@ export default async function NotificationsPage({
         ? all.filter((n) => n.read === 0)
         : all.filter((n) => n.type === filter);
 
-  const activityRows = await db
-    .select({ id: activities.id, name: activities.name })
-    .from(activities)
-    .where(eq(activities.userId, user.id));
   const activityNameById = new Map(activityRows.map((a) => [a.id, a.name]));
 
   const tabs = FILTERS.map((f) => ({

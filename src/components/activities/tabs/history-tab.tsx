@@ -30,19 +30,19 @@ const KIND_ICONS: Record<HistoryKind, React.ComponentType<{ className?: string }
 };
 
 export async function HistoryTab({ activity }: { activity: ActivityRow }) {
-  const history = await db
-    .select()
-    .from(activityHistory)
-    .where(eq(activityHistory.activityId, activity.id))
-    .orderBy(desc(activityHistory.createdAt));
-
-  const retro = (
-    await db
+  const [history, retroRows] = await Promise.all([
+    db
+      .select()
+      .from(activityHistory)
+      .where(eq(activityHistory.activityId, activity.id))
+      .orderBy(desc(activityHistory.createdAt)),
+    db
       .select()
       .from(retrospectives)
       .where(eq(retrospectives.activityId, activity.id))
-      .limit(1)
-  )[0];
+      .limit(1),
+  ]);
+  const retro = retroRows[0];
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">

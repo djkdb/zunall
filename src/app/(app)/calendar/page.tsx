@@ -10,16 +10,13 @@ export const metadata: Metadata = { title: "캘린더" };
 export default async function CalendarPage() {
   const user = await requireUser();
 
-  const allEvents = await db
-    .select()
-    .from(events)
-    .where(eq(events.userId, user.id))
-    .orderBy(events.date);
-
-  const activityOptions = await db
-    .select({ id: activities.id, name: activities.name, color: activities.color })
-    .from(activities)
-    .where(eq(activities.userId, user.id));
+  const [allEvents, activityOptions] = await Promise.all([
+    db.select().from(events).where(eq(events.userId, user.id)).orderBy(events.date),
+    db
+      .select({ id: activities.id, name: activities.name, color: activities.color })
+      .from(activities)
+      .where(eq(activities.userId, user.id)),
+  ]);
 
   return (
     <div className="space-y-5">

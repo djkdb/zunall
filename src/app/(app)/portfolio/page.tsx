@@ -18,28 +18,24 @@ export const metadata: Metadata = { title: "포트폴리오" };
 export default async function PortfolioPage() {
   const user = await requireUser();
 
-  const acts = await db
-    .select()
-    .from(activities)
-    .where(eq(activities.userId, user.id))
-    .orderBy(desc(activities.endDate), desc(activities.createdAt));
-
-  const retros = await db
-    .select()
-    .from(retrospectives)
-    .where(eq(retrospectives.userId, user.id));
-  const retroByActivity = new Map(retros.map((r) => [r.activityId, r]));
-
-  const profile = (
-    await db.select().from(careerProfiles).where(eq(careerProfiles.userId, user.id)).limit(1)
-  )[0];
-  const goal = (
-    await db
+  // 서로 독립적인 조회 — 한 번에 보낸다.
+  const [acts, retros, profileRows, goalRows] = await Promise.all([
+    db
+      .select()
+      .from(activities)
+      .where(eq(activities.userId, user.id))
+      .orderBy(desc(activities.endDate), desc(activities.createdAt)),
+    db.select().from(retrospectives).where(eq(retrospectives.userId, user.id)),
+    db.select().from(careerProfiles).where(eq(careerProfiles.userId, user.id)).limit(1),
+    db
       .select()
       .from(careerGoals)
       .where(and(eq(careerGoals.userId, user.id), eq(careerGoals.isActive, 1)))
-      .limit(1)
-  )[0];
+      .limit(1),
+  ]);
+  const retroByActivity = new Map(retros.map((r) => [r.activityId, r]));
+  const profile = profileRows[0];
+  const goal = goalRows[0];
 
   // 기록할 내용이 있는 활동만 (역할·성과·배운 점·회고 중 하나라도)
   const items = acts.filter(

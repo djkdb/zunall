@@ -23,8 +23,11 @@ export default async function ActivitiesPage({
   const type = typeof params.type === "string" ? params.type : "all";
   const tag = typeof params.tag === "string" ? params.tag : "all";
 
-  let items = await getActivitiesWithMeta(user.id);
-  const allTags = await getUserTags(user.id);
+  const [initialItems, allTags] = await Promise.all([
+    getActivitiesWithMeta(user.id),
+    getUserTags(user.id),
+  ]);
+  let items = initialItems;
 
   if (filter === "ongoing") {
     items = items.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status));

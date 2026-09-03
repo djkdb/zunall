@@ -16,7 +16,7 @@ export default async function EditActivityPage({
   const activity = await getActivity(user.id, id);
   if (!activity) notFound();
 
-  const tagNames = await getActivityTagNames(activity.id);
+  const tagNames = await getActivityTagNames(user.id, activity.id);
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">

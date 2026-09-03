@@ -8,6 +8,7 @@ import { logHistory } from "@/lib/history";
 import { newId } from "@/lib/utils";
 import { eventSchema, type EventInput } from "@/lib/validators";
 import type { ActionResult } from "@/actions/activities";
+import { runDeadlineNotifications } from "@/services/notification/generator";
 
 function revalidateEventPaths(activityId: string | null) {
   revalidatePath("/calendar");
@@ -49,6 +50,8 @@ export async function createEvent(input: EventInput): Promise<ActionResult> {
   if (data.activityId) {
     await logHistory(user.id, data.activityId, "event", `일정 추가: ${data.title} (${data.date})`);
   }
+  // 마감이 바뀌었으니 알림을 지금 다시 계산한다 (화면 이동 때마다 돌리지 않기 위해).
+  await runDeadlineNotifications(user.id);
   revalidateEventPaths(data.activityId);
   return { ok: true, id };
 }
@@ -77,6 +80,8 @@ export async function updateEvent(eventId: string, input: EventInput): Promise<A
     })
     .where(eq(events.id, eventId));
 
+  // 마감이 바뀌었으니 알림을 지금 다시 계산한다 (화면 이동 때마다 돌리지 않기 위해).
+  await runDeadlineNotifications(user.id);
   revalidateEventPaths(existing.activityId);
   return { ok: true, id: eventId };
 }

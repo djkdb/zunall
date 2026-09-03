@@ -30,6 +30,7 @@ import {
   ACTIVITY_STATUSES,
   type ActivityStatus,
 } from "@/lib/constants";
+import { runDeadlineNotifications } from "@/services/notification/generator";
 
 export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -111,6 +112,8 @@ export async function createActivity(input: ActivityInput): Promise<ActionResult
   await autoCreateDeadlineEvents(user.id, id, data);
   await logHistory(user.id, id, "created", `활동 "${data.name}" 생성`);
 
+  // 마감이 바뀌었으니 알림을 지금 다시 계산한다 (화면 이동 때마다 돌리지 않기 위해).
+  await runDeadlineNotifications(user.id);
   revalidatePath("/activities");
   revalidatePath("/");
   return { ok: true, id };
@@ -193,6 +196,8 @@ export async function updateActivity(activityId: string, input: ActivityInput): 
     await logHistory(user.id, activityId, "updated", "활동 정보 수정");
   }
 
+  // 마감이 바뀌었으니 알림을 지금 다시 계산한다 (화면 이동 때마다 돌리지 않기 위해).
+  await runDeadlineNotifications(user.id);
   revalidatePath("/activities");
   revalidatePath(`/activities/${activityId}`);
   revalidatePath("/");
@@ -217,6 +222,8 @@ export async function updateActivityStatus(activityId: string, status: string): 
     `상태 변경: ${ACTIVITY_STATUSES[activity.status as ActivityStatus]} → ${ACTIVITY_STATUSES[status as ActivityStatus]}`,
   );
 
+  // 마감이 바뀌었으니 알림을 지금 다시 계산한다 (화면 이동 때마다 돌리지 않기 위해).
+  await runDeadlineNotifications(user.id);
   revalidatePath("/activities");
   revalidatePath(`/activities/${activityId}`);
   revalidatePath("/");
@@ -326,6 +333,8 @@ export async function duplicateActivity(activityId: string): Promise<ActionResul
     `활동 복제로 생성: ${source.name}`,
   );
 
+  // 마감이 바뀌었으니 알림을 지금 다시 계산한다 (화면 이동 때마다 돌리지 않기 위해).
+  await runDeadlineNotifications(user.id);
   revalidatePath("/activities");
   return { ok: true, id: newActivityId };
 }

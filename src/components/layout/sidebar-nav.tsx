@@ -51,6 +51,8 @@ export function SidebarNav({ unreadCount }: { unreadCount: number }) {
           <Link
             key={item.href}
             href={item.href}
+            // 모든 화면이 개인화된 동적 페이지라, 미리 불러오면 그만큼 DB 조회만 늘어난다.
+            prefetch={false}
             className={cn(
               "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
               active

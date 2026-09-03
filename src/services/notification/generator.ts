@@ -17,11 +17,34 @@ import {
  * - 마감 성격의 일정 (모집 마감, 지원 마감, 중간/최종 제출)
  * dedupeKey로 같은 알림이 두 번 생기지 않도록 보장한다.
  */
+/**
+ * 사용자별 마지막 실행 시각 (인스턴스 메모리, 보조 수단).
+ * 화면을 옮길 때마다 알림을 다시 계산하면 이동이 그만큼 느려진다.
+ * 마감이 바뀌는 순간(활동·일정 생성/수정)에는 액션에서 곧바로 다시 계산하므로,
+ * 여기서는 하루 단위 임계일이 넘어가는 경우만 10분 간격으로 챙기면 된다.
+ */
+const lastRunAt = new Map<string, number>();
+const THROTTLE_MS = 10 * 60 * 1000;
+
 export async function ensureDeadlineNotifications(userId: string): Promise<void> {
-  const acts = await db
-    .select()
-    .from(activities)
-    .where(and(eq(activities.userId, userId), inArray(activities.status, [...ONGOING_STATUSES, "interested"])));
+  const previous = lastRunAt.get(userId) ?? 0;
+  if (Date.now() - previous < THROTTLE_MS) return;
+  lastRunAt.set(userId, Date.now());
+  return runDeadlineNotifications(userId);
+}
+
+/** 스로틀을 건너뛰고 즉시 실행 (크론 등에서 사용) */
+export async function runDeadlineNotifications(userId: string): Promise<void> {
+  const [acts, evts] = await Promise.all([
+    db
+      .select()
+      .from(activities)
+      .where(and(eq(activities.userId, userId), inArray(activities.status, [...ONGOING_STATUSES, "interested"]))),
+    db
+      .select()
+      .from(events)
+      .where(and(eq(events.userId, userId), inArray(events.type, DEADLINE_EVENT_TYPES))),
+  ]);
 
   // 활동 마감일에서 이미 알린 (활동, 날짜)는 기억해둔다.
   // 활동을 만들면 같은 마감일로 일정도 함께 생기므로, 그대로 두면 알림이 두 번 뜬다.
@@ -40,11 +63,6 @@ export async function ensureDeadlineNotifications(userId: string): Promise<void>
   }
 
   const activityNames = new Map(acts.map((a) => [a.id, a.name]));
-  const evts = await db
-    .select()
-    .from(events)
-    .where(and(eq(events.userId, userId), inArray(events.type, DEADLINE_EVENT_TYPES)));
-
   for (const evt of evts) {
     // 활동 마감일로 이미 알린 날짜면 건너뛴다
     if (evt.activityId && notified.has(`${evt.activityId}:${evt.date}`)) continue;

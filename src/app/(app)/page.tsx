@@ -66,121 +66,98 @@ function greeting(): string {
 export default async function DashboardPage() {
   const user = await requireUser();
 
-  // 사용자가 고른 대시보드 구성 (없으면 기본값)
-  const settings = (
-    await db.select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1)
-  )[0];
-  const widgets = parseWidgets(settings?.dashboardWidgets);
-
   const show = (key: WidgetKey) => widgets.includes(key);
   const today = todayStr();
   const weekEnd = toDateStr(new Date(Date.now() + 7 * 86400000));
 
-  const careerCtx = await getCareerContext(user.id);
-  const scoreTrend = await getScoreTrend(user.id);
-
-  const allActivities = await getActivitiesWithMeta(user.id);
+  // 서로 의존하지 않는 조회는 한 번에 보낸다.
+  // 서버리스 DB 는 쿼리마다 왕복이 생겨, 순서대로 기다리면 대시보드가 눈에 띄게 느려진다.
+  const [settingsRows, careerCtx, scoreTrend, allActivities] = await Promise.all([
+    db.select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1),
+    getCareerContext(user.id),
+    getScoreTrend(user.id),
+    getActivitiesWithMeta(user.id),
+  ]);
+  // 사용자가 고른 대시보드 구성 (없으면 기본값)
+  const widgets = parseWidgets(settingsRows[0]?.dashboardWidgets);
   const ongoing = allActivities.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status));
 
+  // 위젯별 데이터는 서로 의존하지 않는다.
+  // 서버리스 DB 는 쿼리 하나가 왕복 하나라, 순서대로 기다리면 대시보드가 눈에 띄게 느려진다.
+  const [weekEvents, openTasks, allSubs, notificationRows, unreadRows, allTaskRows, doneReviews, retroRows] =
+    await Promise.all([
+      db
+        .select()
+        .from(events)
+        .where(and(eq(events.userId, user.id), gte(events.date, today), lte(events.date, weekEnd)))
+        .orderBy(events.date),
+      db
+        .select()
+        .from(tasks)
+        .where(and(eq(tasks.userId, user.id), inArray(tasks.status, ["todo", "in_progress", "review"])))
+        .orderBy(tasks.dueDate),
+      db.select().from(submissions).where(eq(submissions.userId, user.id)).orderBy(submissions.dueDate),
+      db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, user.id))
+        .orderBy(desc(notifications.createdAt)),
+      db
+        .select({ id: notifications.id })
+        .from(notifications)
+        .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0))),
+      db.select({ status: tasks.status }).from(tasks).where(eq(tasks.userId, user.id)),
+      db
+        .select()
+        .from(aiReviews)
+        .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.status, "done"))),
+      db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id)),
+    ]);
+
   // 이번 주 일정
-  const weekEvents = await db
-    .select()
-    .from(events)
-    .where(and(eq(events.userId, user.id), gte(events.date, today), lte(events.date, weekEnd)))
-    .orderBy(events.date);
   const todayEvents = weekEvents.filter((e) => e.date === today);
 
   // 오늘/지난 마감 작업
-  const openTasks = await db
-    .select()
-    .from(tasks)
-    .where(and(eq(tasks.userId, user.id), inArray(tasks.status, ["todo", "in_progress", "review"])))
-    .orderBy(tasks.dueDate);
   const dueTasks = openTasks
     .filter((t) => t.dueDate && t.dueDate <= weekEnd)
     .sort((a, b) => (a.dueDate! < b.dueDate! ? -1 : 1));
 
   // AI 평가가 필요한 제출물: 버전은 있는데 완료 전 상태
-  const subs = await db
-    .select()
-    .from(submissions)
-    .where(
-      and(
-        eq(submissions.userId, user.id),
-        inArray(submissions.status, ["draft", "review_needed"]),
-      ),
-    );
+  const subs = allSubs.filter((s) => s.status === "draft" || s.status === "review_needed");
   const subIds = subs.map((s) => s.id);
   const versionedSubIds = new Set(
     subIds.length > 0
-      ? (await db
-          .select({ submissionId: submissionVersions.submissionId })
-          .from(submissionVersions)
-          .where(inArray(submissionVersions.submissionId, subIds))
-          )
-          .map((v) => v.submissionId)
+      ? (
+          await db
+            .select({ submissionId: submissionVersions.submissionId })
+            .from(submissionVersions)
+            .where(inArray(submissionVersions.submissionId, subIds))
+        ).map((v) => v.submissionId)
       : [],
   );
   const needsReview = subs.filter((s) => versionedSubIds.has(s.id)).slice(0, 4);
 
   // 제출 예정 (마감일 있는 미제출 제출물)
-  const upcomingSubs = (await db
-    .select()
-    .from(submissions)
-    .where(and(eq(submissions.userId, user.id), gte(submissions.dueDate, today)))
-    .orderBy(submissions.dueDate)
-    )
-    .filter((s) => s.status !== "submitted")
+  const upcomingSubs = allSubs
+    .filter((s) => s.dueDate != null && s.dueDate >= today && s.status !== "submitted")
     .slice(0, 4);
 
   // 최근 알림
-  const recentNotifications = (await db
-    .select()
-    .from(notifications)
-    .where(eq(notifications.userId, user.id))
-    .orderBy(desc(notifications.createdAt))
-    )
-    .slice(0, 5);
-  const unreadCount = (await db
-    .select({ id: notifications.id })
-    .from(notifications)
-    .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0)))
-    ).length;
+  const recentNotifications = notificationRows.slice(0, 5);
+  const unreadCount = unreadRows.length;
 
   // 전체 진행률
-  const allTaskRows = await db
-    .select({ status: tasks.status })
-    .from(tasks)
-    .where(eq(tasks.userId, user.id));
   const overallProgress =
     allTaskRows.length > 0
       ? Math.round((allTaskRows.filter((t) => t.status === "done").length / allTaskRows.length) * 100)
       : null;
 
   // AI 평균 점수
-  const aiReviewCount = (
-    await db
-      .select({ id: aiReviews.id })
-      .from(aiReviews)
-      .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.status, "done")))
-  ).length;
-
-  const retroCount = (
-    await db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id))
-  ).length;
-
-  const evalReviews = (await db
-    .select()
-    .from(aiReviews)
-    .where(
-      and(
-        eq(aiReviews.userId, user.id),
-        eq(aiReviews.action, "evaluate_submission"),
-        eq(aiReviews.status, "done"),
-      ),
-    )
-    )
-    .filter((r) => r.overallScore != null && r.maxScore);
+  const aiReviewCount = doneReviews.length;
+  const retroCount = retroRows.length;
+  const evalReviews = doneReviews.filter(
+    (r) => r.action === "evaluate_submission" && r.overallScore != null && r.maxScore,
+  );
 
   // 마감 임박(7일 이내) + 최근 추가
   const imminent = ongoing

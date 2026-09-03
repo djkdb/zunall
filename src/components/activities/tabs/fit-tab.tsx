@@ -27,24 +27,26 @@ const RECOMMENDATION_LABELS: Record<string, { label: string; className: string }
 };
 
 export async function FitTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
-  const ctx = await getCareerContext(userId);
-  const analysis = (await db
-    .select()
-    .from(opportunityAnalyses)
-    .where(
-      and(
-        eq(opportunityAnalyses.activityId, activity.id),
-        eq(opportunityAnalyses.userId, userId),
-      ),
-    )
-    .orderBy(desc(opportunityAnalyses.createdAt))
-    .limit(1))[0];
-
-  const noticeDocCount = (await db
-    .select({ id: documents.id })
-    .from(documents)
-    .where(and(eq(documents.activityId, activity.id), eq(documents.category, "notice")))
-    ).length;
+  const [ctx, analysisRows, noticeDocs] = await Promise.all([
+    getCareerContext(userId),
+    db
+      .select()
+      .from(opportunityAnalyses)
+      .where(
+        and(
+          eq(opportunityAnalyses.activityId, activity.id),
+          eq(opportunityAnalyses.userId, userId),
+        ),
+      )
+      .orderBy(desc(opportunityAnalyses.createdAt))
+      .limit(1),
+    db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(and(eq(documents.activityId, activity.id), eq(documents.category, "notice"))),
+  ]);
+  const analysis = analysisRows[0];
+  const noticeDocCount = noticeDocs.length;
 
   if (!ctx.onboarded) {
     return (

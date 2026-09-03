@@ -7,17 +7,18 @@ import { EssayEditor } from "@/components/essays/essay-editor";
 
 /** 자기소개서 문항별 작성 + AI 첨삭 */
 export async function EssayTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
-  const questions = await db
-    .select()
-    .from(essayQuestions)
-    .where(and(eq(essayQuestions.activityId, activity.id), eq(essayQuestions.userId, userId)))
-    .orderBy(asc(essayQuestions.position));
-
-  const drafts = await db
-    .select()
-    .from(essayDrafts)
-    .where(eq(essayDrafts.userId, userId))
-    .orderBy(desc(essayDrafts.version));
+  const [questions, drafts] = await Promise.all([
+    db
+      .select()
+      .from(essayQuestions)
+      .where(and(eq(essayQuestions.activityId, activity.id), eq(essayQuestions.userId, userId)))
+      .orderBy(asc(essayQuestions.position)),
+    db
+      .select()
+      .from(essayDrafts)
+      .where(eq(essayDrafts.userId, userId))
+      .orderBy(desc(essayDrafts.version)),
+  ]);
 
   const draftsByQuestion = new Map<string, typeof drafts>();
   for (const draft of drafts) {

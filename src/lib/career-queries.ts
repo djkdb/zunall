@@ -40,16 +40,27 @@ export interface CareerContext {
 
 /** Career 화면·대시보드가 공유하는 컨텍스트를 한 번에 조립한다. */
 export async function getCareerContext(userId: string): Promise<CareerContext> {
-  const profile =
-    (await db.select().from(careerProfiles).where(eq(careerProfiles.userId, userId)).limit(1))[0] ?? null;
-
-  const goal =
-    (await db
+  // 서로 의존하지 않는 조회는 한꺼번에 보낸다.
+  // 순서대로 기다리면 왕복 시간이 그대로 더해져 화면 이동이 느려진다.
+  const [profileRows, goalRows, skills, evidence, acts, actions] = await Promise.all([
+    db.select().from(careerProfiles).where(eq(careerProfiles.userId, userId)).limit(1),
+    db
       .select()
       .from(careerGoals)
       .where(and(eq(careerGoals.userId, userId), eq(careerGoals.isActive, 1)))
       .orderBy(desc(careerGoals.updatedAt))
-      .limit(1))[0] ?? null;
+      .limit(1),
+    db.select().from(userSkills).where(eq(userSkills.userId, userId)),
+    db
+      .select()
+      .from(careerEvidence)
+      .where(eq(careerEvidence.userId, userId))
+      .orderBy(desc(careerEvidence.createdAt)),
+    db.select({ status: activities.status }).from(activities).where(eq(activities.userId, userId)),
+    db.select().from(careerActions).where(eq(careerActions.userId, userId)),
+  ]);
+  const profile = profileRows[0] ?? null;
+  const goal = goalRows[0] ?? null;
 
   const template = matchTemplate(
     goal
@@ -61,13 +72,6 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
       : null,
   );
 
-  const skills = await db.select().from(userSkills).where(eq(userSkills.userId, userId));
-  const evidence = await db
-    .select()
-    .from(careerEvidence)
-    .where(eq(careerEvidence.userId, userId))
-    .orderBy(desc(careerEvidence.createdAt));
-
   const skillScores = computeSkillScores(
     skills.map((s) => ({ name: s.name, category: s.category, selfScore: s.selfScore })),
     evidence.map((e) => ({
@@ -77,11 +81,6 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
       skills: safeJsonParse<string[]>(e.skills, []),
     })),
   );
-
-  const acts = await db
-    .select({ status: activities.status })
-    .from(activities)
-    .where(eq(activities.userId, userId));
 
   const readiness = computeReadiness({
     template,
@@ -102,10 +101,6 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
 
   const gaps = computeGaps(template, skillScores);
 
-  const actions = await db
-    .select()
-    .from(careerActions)
-    .where(eq(careerActions.userId, userId));
   const excludeTitles = new Set(
     actions.filter((a) => a.status !== "suggested").map((a) => a.title),
   );

@@ -30,20 +30,16 @@ const REC_BADGES: Record<string, { label: string; className: string }> = {
 
 export default async function OpportunitiesPage() {
   const user = await requireUser();
-  const ctx = await getCareerContext(user.id);
-
-  const acts = (await db
-    .select()
-    .from(activities)
-    .where(eq(activities.userId, user.id))
-    .orderBy(desc(activities.updatedAt))
-    )
-    .filter((a) => !(FINISHED_STATUSES as string[]).includes(a.status));
-
-  const analyses = await db
-    .select()
-    .from(opportunityAnalyses)
-    .where(eq(opportunityAnalyses.userId, user.id));
+  const [ctx, actRows, analyses] = await Promise.all([
+    getCareerContext(user.id),
+    db
+      .select()
+      .from(activities)
+      .where(eq(activities.userId, user.id))
+      .orderBy(desc(activities.updatedAt)),
+    db.select().from(opportunityAnalyses).where(eq(opportunityAnalyses.userId, user.id)),
+  ]);
+  const acts = actRows.filter((a) => !(FINISHED_STATUSES as string[]).includes(a.status));
   const analysisByActivity = new Map(analyses.map((a) => [a.activityId, a]));
 
   // 분석된 것은 적합도 높은 순, 미분석은 뒤로

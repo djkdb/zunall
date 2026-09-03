@@ -20,42 +20,43 @@ import { EVENT_TYPES, CRITERIA_SOURCES, type EventType, type CriteriaSource } fr
 import { announcementSummarySchema, type AnnouncementSummary } from "@/services/ai/schemas";
 
 export async function OverviewTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
-  const activityTasks = await db
-    .select()
-    .from(tasks)
-    .where(and(eq(tasks.activityId, activity.id), eq(tasks.userId, userId)))
-    .orderBy(desc(tasks.updatedAt));
+  // 서로 독립적인 조회 — 왕복을 줄이려고 한 번에 보낸다.
+  const [activityTasks, eventRows, latestEvalRows, criteria] = await Promise.all([
+    db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.activityId, activity.id), eq(tasks.userId, userId)))
+      .orderBy(desc(tasks.updatedAt)),
+    db
+      .select()
+      .from(events)
+      .where(and(eq(events.activityId, activity.id), gte(events.date, todayStr())))
+      .orderBy(events.date),
+    db
+      .select()
+      .from(aiReviews)
+      .where(
+        and(
+          eq(aiReviews.activityId, activity.id),
+          eq(aiReviews.action, "evaluate_submission"),
+          eq(aiReviews.status, "done"),
+        ),
+      )
+      .orderBy(desc(aiReviews.createdAt))
+      .limit(1),
+    db
+      .select()
+      .from(evaluationCriteria)
+      .where(eq(evaluationCriteria.activityId, activity.id))
+      .orderBy(evaluationCriteria.position),
+  ]);
+
   const openTasks = activityTasks.filter((t) => t.status !== "done");
   const doneCount = activityTasks.length - openTasks.length;
   const progress =
     activityTasks.length > 0 ? Math.round((doneCount / activityTasks.length) * 100) : null;
-
-  const upcomingEvents = (await db
-    .select()
-    .from(events)
-    .where(and(eq(events.activityId, activity.id), gte(events.date, todayStr())))
-    .orderBy(events.date)
-    )
-    .slice(0, 5);
-
-  const latestEval = (await db
-    .select()
-    .from(aiReviews)
-    .where(
-      and(
-        eq(aiReviews.activityId, activity.id),
-        eq(aiReviews.action, "evaluate_submission"),
-        eq(aiReviews.status, "done"),
-      ),
-    )
-    .orderBy(desc(aiReviews.createdAt))
-    .limit(1))[0];
-
-  const criteria = await db
-    .select()
-    .from(evaluationCriteria)
-    .where(eq(evaluationCriteria.activityId, activity.id))
-    .orderBy(evaluationCriteria.position);
+  const upcomingEvents = eventRows.slice(0, 5);
+  const latestEval = latestEvalRows[0];
 
   // AI 요약 (사용자가 적용한 경우)
   let aiSummary: AnnouncementSummary | null = null;

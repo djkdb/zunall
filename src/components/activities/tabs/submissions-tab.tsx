@@ -27,26 +27,19 @@ export async function SubmissionsTab({ activity, userId }: { activity: ActivityR
     .orderBy(desc(submissions.createdAt));
 
   const subIds = subs.map((s) => s.id);
-  const versions =
+
+  // 버전과 AI 평가는 서로 독립적이라 한 번에 보낸다.
+  const [versions, reviews] = await Promise.all([
     subIds.length > 0
-      ? await db
+      ? db
           .select()
           .from(submissionVersions)
           .where(inArray(submissionVersions.submissionId, subIds))
           .orderBy(desc(submissionVersions.createdAt))
-
-      : [];
-  const docIds = versions.map((v) => v.documentId);
-  const versionDocs =
-    docIds.length > 0
-      ? await db.select().from(documents).where(inArray(documents.id, docIds))
-      : [];
-  const docById = new Map(versionDocs.map((d) => [d.id, d]));
-
-  // 제출물별 최근 AI 평가 점수
-  const reviews =
+      : [],
+    // 제출물별 최근 AI 평가 점수
     subIds.length > 0
-      ? await db
+      ? db
           .select()
           .from(aiReviews)
           .where(
@@ -57,8 +50,15 @@ export async function SubmissionsTab({ activity, userId }: { activity: ActivityR
             ),
           )
           .orderBy(desc(aiReviews.createdAt))
+      : [],
+  ]);
 
+  const docIds = versions.map((v) => v.documentId);
+  const versionDocs =
+    docIds.length > 0
+      ? await db.select().from(documents).where(inArray(documents.id, docIds))
       : [];
+  const docById = new Map(versionDocs.map((d) => [d.id, d]));
 
   return (
     <div className="space-y-4">

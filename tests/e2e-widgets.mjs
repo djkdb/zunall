@@ -21,8 +21,9 @@ try {
 
   // 요약 지표와 알림 끄기
   await p.getByLabel("대시보드 구성").click();
-  await p.getByRole("checkbox").nth(0).uncheck();      // 요약 지표
-  await p.getByRole("checkbox").nth(6).uncheck();      // 최근 알림
+  // 순번 대신 라벨로 고른다 (위젯이 추가돼도 흔들리지 않게)
+  await p.getByRole("checkbox", { name: /요약 지표/ }).uncheck();
+  await p.getByRole("checkbox", { name: /최근 알림/ }).uncheck();
   await p.getByRole("button", { name: "저장" }).click();
   await p.waitForTimeout(2000);
   await p.reload();
