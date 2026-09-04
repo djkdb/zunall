@@ -11,6 +11,15 @@ import { newId } from "@/lib/utils";
 export type AuthFormState = { error?: string } | undefined;
 
 /**
+ * 로그인 뒤 돌아갈 주소.
+ * 다른 사이트로 튕기지 않도록 앱 안의 경로만 허용한다.
+ */
+function safeNext(value: FormDataEntryValue | null): string {
+  const raw = typeof value === "string" ? value.trim() : "";
+  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
+}
+
+/**
  * DB 설정이 안 된 배포에서 서버 예외로 흰 화면이 뜨는 대신,
  * 폼 위에 원인을 보여준다. (redirect()가 던지는 제어 흐름 예외는 그대로 통과)
  */
@@ -64,7 +73,7 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
   } catch (error) {
     return { error: dbErrorMessage(error) };
   }
-  redirect("/");
+  redirect(safeNext(formData.get("next")));
 }
 
 const loginSchema = z.object({
@@ -99,7 +108,7 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
   } catch (error) {
     return { error: dbErrorMessage(error) };
   }
-  redirect("/");
+  redirect(safeNext(formData.get("next")));
 }
 
 export async function logout(): Promise<void> {

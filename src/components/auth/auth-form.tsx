@@ -49,11 +49,14 @@ export function AuthForm({
   googleEnabled = false,
   errorCode,
   errorReason,
+  next,
 }: {
   mode: "login" | "signup";
   googleEnabled?: boolean;
   errorCode?: string;
   errorReason?: string;
+  /** 로그인 뒤 돌아갈 앱 안의 경로 (공유로 들어온 경우 등) */
+  next?: string;
 }) {
   const action = mode === "login" ? login : signup;
   const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
@@ -117,6 +120,7 @@ export function AuthForm({
           action={formAction}
           className="space-y-4 rounded-lg border bg-card p-6 shadow-sm"
         >
+          {next && <input type="hidden" name="next" value={next} />}
           {mode === "signup" && (
             <div className="space-y-1.5">
               <Label htmlFor="name">이름</Label>

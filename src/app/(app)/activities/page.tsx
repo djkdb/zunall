@@ -4,6 +4,8 @@ import { Plus, FolderKanban } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { getActivitiesWithMeta, getUserTags } from "@/lib/queries";
 import { ActivityCard } from "@/components/activities/activity-card";
+import { StatusBoard } from "@/components/activities/status-board";
+import { ViewToggle } from "@/components/activities/view-toggle";
 import { ActivityFilters } from "@/components/activities/activity-filters";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -22,6 +24,7 @@ export default async function ActivitiesPage({
   const filter = typeof params.filter === "string" ? params.filter : "all";
   const type = typeof params.type === "string" ? params.type : "all";
   const tag = typeof params.tag === "string" ? params.tag : "all";
+  const view = params.view === "board" ? "board" : "list";
 
   const [initialItems, allTags] = await Promise.all([
     getActivitiesWithMeta(user.id),
@@ -76,9 +79,22 @@ export default async function ActivitiesPage({
         </Link>
       </div>
 
+      <ViewToggle view={view} />
+
       <ActivityFilters tags={allTags} />
 
-      {items.length === 0 ? (
+      {view === "board" && items.length > 0 ? (
+        <StatusBoard
+          items={items.map((a) => ({
+            id: a.id,
+            name: a.name,
+            status: a.status,
+            type: a.type,
+            color: a.color,
+            nearestDeadline: a.nearestDeadline,
+          }))}
+        />
+      ) : items.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
           title={q || filter !== "all" || type !== "all" ? "조건에 맞는 활동이 없습니다" : "아직 등록된 활동이 없습니다"}
