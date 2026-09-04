@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url TEXT,
   calendar_token TEXT,
   terms_agreed_at BIGINT,
+  portfolio_token TEXT,
   created_at BIGINT NOT NULL
 );
 
@@ -129,6 +130,16 @@ CREATE TABLE IF NOT EXISTS password_resets (
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_caltoken ON users(calendar_token);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_portfolio_token ON users(portfolio_token);
+
+CREATE TABLE IF NOT EXISTS ai_usage (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  day TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  updated_at BIGINT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_usage_user_day ON ai_usage(user_id, day);
 CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 
 CREATE TABLE IF NOT EXISTS tags (
@@ -498,6 +509,7 @@ export const REQUIRED_TABLES = [
   "notice_sources",
   "notice_items",
   "interview_questions",
+  "ai_usage",
 ] as const;
 
 /** 밀리초 시간값이라 BIGINT 여야 하는 컬럼 (진단용) */

@@ -10,6 +10,7 @@ import { newId } from "@/lib/utils";
 import { getProvider, type AIContext, type AIRequest } from "@/services/ai/provider";
 import { buildPrompt } from "@/services/ai/prompt-builder";
 import { completeWithRetry } from "@/services/ai/evaluator";
+import { getUsage, recordUsage, limitMessage } from "@/services/ai/usage";
 import { buildProfileText } from "@/lib/career-queries";
 import type { ActionResult } from "@/actions/activities";
 import { classifyQuestion, parseTopic, topicOf, ESSAY_TOPICS } from "@/services/essay/topics";
@@ -188,6 +189,10 @@ export async function coachEssayDraft(draftId: string): Promise<ActionResult> {
   try {
     const provider = await getProvider();
     const request: AIRequest = { action: "essay_coach", prompt: buildPrompt("essay_coach", ctx), context: ctx };
+    // 하루 상한을 넘었으면 AI 를 부르지 않는다
+    const usage = await getUsage(user.id);
+    if (usage.exceeded) return { ok: false, error: limitMessage(usage) };
+    await recordUsage(user.id);
     const parsed = await completeWithRetry(provider, request);
     if (parsed.kind !== "essay") return { ok: false, error: "첨삭 결과 형식이 올바르지 않습니다." };
 

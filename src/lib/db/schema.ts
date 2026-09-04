@@ -39,6 +39,8 @@ export const users = pgTable("users", {
   calendarToken: text("calendar_token"),
   /** 이용약관·개인정보처리방침에 동의한 시각 */
   termsAgreedAt: epochMs("terms_agreed_at"),
+  /** 포트폴리오 공유 주소에 쓰는 비밀 토큰. 발급 전에는 null */
+  portfolioToken: text("portfolio_token"),
   createdAt: epochMs("created_at").notNull(),
 });
 
@@ -635,6 +637,20 @@ export const interviewQuestions = pgTable(
 );
 
 export type InterviewQuestionRow = typeof interviewQuestions.$inferSelect;
+
+/** 하루 단위 AI 호출 횟수 (비용이 무제한으로 열리지 않게 막는 데 쓴다) */
+export const aiUsage = pgTable(
+  "ai_usage",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    /** YYYY-MM-DD (사용자 시간대 아님, 서버 UTC 기준) */
+    day: text("day").notNull(),
+    count: integer("count").notNull().default(0),
+    updatedAt: epochMs("updated_at").notNull(),
+  },
+  (t) => [uniqueIndex("idx_ai_usage_user_day").on(t.userId, t.day)],
+);
 
 export type UserRow = typeof users.$inferSelect;
 export type UserSettingsRow = typeof userSettings.$inferSelect;

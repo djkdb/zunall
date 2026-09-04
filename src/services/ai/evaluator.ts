@@ -19,6 +19,7 @@ import { AI_ACTIONS, type AIAction } from "@/lib/constants";
 import { getProvider, type AIContext, type AIRequest } from "./provider";
 import { buildPrompt, buildRetryPrompt } from "./prompt-builder";
 import { extractJson } from "./parse-json";
+import { getUsage, recordUsage, limitMessage } from "./usage";
 import {
   announcementSummarySchema,
   evaluationResultSchema,
@@ -51,6 +52,10 @@ export interface RunAIResult {
 export async function runAIAction(params: RunAIParams): Promise<RunAIResult> {
   const { userId, activityId, action } = params;
 
+  // 하루 상한을 먼저 확인한다 (AI 를 부르기 전에 막아야 비용이 들지 않는다)
+  const usage = await getUsage(userId);
+  if (usage.exceeded) return { ok: false, reviewId: "", error: limitMessage(usage) };
+
   const activity = (await db
     .select()
     .from(activities)
@@ -79,6 +84,8 @@ export async function runAIAction(params: RunAIParams): Promise<RunAIResult> {
   try {
     const prompt = buildPrompt(action, context.ctx);
     const request: AIRequest = { action, prompt, context: context.ctx };
+    // 실제로 호출하기 직전에 기록한다 (실패해도 호출은 일어났으므로 세는 것이 맞다)
+    await recordUsage(userId);
     const parsed = await completeWithRetry(provider, request);
     await persistResult(reviewId, userId, activity.id, activity.name, action, parsed, params.submissionId ?? null);
     return { ok: true, reviewId };

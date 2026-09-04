@@ -17,6 +17,7 @@ import { newId } from "@/lib/utils";
 import { getProvider, type AIContext, type AIRequest } from "@/services/ai/provider";
 import { buildPrompt } from "@/services/ai/prompt-builder";
 import { completeWithRetry } from "@/services/ai/evaluator";
+import { getUsage, recordUsage, limitMessage } from "@/services/ai/usage";
 import { buildProfileText } from "@/lib/career-queries";
 import type { ActionResult } from "@/actions/activities";
 
@@ -104,6 +105,10 @@ export async function generateInterviewQuestions(activityId: string): Promise<Ac
   };
 
   const provider = await getProvider();
+  // 하루 상한을 넘었으면 AI 를 부르지 않는다
+  const usage = await getUsage(user.id);
+  if (usage.exceeded) return { ok: false, error: limitMessage(usage) };
+  await recordUsage(user.id);
   const result = await completeWithRetry(provider, request);
   if (result.kind !== "interview") return { ok: false, error: "질문을 만들지 못했습니다." };
 

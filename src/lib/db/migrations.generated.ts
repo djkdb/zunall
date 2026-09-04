@@ -64,4 +64,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "014-interview.sql",
     sql: "-- 면접 준비: 예상 질문과 내가 준비한 답변.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nCREATE TABLE IF NOT EXISTS interview_questions (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  activity_id TEXT NOT NULL,\n  question TEXT NOT NULL,\n  why TEXT,\n  hint TEXT,\n  answer TEXT,\n  ready INTEGER NOT NULL DEFAULT 0,\n  source TEXT NOT NULL DEFAULT 'ai',\n  position INTEGER NOT NULL DEFAULT 0,\n  created_at BIGINT NOT NULL,\n  updated_at BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_interview_activity ON interview_questions(activity_id);\nCREATE INDEX IF NOT EXISTS idx_interview_user ON interview_questions(user_id);\n",
   },
+  {
+    name: "015-share-and-ai-usage.sql",
+    sql: "-- 포트폴리오 공유 링크와 AI 사용량 기록.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE users ADD COLUMN IF NOT EXISTS portfolio_token TEXT;\nCREATE UNIQUE INDEX IF NOT EXISTS idx_users_portfolio_token ON users(portfolio_token);\n\n-- 하루 단위 AI 호출 횟수 (사용자 × 날짜)\nCREATE TABLE IF NOT EXISTS ai_usage (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  day TEXT NOT NULL,\n  count INTEGER NOT NULL DEFAULT 0,\n  updated_at BIGINT NOT NULL\n);\nCREATE UNIQUE INDEX IF NOT EXISTS idx_ai_usage_user_day ON ai_usage(user_id, day);\n",
+  },
 ];
