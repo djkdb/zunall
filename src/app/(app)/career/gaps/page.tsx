@@ -24,7 +24,7 @@ export default async function GapsPage() {
         >
           <ArrowLeft className="h-3 w-3" /> Career Profile
         </Link>
-        <h1 className="text-xl font-bold tracking-tight">Career Gap 분석</h1>
+        <h1 className="text-xl font-bold tracking-tight">부족한 부분</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           목표 &ldquo;{ctx.goal?.name ?? "미설정"}&rdquo; ({ctx.template.label} 기준) 대비 부족한
           역량과, 그 격차를 줄이는 가장 효과적인 행동입니다.
@@ -89,7 +89,7 @@ export default async function GapsPage() {
                             <p className="mt-0.5 text-xs text-muted-foreground">
                               예상 효과{" "}
                               <b className="text-emerald-600 dark:text-emerald-400">
-                                Career Score +{action.effect}
+                                커리어 점수 +{action.effect}
                               </b>{" "}
                               · 약 {Math.round((action.minutes / 60) * 10) / 10}시간 —{" "}
                               {action.reason}

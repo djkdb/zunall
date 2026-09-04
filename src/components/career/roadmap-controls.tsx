@@ -39,7 +39,7 @@ export function GenerateRoadmapButton() {
         }}
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-        Gap 기반 자동 생성
+        부족한 부분으로 자동 생성
       </Button>
       {message && <span className="mt-0.5 text-[10px] text-destructive">{message}</span>}
     </span>

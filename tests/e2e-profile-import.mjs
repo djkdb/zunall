@@ -29,7 +29,7 @@ try {
   await p.getByLabel("나를 한 줄로 표현하면?").fill("데이터로 문제를 푸는 사람");
   await p.getByRole("button", { name: "다음" }).click();
   await p.getByRole("button", { name: "데이터 분석", exact: true }).click();
-  await p.getByRole("button", { name: "Career Profile 만들기" }).click();
+  await p.getByRole("button", { name: "내 커리어 시작하기" }).click();
   await p.waitForSelector("text=Career Readiness", { timeout: 30000 });
 
   let text = await p.locator("main").innerText();

@@ -41,7 +41,7 @@ export function AddEvidenceDialog() {
       <Button size="sm" onClick={() => setOpen(true)}>
         <Plus className="h-4 w-4" /> 근거 추가
       </Button>
-      <Dialog open={open} onClose={() => setOpen(false)} title="근거(Evidence) 추가">
+      <Dialog open={open} onClose={() => setOpen(false)} title="근거가 되는 경험 추가">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">

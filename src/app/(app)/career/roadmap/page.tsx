@@ -69,7 +69,7 @@ export default async function RoadmapPage() {
         <EmptyState
           icon={MapIcon}
           title="로드맵이 비어 있습니다"
-          description="'Gap 기반 자동 생성'을 누르면 Career Gap 분석에서 나온 추천 행동으로 3개월 계획을 만들어드립니다."
+          description="'부족한 부분으로 자동 생성'을 누르면 지금 가장 부족한 역량을 채우는 3개월 계획을 만들어드립니다."
         />
       ) : (
         <ol className="relative space-y-6 border-l-2 border-border pl-6">

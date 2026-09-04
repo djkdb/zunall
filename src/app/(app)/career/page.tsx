@@ -52,7 +52,7 @@ export default async function CareerPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            Your Career
+            내 커리어
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight">
             {ctx.profile?.headline || user.name}
@@ -126,7 +126,7 @@ export default async function CareerPage() {
         <div className="space-y-4 lg:col-span-2">
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Skills</CardTitle>
+              <CardTitle>스킬</CardTitle>
               <Link href="/career/skills" className="text-xs text-primary hover:underline">
                 스킬 관리
               </Link>
@@ -134,7 +134,7 @@ export default async function CareerPage() {
             <CardContent>
               <SkillList skills={ctx.skillScores} limit={8} />
               <p className="mt-3 text-xs text-muted-foreground">
-                점수를 클릭하면 산출 근거가 보입니다. 점수는 자가 평가가 아니라 근거(Evidence)로
+                점수를 클릭하면 산출 근거가 보입니다. 점수는 스스로 매기는 것이 아니라 남긴 기록으로
                 계산됩니다.
               </p>
             </CardContent>
@@ -145,7 +145,7 @@ export default async function CareerPage() {
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-1.5">
-                <BookMarked className="h-4 w-4 text-muted-foreground" /> Career Evidence (
+                <BookMarked className="h-4 w-4 text-muted-foreground" /> 근거가 되는 경험 (
                 {ctx.evidence.length})
               </CardTitle>
               <div className="flex flex-wrap items-center gap-2">
@@ -208,7 +208,7 @@ export default async function CareerPage() {
           </Card>
         </div>
 
-        {/* 오른쪽: 점수 + 미션 + Gap 미리보기 */}
+        {/* 오른쪽: 점수 + 미션 + 부족한 부분 미리보기 */}
         <div className="space-y-4">
           <ProfileCompleteness
             hasGoal={Boolean(ctx.goal)}
@@ -237,7 +237,7 @@ export default async function CareerPage() {
 
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>가장 큰 Gap</CardTitle>
+              <CardTitle>가장 부족한 부분</CardTitle>
               <Link href="/career/gaps" className="text-xs text-primary hover:underline">
                 전체 분석 <ArrowRight className="inline h-3 w-3" />
               </Link>

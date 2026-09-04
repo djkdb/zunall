@@ -91,7 +91,7 @@ export function RetrospectiveForm({
           defaultValue={skills.join(", ")}
         />
         <p className="text-xs text-muted-foreground">
-          여기 적은 스킬은 커리어 근거로도 등록되어 Career Score 에 반영됩니다.
+          여기 적은 스킬은 커리어 근거로도 등록되어 커리어 점수에 반영됩니다.
         </p>
       </div>
 

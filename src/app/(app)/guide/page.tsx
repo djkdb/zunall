@@ -181,8 +181,8 @@ export default async function GuidePage() {
       <Card className="bg-secondary/40">
         <CardContent className="p-4 text-xs leading-relaxed text-muted-foreground">
           <p className="mb-1 text-sm font-semibold text-foreground">점수에 대해</p>
-          Career Score는 합격 확률이 아니라 <strong>목표 대비 준비도</strong>입니다. 자기 평가가
-          아니라 등록한 <strong>근거(Evidence)</strong>로 계산되며, 점수를 누르면 어떤 항목에서
+          커리어 점수(Career Score)는 합격 확률이 아니라 <strong>목표 대비 준비도</strong>입니다. 자기 평가가
+          아니라 등록한 <strong>경험 기록</strong>으로 계산되며, 점수를 누르면 어떤 항목에서
           몇 점이 나왔는지 그대로 보여줍니다. 정보를 적게 넣으면 점수도 낮게 나오니,{" "}
           <Link href="/career" className="text-primary hover:underline">
             이력 붙여넣기

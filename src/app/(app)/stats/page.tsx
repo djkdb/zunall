@@ -281,7 +281,7 @@ async function CareerStatsSection({ userId }: { userId: string }) {
       <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Career</h2>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <MetricCard
-          label="Career Score"
+          label="커리어 점수"
           value={String(latest)}
           sub={
             monthAgo !== null && monthAgo !== latest
@@ -290,8 +290,8 @@ async function CareerStatsSection({ userId }: { userId: string }) {
           }
           highlight
         />
-        <MetricCard label="가장 큰 Gap" value={ctx.gaps[0] ? `-${ctx.gaps[0].gap}` : "-"} sub={ctx.gaps[0]?.skill} />
-        <MetricCard label="근거 (Evidence)" value={String(ctx.evidence.length)} sub={`스킬 ${ctx.skillScores.length}개 뒷받침`} />
+        <MetricCard label="가장 부족한 부분" value={ctx.gaps[0] ? `-${ctx.gaps[0].gap}` : "-"} sub={ctx.gaps[0]?.skill} />
+        <MetricCard label="근거가 되는 경험" value={String(ctx.evidence.length)} sub={`스킬 ${ctx.skillScores.length}개 뒷받침`} />
         <MetricCard
           label="추천 행동 완료율"
           value={actionRate !== null ? `${actionRate}%` : "-"}

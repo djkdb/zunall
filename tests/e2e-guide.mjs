@@ -35,7 +35,7 @@ try {
   await p.getByLabel("나를 한 줄로 표현하면?").fill("가이드 테스트");
   await p.getByRole("button", { name: "다음" }).click();
   await p.getByRole("button", { name: "기획", exact: true }).click();
-  await p.getByRole("button", { name: "Career Profile 만들기" }).click();
+  await p.getByRole("button", { name: "내 커리어 시작하기" }).click();
   await p.waitForSelector("text=Career Readiness", { timeout: 30000 });
 
   await p.goto(`${BASE}/guide`);

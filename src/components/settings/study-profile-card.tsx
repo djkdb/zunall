@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * 전공 계열·학과·희망 직무를 언제든 바꾸는 카드.
- * 이 값이 스킬 추천, Career Score 기준(역할 템플릿), 활동 추천을 결정한다.
+ * 이 값이 스킬 추천, 커리어 점수 기준(역할 템플릿), 활동 추천을 결정한다.
  */
 export function StudyProfileCard({
   initialField,
@@ -51,7 +51,7 @@ export function StudyProfileCard({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          여기서 고른 기준으로 스킬 추천, Career Score 기준 역량, 추천 활동이 달라집니다.
+          여기서 고른 기준으로 스킬 추천, 커리어 점수 기준 역량, 추천 활동이 달라집니다.
         </p>
 
         <div className="space-y-1.5">

@@ -116,7 +116,7 @@ try {
   await page.getByRole("button", { name: "다음" }).click();
   await page.getByRole("button", { name: "AI 활용", exact: true }).click();
   await page.getByRole("button", { name: "Frontend", exact: true }).click();
-  await page.getByRole("button", { name: "Career Profile 만들기" }).click();
+  await page.getByRole("button", { name: "내 커리어 시작하기" }).click();
   await page.waitForSelector("text=Career Readiness", { timeout: 30000 });
   step("온보딩 완료 → Career Profile 생성", true);
   await page.screenshot({ path: `${SHOT}/01-career-profile.png` });
@@ -138,7 +138,7 @@ try {
   text = await page.locator("main").textContent();
   const afterEvidence = readinessScore(text);
   step(
-    "근거(Evidence) 추가 → Career Score 상승",
+    "근거가 되는 경험 추가 → Career Score 상승",
     afterEvidence !== null && initialScore !== null && afterEvidence > initialScore,
     `${initialScore} → ${afterEvidence}`,
   );
@@ -224,7 +224,7 @@ try {
 
   // ── 9. 로드맵 자동 생성
   await page.goto(`${BASE}/career/roadmap`);
-  await page.getByRole("button", { name: "Gap 기반 자동 생성" }).click();
+  await page.getByRole("button", { name: "부족한 부분으로 자동 생성" }).click();
   await page.waitForTimeout(2500);
   text = await page.locator("main").textContent();
   step("로드맵: Gap 추천 행동으로 월별 계획 생성", /20\d\d [A-Z]{3}/.test(text));
@@ -234,8 +234,8 @@ try {
   await page.goto(`${BASE}/stats`);
   text = await page.locator("main").textContent();
   step(
-    "통계: Career Score/완료율/평균 적합도 표시",
-    text.includes("Career Score") && text.includes("추천 행동 완료율") && text.includes("평균 지원 적합도"),
+    "통계: 커리어 점수/완료율/평균 적합도 표시",
+    text.includes("커리어 점수") && text.includes("추천 행동 완료율") && text.includes("평균 지원 적합도"),
   );
 
   // ── 11. 기존 기능 회귀 확인

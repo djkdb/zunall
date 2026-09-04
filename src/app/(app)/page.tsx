@@ -248,7 +248,7 @@ export default async function DashboardPage() {
                 <Link href="/career" className="text-base font-semibold hover:text-primary">
                   🎯 {careerCtx.goal?.name}
                 </Link>
-                <p className="mt-2 text-xs font-semibold text-muted-foreground">가장 큰 Gap</p>
+                <p className="mt-2 text-xs font-semibold text-muted-foreground">가장 부족한 부분</p>
                 {careerCtx.gaps.length === 0 ? (
                   <p className="mt-1 text-sm text-muted-foreground">목표 수준 달성 🎉</p>
                 ) : (
@@ -267,7 +267,7 @@ export default async function DashboardPage() {
                   href="/career/gaps"
                   className="mt-2 inline-block text-xs text-primary hover:underline"
                 >
-                  Gap 분석 보기 <ArrowRight className="inline h-3 w-3" />
+                  부족한 부분 보기 <ArrowRight className="inline h-3 w-3" />
                 </Link>
               </CardContent>
             </Card>
@@ -318,13 +318,13 @@ export default async function DashboardPage() {
                 <Compass className="h-4 w-4 text-primary" /> CAVERO 시작하기
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                목표를 정하면 내 경험을 분석해 Career Score와 부족한 부분, 오늘 가장 효과적인
+                목표를 정하면 내 경험을 분석해 커리어 점수와 부족한 부분, 오늘 가장 효과적인
                 행동을 알려드립니다.
               </p>
             </div>
             <Link href="/career">
               <Button size="sm">
-                Career Profile 만들기 <ArrowRight className="h-4 w-4" />
+                내 커리어 시작하기 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </CardContent>

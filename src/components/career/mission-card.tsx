@@ -55,7 +55,7 @@ export function MissionCard({
           <div className="mt-2">
             <p className="text-base font-semibold leading-snug">{activeTask.title}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              진행 중인 미션이 있습니다. 작업을 완료하면 Career Score가 갱신됩니다.
+              진행 중인 미션이 있습니다. 작업을 완료하면 커리어 점수가 갱신됩니다.
             </p>
             <Link href="/?focus=tasks" className="mt-3 inline-block">
               <Button size="sm" variant="secondary">
@@ -72,7 +72,7 @@ export function MissionCard({
             <p className="text-base font-semibold leading-snug">{mission.title}</p>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span>
-                예상 효과 <b className="text-emerald-600 dark:text-emerald-400">+{mission.expectedEffect} Career Score</b>
+                예상 효과 <b className="text-emerald-600 dark:text-emerald-400">+{mission.expectedEffect} 커리어 점수</b>
               </span>
               <span>예상 소요 {hours}시간</span>
               <span>관련 역량: {mission.skill}</span>

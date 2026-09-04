@@ -73,7 +73,7 @@ export default async function OpportunitiesPage({
     <div className="space-y-5">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Opportunities</h1>
+          <h1 className="text-xl font-bold tracking-tight">기회 찾기</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             &ldquo;좋은 기회인가?&rdquo;가 아니라 &ldquo;지금의 나에게 좋은 기회인가?&rdquo;를
             판단합니다.

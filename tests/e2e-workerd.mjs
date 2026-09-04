@@ -32,7 +32,7 @@ try {
   await page.getByLabel("나를 한 줄로 표현하면?").fill("Workers Test");
   await page.getByRole("button", { name: "다음" }).click();
   await page.getByRole("button", { name: "AI 활용", exact: true }).click();
-  await page.getByRole("button", { name: "Career Profile 만들기" }).click();
+  await page.getByRole("button", { name: "내 커리어 시작하기" }).click();
   await page.waitForSelector("text=Career Readiness", { timeout: 30000 });
   step("workerd: 온보딩 → Career Score 계산", true);
 

@@ -34,7 +34,7 @@ export function computeGaps(
     const evidenceCount = detail?.evidenceCount ?? 0;
     const whyLacking =
       evidenceCount === 0
-        ? `이 역량을 뒷받침하는 근거(Evidence)가 아직 없습니다.`
+        ? `이 역량을 뒷받침하는 경험이 아직 없습니다.`
         : `연결된 근거가 ${evidenceCount}개뿐이라 목표 수준(${req.target})에 비해 검증이 부족합니다.`;
 
     gaps.push({

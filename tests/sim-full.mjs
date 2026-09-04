@@ -279,7 +279,7 @@ await scene("모바일 화면", async () => {
   await m.waitForTimeout(1200);
   await m.getByRole("button", { name: "다음" }).click();
   await m.waitForTimeout(1200);
-  await m.getByRole("button", { name: "Career Profile 만들기" }).click();
+  await m.getByRole("button", { name: "내 커리어 시작하기" }).click();
   await m.waitForTimeout(2500);
 
   await m.goto(`${BASE}/activities/new`);

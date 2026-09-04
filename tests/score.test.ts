@@ -92,7 +92,7 @@ test("computeGaps: 부족한 스킬만 gap으로, 큰 순서로 정렬", () => {
   assert.ok(cloud, "Cloud gap 존재");
   assert.equal(cloud!.current, 0);
   assert.ok(cloud!.actions.length > 0, "추천 행동 존재");
-  assert.ok(cloud!.whyLacking.includes("근거"), "부족 사유에 근거 언급");
+  assert.ok(cloud!.whyLacking.includes("경험"), "부족 사유에 경험 언급");
   // 정렬 확인
   for (let i = 1; i < gaps.length; i++) assert.ok(gaps[i - 1].gap >= gaps[i].gap);
 });

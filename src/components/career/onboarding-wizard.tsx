@@ -344,8 +344,8 @@ export function OnboardingWizard({ userName }: { userName: string }) {
               })}
             </div>
             <p className="text-xs text-muted-foreground">
-              완료하면 기존에 등록한 활동·수상 기록을 근거(Evidence)로 자동으로 가져와 첫 Career
-              Score를 계산합니다.
+              완료하면 기존에 등록한 활동·수상 기록을 근거로 자동으로 가져와 첫 커리어
+              점수를 계산합니다.
             </p>
             {error && <p className="text-xs text-destructive">{error}</p>}
             <div className="flex gap-2">
@@ -354,7 +354,7 @@ export function OnboardingWizard({ userName }: { userName: string }) {
               </Button>
               <Button className="flex-1" onClick={finish} disabled={pending}>
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Career Profile 만들기
+                내 커리어 시작하기
               </Button>
             </div>
           </div>

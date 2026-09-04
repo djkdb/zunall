@@ -59,7 +59,7 @@ export async function FitTab({ activity, userId }: { activity: ActivityRow; user
             프로필을 만들어주세요.
           </p>
           <Link href="/career" className="mt-3 text-sm font-medium text-primary hover:underline">
-            Career Profile 만들기 →
+            내 커리어 시작하기 →
           </Link>
         </CardContent>
       </Card>
@@ -130,7 +130,7 @@ export async function FitTab({ activity, userId }: { activity: ActivityRow; user
             <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
               <span>예상 준비 시간 {analysis.prepHours}시간</span>
               <span>
-                Career Gap 감소 효과{" "}
+                부족한 부분을 얼마나 메우나{" "}
                 <b className={cn((analysis.gapEffect ?? 0) >= 1 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>
                   +{analysis.gapEffect}
                 </b>
@@ -150,7 +150,7 @@ export async function FitTab({ activity, userId }: { activity: ActivityRow; user
             <CardContent>
               <p className="text-sm font-medium">{alternative.title}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                예상 효과 Career Score +{alternative.effect} · 약{" "}
+                예상 효과 커리어 점수 +{alternative.effect} · 약{" "}
                 {Math.round((alternative.minutes / 60) * 10) / 10}시간 — 이 공고를 준비하는{" "}
                 {analysis.prepHours}시간 대비 목표에 더 직접적입니다.
               </p>
@@ -158,7 +158,7 @@ export async function FitTab({ activity, userId }: { activity: ActivityRow; user
                 href="/career/gaps"
                 className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
               >
-                Gap 분석에서 실행하기 →
+                부족한 부분에서 실행하기 →
               </Link>
             </CardContent>
           </Card>

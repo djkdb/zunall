@@ -71,8 +71,11 @@ export function AuthForm({
           <CaveroMark className="h-12 w-12 text-[#0F2338] dark:text-foreground" />
           <h1 className="text-xl font-bold tracking-[0.3em]">CAVERO</h1>
           <p className="text-center text-sm text-muted-foreground">
-            스펙을 쌓는 게 아니라, 다음 합격을 설계합니다
+            공모전·대외활동·인턴을 한곳에서
           </p>
+          <Link href="/welcome" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+            어떤 서비스인지 먼저 볼게요
+          </Link>
         </div>
 
         {errorCode && OAUTH_ERRORS[errorCode] && (

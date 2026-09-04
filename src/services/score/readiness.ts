@@ -77,7 +77,7 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
       label: "검증 가능한 근거",
       points: Math.round(evidenceRatio * 15),
       max: 15,
-      detail: `등록된 근거(Evidence) ${evidenceCount}개`,
+      detail: `등록된 경험 ${evidenceCount}개`,
     },
     {
       label: "준비 기본기",

@@ -28,9 +28,9 @@ export default async function SkillsPage() {
         >
           <ArrowLeft className="h-3 w-3" /> Career Profile
         </Link>
-        <h1 className="text-xl font-bold tracking-tight">Skills</h1>
+        <h1 className="text-xl font-bold tracking-tight">스킬</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          스킬을 등록하고, 근거(Evidence)를 연결해 점수를 키우세요. 세로선은 목표(
+          스킬을 등록하고, 그 스킬을 쓴 경험을 연결하면 점수가 올라갑니다. 세로선은 목표(
           {ctx.template.label}) 수준입니다.
         </p>
       </div>

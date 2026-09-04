@@ -24,7 +24,7 @@ export function SkillList({
   if (list.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        아직 등록된 스킬이 없습니다. 근거(Evidence)를 추가하면 스킬 점수가 계산됩니다.
+        아직 등록된 스킬이 없습니다. 그 스킬을 쓴 경험을 추가하면 점수가 계산됩니다.
       </p>
     );
   }

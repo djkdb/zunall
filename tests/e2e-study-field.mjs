@@ -47,7 +47,7 @@ try {
 
   await p.locator("button", { hasText: "마케팅" }).first().click();
   await p.waitForTimeout(800);
-  await p.getByRole("button", { name: "Career Profile 만들기" }).click();
+  await p.getByRole("button", { name: "내 커리어 시작하기" }).click();
   await p.waitForTimeout(2500);
 
   // ── 저장 확인: 커리어 화면에 기준이 표시된다 ────────────────

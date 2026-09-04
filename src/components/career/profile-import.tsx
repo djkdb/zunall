@@ -64,7 +64,7 @@ export function ProfileImport() {
         </CardTitle>
         <p className="text-xs text-muted-foreground">
           이력서·자기소개서·수상 내역을 붙여넣거나 파일로 올리면 스킬과 근거를 뽑아드립니다.
-          <strong> 고른 것만 저장</strong>되고, 저장한 만큼 Career Score의 근거가 됩니다.
+          <strong> 고른 것만 저장</strong>되고, 저장한 만큼 커리어 점수의 근거가 됩니다.
         </p>
       </CardHeader>
 
