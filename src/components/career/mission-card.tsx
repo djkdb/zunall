@@ -80,7 +80,7 @@ export function MissionCard({
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               <b className="text-foreground/80">이 행동을 추천한 이유</b> — {mission.why}
             </p>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <Button size="sm" disabled={pending !== null} onClick={() => handle("accept")}>
                 {pending === "accept" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

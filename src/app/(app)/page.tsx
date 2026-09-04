@@ -228,7 +228,7 @@ export default async function DashboardPage() {
       {/* Career OS 영역 */}
       {show("careerStart") && (careerCtx.onboarded ? (
         <>
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
             <ReadinessCard
               compact
               readiness={careerCtx.readiness}
@@ -361,7 +361,7 @@ export default async function DashboardPage() {
       </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
         <div className="space-y-4 lg:col-span-2">
           {/* TODAY / UPCOMING */}
           {show("deadlines") && (
@@ -418,7 +418,7 @@ export default async function DashboardPage() {
           {imminent.length > 0 && (
             <section>
               <h2 className="mb-2 text-sm font-semibold text-muted-foreground">마감 임박 활동</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
                 {imminent.slice(0, 4).map((activity) => (
                   <ActivityCard key={activity.id} activity={activity} />
                 ))}
@@ -430,7 +430,7 @@ export default async function DashboardPage() {
           {show("activities") && recentActivities.length > 0 && imminent.length === 0 && (
             <section>
               <h2 className="mb-2 text-sm font-semibold text-muted-foreground">최근 추가된 활동</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
                 {recentActivities.map((activity) => (
                   <ActivityCard key={activity.id} activity={activity} />
                 ))}

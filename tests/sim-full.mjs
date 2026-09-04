@@ -269,11 +269,33 @@ await scene("활동 삭제", async () => {
 await scene("모바일 화면", async () => {
   const m = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await signup(m, "모바일", `simM-${stamp}@test.local`);
+
+  // 빈 계정에서는 넘치지 않다가 내용이 생기면 넘치는 경우가 있었다.
+  // 커리어 프로필과 활동을 만들어 실제 상태에서 확인한다.
+  await m.goto(`${BASE}/career`);
+  await m.getByRole("button", { name: "공학·IT" }).click();
+  await m.getByLabel("어떤 목표를 향해 가고 있나요? *").fill("프론트엔드 개발자");
+  await m.getByRole("button", { name: "다음" }).click();
+  await m.waitForTimeout(1200);
+  await m.getByRole("button", { name: "다음" }).click();
+  await m.waitForTimeout(1200);
+  await m.getByRole("button", { name: "Career Profile 만들기" }).click();
+  await m.waitForTimeout(2500);
+
+  await m.goto(`${BASE}/activities/new`);
+  await m.getByLabel("활동명 *").fill("모바일 확인용 공모전");
+  await m.getByLabel("접수(지원) 마감일").fill(dday(3));
+  await m.getByRole("button", { name: "활동 만들기", exact: true }).click();
+  await m.waitForURL(/\/activities\/[a-z0-9]{20}$/);
+
   for (const [name, path] of [["대시보드", "/"], ["커리어", "/career"], ["활동", "/activities"], ["통계", "/stats"]]) {
     await m.goto(`${BASE}${path}`);
     await m.waitForTimeout(400);
-    const overflow = await m.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
-    note(`모바일 ${name}: 가로 스크롤 없음`, !overflow);
+    const over = await m.evaluate(() => {
+      const doc = document.documentElement;
+      return doc.scrollWidth - doc.clientWidth;
+    });
+    note(`모바일 ${name}: 가로 스크롤 없음`, over <= 2, over > 2 ? `${over}px 넘침` : "");
   }
   await m.screenshot({ path: `${SHOT}/mobile.png` });
   await m.close();

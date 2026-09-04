@@ -85,7 +85,7 @@ export default async function CareerPage() {
             );
           })()}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <ProfileFormDialog
             profile={ctx.profile}
             desiredRoles={desiredRoles}
@@ -121,7 +121,7 @@ export default async function CareerPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
         {/* 왼쪽: 스킬 + 근거 */}
         <div className="space-y-4 lg:col-span-2">
           <Card>
@@ -148,7 +148,7 @@ export default async function CareerPage() {
                 <BookMarked className="h-4 w-4 text-muted-foreground" /> Career Evidence (
                 {ctx.evidence.length})
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <ImportEvidenceButton />
                 <AddEvidenceDialog />
               </div>
@@ -168,7 +168,7 @@ export default async function CareerPage() {
                           {EVIDENCE_KINDS[ev.kind as EvidenceKind] ?? ev.kind}
                         </Badge>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             {ev.sourceType === "activity" && ev.sourceId ? (
                               <Link
                                 href={`/activities/${ev.sourceId}`}

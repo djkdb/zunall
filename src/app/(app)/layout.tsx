@@ -24,7 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const unread = unreadRows.length;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="min-h-screen">
       <aside className="fixed inset-y-0 left-0 z-40 flex w-14 flex-col border-r bg-card px-2 py-4 md:w-56 md:px-3">
         <Link href="/" className="flex items-center gap-2 px-2 py-1">
           <CaveroMark className="h-7 w-7 text-[#0F2338] dark:text-foreground" />
@@ -56,7 +56,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <main className="ml-14 flex-1 md:ml-56">
+      <main className="ml-14 md:ml-56">
         <div className="mx-auto max-w-6xl px-4 py-6 md:px-8">{children}</div>
       </main>
     </div>
