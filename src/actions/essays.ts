@@ -12,6 +12,7 @@ import { buildPrompt } from "@/services/ai/prompt-builder";
 import { completeWithRetry } from "@/services/ai/evaluator";
 import { buildProfileText } from "@/lib/career-queries";
 import type { ActionResult } from "@/actions/activities";
+import { classifyQuestion, parseTopic, topicOf, ESSAY_TOPICS } from "@/services/essay/topics";
 
 const questionSchema = z.object({
   activityId: z.string().min(1),
@@ -21,6 +22,7 @@ const questionSchema = z.object({
     .optional()
     .transform((v) => (v === "" || v === undefined ? null : (v as number))),
   guide: z.string().trim().max(500).optional(),
+  topic: z.string().max(30).optional(),
 });
 
 async function ownedActivity(activityId: string, userId: string) {
@@ -50,6 +52,7 @@ export async function addEssayQuestion(formData: FormData): Promise<ActionResult
     question: formData.get("question"),
     charLimit: formData.get("charLimit") ?? "",
     guide: formData.get("guide") ?? "",
+    topic: formData.get("topic") ?? "",
   });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
 
@@ -67,6 +70,8 @@ export async function addEssayQuestion(formData: FormData): Promise<ActionResult
     userId: user.id,
     activityId: activity.id,
     question: parsed.data.question,
+    // 고르지 않았으면 문항 문장에서 유형을 추측한다 (나중에 바꿀 수 있다)
+    topic: parseTopic(parsed.data.topic) ?? classifyQuestion(parsed.data.question).topic,
     charLimit: parsed.data.charLimit,
     guide: parsed.data.guide || null,
     position: existing.length,
@@ -205,4 +210,80 @@ export async function coachEssayDraft(draftId: string): Promise<ActionResult> {
       error: error instanceof Error ? error.message : "첨삭 중 오류가 발생했습니다.",
     };
   }
+}
+
+/** 문항 유형 바꾸기 (자동 분류가 어긋났을 때) */
+export async function setEssayTopic(questionId: string, topic: string): Promise<ActionResult> {
+  const user = await requireUser();
+  const question = await ownedQuestion(questionId, user.id);
+  if (!question) return { ok: false, error: "문항을 찾을 수 없습니다." };
+  if (!(topic in ESSAY_TOPICS)) return { ok: false, error: "알 수 없는 유형입니다." };
+
+  await db.update(essayQuestions).set({ topic }).where(eq(essayQuestions.id, questionId));
+  revalidatePath(`/activities/${question.activityId}`);
+  revalidatePath("/essays");
+  return { ok: true, id: questionId };
+}
+
+export interface SimilarAnswer {
+  questionId: string;
+  question: string;
+  activityId: string;
+  activityName: string;
+  content: string;
+  version: number;
+  createdAt: number;
+}
+
+/**
+ * 같은 유형의 다른 문항에 예전에 쓴 답변을 찾아준다.
+ * 자소서에서 가장 오래 걸리는 일이 "그때 뭐라고 썼더라"를 찾는 것이다.
+ */
+export async function findSimilarAnswers(questionId: string, limit = 5): Promise<SimilarAnswer[]> {
+  const user = await requireUser();
+  const question = await ownedQuestion(questionId, user.id);
+  if (!question) return [];
+
+  const target = topicOf(question);
+
+  const [questions, drafts, acts] = await Promise.all([
+    db.select().from(essayQuestions).where(eq(essayQuestions.userId, user.id)),
+    db
+      .select()
+      .from(essayDrafts)
+      .where(eq(essayDrafts.userId, user.id))
+      .orderBy(desc(essayDrafts.version)),
+    db
+      .select({ id: activities.id, name: activities.name })
+      .from(activities)
+      .where(eq(activities.userId, user.id)),
+  ]);
+
+  const activityName = new Map(acts.map((a) => [a.id, a.name]));
+  const sameTopic = questions.filter((q) => q.id !== questionId && topicOf(q) === target);
+  if (sameTopic.length === 0) return [];
+
+  // 문항마다 가장 최신 버전 하나만 (버전 내림차순으로 읽었으니 처음 만난 것이 최신)
+  const latest = new Map<string, (typeof drafts)[number]>();
+  for (const draft of drafts) {
+    if (!latest.has(draft.questionId)) latest.set(draft.questionId, draft);
+  }
+
+  return sameTopic
+    .map((q) => {
+      const draft = latest.get(q.id);
+      if (!draft || !draft.content.trim()) return null;
+      return {
+        questionId: q.id,
+        question: q.question,
+        activityId: q.activityId,
+        activityName: activityName.get(q.activityId) ?? "삭제된 활동",
+        content: draft.content,
+        version: draft.version,
+        createdAt: draft.createdAt,
+      };
+    })
+    .filter((item): item is SimilarAnswer => item !== null)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, limit);
 }

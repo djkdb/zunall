@@ -56,4 +56,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "012-notify-settings.sql",
     sql: "-- 알림 세부 설정과 주간 리포트.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS notify_thresholds TEXT;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS notify_types TEXT;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS quiet_start INTEGER;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS quiet_end INTEGER;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS weekly_report INTEGER NOT NULL DEFAULT 1;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS weekly_day INTEGER NOT NULL DEFAULT 0;\nALTER TABLE user_settings ADD COLUMN IF NOT EXISTS timezone_offset INTEGER NOT NULL DEFAULT 540;\n",
   },
+  {
+    name: "013-essay-topic.sql",
+    sql: "-- 자소서 문항 유형 (지원 동기 · 협업 · 도전 …).\n-- 유형을 붙여두면 비슷한 문항에 예전에 쓴 답변을 찾아줄 수 있다.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE essay_questions ADD COLUMN IF NOT EXISTS topic TEXT;\n",
+  },
 ];

@@ -225,6 +225,7 @@ CREATE TABLE IF NOT EXISTS essay_questions (
   user_id TEXT NOT NULL,
   activity_id TEXT NOT NULL,
   question TEXT NOT NULL,
+  topic TEXT,
   char_limit INTEGER,
   guide TEXT,
   position INTEGER NOT NULL DEFAULT 0,

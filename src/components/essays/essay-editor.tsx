@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { SimilarAnswers } from "@/components/essays/similar-answers";
 import { cn } from "@/lib/utils";
 
 interface Question {
@@ -113,6 +114,14 @@ export function EssayEditor({ question, drafts }: { question: Question; drafts: 
           onChange={(e) => setContent(e.target.value)}
           placeholder="답변을 작성하세요. 저장할 때마다 버전이 쌓이고, 점수 변화를 볼 수 있습니다."
           aria-label={`${question.question} 답변`}
+        />
+
+        <SimilarAnswers
+          questionId={question.id}
+          onInsert={(text) =>
+            // 통째로 덮어쓰지 않고 이어붙인다. 예전 답변은 참고 자료이지 정답이 아니다.
+            setContent((current) => (current.trim() ? `${current.trim()}\n\n${text}` : text))
+          }
         />
 
         <div className="flex flex-wrap items-center gap-2">

@@ -281,6 +281,8 @@ export const essayQuestions = pgTable(
     userId: text("user_id").notNull(),
     activityId: text("activity_id").notNull(),
     question: text("question").notNull(),
+    /** 문항 유형 (ESSAY_TOPICS 키). 비어 있으면 문항 텍스트로 자동 분류 */
+    topic: text("topic"),
     /** 글자수 제한 (없으면 null) */
     charLimit: integer("char_limit"),
     guide: text("guide"),
@@ -607,6 +609,8 @@ export const noticeItems = pgTable(
 
 export type UserRow = typeof users.$inferSelect;
 export type UserSettingsRow = typeof userSettings.$inferSelect;
+export type EssayQuestionRow = typeof essayQuestions.$inferSelect;
+export type EssayDraftRow = typeof essayDrafts.$inferSelect;
 export type NoticeSourceRow = typeof noticeSources.$inferSelect;
 export type NoticeItemRow = typeof noticeItems.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
