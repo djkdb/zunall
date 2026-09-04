@@ -18,6 +18,7 @@ import {
   Download,
   Copy,
   Rss,
+  MessageCircleQuestion,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { getGuideCounts } from "@/lib/queries";
@@ -92,6 +93,7 @@ export default async function GuidePage() {
     { icon: Rss, title: "공고 자동 수집", desc: "자주 보는 사이트를 등록해두면 새 공고를 찾아 알려줍니다." },
     { icon: Crosshair, title: "지원 적합도", desc: "내 역량과 공고 요구를 비교해 지원/보류/비추천과 대안을 제시합니다." },
     { icon: PenLine, title: "자소서 문항 코칭", desc: "문항별로 저장하고 첨삭받으면 버전마다 점수 변화가 남습니다." },
+    { icon: MessageCircleQuestion, title: "면접 준비", desc: "내 자소서에서 파고드는 예상 질문을 만들고 답변을 적어둡니다." },
     { icon: Sparkles, title: "제출물 AI 평가", desc: "공고의 평가 기준 그대로 항목별 점수와 개선점을 받습니다." },
     { icon: CalendarPlus, title: "캘린더 구독", desc: "마감을 구글·애플 캘린더에 자동으로 띄웁니다." },
     { icon: Bell, title: "마감 알림", desc: "D-7·3·1·당일에 앱과 브라우저 알림으로 알려줍니다." },

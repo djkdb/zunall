@@ -60,4 +60,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "013-essay-topic.sql",
     sql: "-- 자소서 문항 유형 (지원 동기 · 협업 · 도전 …).\n-- 유형을 붙여두면 비슷한 문항에 예전에 쓴 답변을 찾아줄 수 있다.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE essay_questions ADD COLUMN IF NOT EXISTS topic TEXT;\n",
   },
+  {
+    name: "014-interview.sql",
+    sql: "-- 면접 준비: 예상 질문과 내가 준비한 답변.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nCREATE TABLE IF NOT EXISTS interview_questions (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  activity_id TEXT NOT NULL,\n  question TEXT NOT NULL,\n  why TEXT,\n  hint TEXT,\n  answer TEXT,\n  ready INTEGER NOT NULL DEFAULT 0,\n  source TEXT NOT NULL DEFAULT 'ai',\n  position INTEGER NOT NULL DEFAULT 0,\n  created_at BIGINT NOT NULL,\n  updated_at BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_interview_activity ON interview_questions(activity_id);\nCREATE INDEX IF NOT EXISTS idx_interview_user ON interview_questions(user_id);\n",
+  },
 ];

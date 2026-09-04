@@ -88,6 +88,8 @@ export function buildPrompt(action: AIAction, ctx: AIContext): string {
         "이 제출물로 발표/면접을 한다고 가정하고 심사위원이 던질 만한 예상 질문 15~20개를 생성하라. 평가 기준과 연결된 질문을 포함하라.",
         false,
       );
+    case "interview_questions":
+      return buildInterviewPrompt(ctx);
   }
 }
 
@@ -302,4 +304,37 @@ ${clip(ctx.submissionText, "이력")}
 - 원문에 없는 경험·수치·기관을 만들어내지 마라. 확실하지 않으면 넣지 마라.
 - 한 줄짜리 나열도 근거가 될 수 있으면 evidence 로 만들어라.
 - skills 는 일반적인 역량 이름으로 표준화하라 (예: "파이썬" → "Python").`;
+}
+
+/**
+ * 면접 예상 질문.
+ * 공고·평가 기준뿐 아니라 지원자가 쓴 자기소개서 답변까지 근거로 삼아,
+ * "그 사람에게만 나올 질문"이 나오게 한다.
+ */
+function buildInterviewPrompt(ctx: AIContext): string {
+  return `너는 채용·선발 면접관이다. 아래 자료를 읽고 이 지원자에게 실제로 나올 만한 면접 질문을 만들어라.
+
+[활동] ${ctx.activityName} (${ctx.activityType})${ctx.organizer ? ` · 주최 ${ctx.organizer}` : ""}
+
+[공고]
+${ctx.announcementText.slice(0, 4000) || "(없음)"}
+
+[평가 기준]
+${ctx.criteria.map((c) => `- ${c.name} (${c.weight})`).join("\n") || "(없음)"}
+
+[지원자가 제출한 글 · 자기소개서 답변]
+${ctx.submissionText.slice(0, 6000) || "(없음)"}
+
+[지원자 프로필]
+${ctx.userProfile || "(없음)"}
+
+규칙:
+- 지원자가 쓴 문장에서 파고들 만한 지점을 찾아 구체적으로 물어라. 일반론적인 질문만 나열하지 마라.
+- 답하기 곤란한 지점(수치 근거 부족, 역할이 모호한 부분)도 포함하라.
+- 10~14개를 만들어라.
+- why 에는 왜 이 질문이 나올지, hint 에는 답변에 반드시 담아야 할 포인트를 적어라.
+- 없는 사실을 지어내지 마라. 자료에 없으면 "자료에 없음"이라고 적어라.
+
+JSON 만 출력하라:
+{"questions":[{"question":"...","why":"...","hint":"..."}]}`;
 }

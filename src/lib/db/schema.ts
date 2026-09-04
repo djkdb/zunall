@@ -607,6 +607,35 @@ export const noticeItems = pgTable(
   ],
 );
 
+/** 면접 예상 질문과 내가 준비한 답변 */
+export const interviewQuestions = pgTable(
+  "interview_questions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    activityId: text("activity_id").notNull(),
+    question: text("question").notNull(),
+    /** 왜 이 질문이 나올 만한지 */
+    why: text("why"),
+    /** 답변에 담아야 할 포인트 */
+    hint: text("hint"),
+    /** 내가 준비한 답변 스크립트 */
+    answer: text("answer"),
+    ready: integer("ready").notNull().default(0),
+    /** ai | manual */
+    source: text("source").notNull().default("ai"),
+    position: integer("position").notNull().default(0),
+    createdAt: epochMs("created_at").notNull(),
+    updatedAt: epochMs("updated_at").notNull(),
+  },
+  (t) => [
+    index("idx_interview_activity").on(t.activityId),
+    index("idx_interview_user").on(t.userId),
+  ],
+);
+
+export type InterviewQuestionRow = typeof interviewQuestions.$inferSelect;
+
 export type UserRow = typeof users.$inferSelect;
 export type UserSettingsRow = typeof userSettings.$inferSelect;
 export type EssayQuestionRow = typeof essayQuestions.$inferSelect;

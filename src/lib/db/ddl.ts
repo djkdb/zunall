@@ -74,6 +74,23 @@ CREATE TABLE IF NOT EXISTS activities (
   updated_at BIGINT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
+CREATE TABLE IF NOT EXISTS interview_questions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_id TEXT NOT NULL,
+  question TEXT NOT NULL,
+  why TEXT,
+  hint TEXT,
+  answer TEXT,
+  ready INTEGER NOT NULL DEFAULT 0,
+  source TEXT NOT NULL DEFAULT 'ai',
+  position INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_interview_activity ON interview_questions(activity_id);
+CREATE INDEX IF NOT EXISTS idx_interview_user ON interview_questions(user_id);
+
 CREATE TABLE IF NOT EXISTS notice_sources (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -480,6 +497,7 @@ export const REQUIRED_TABLES = [
   "password_resets",
   "notice_sources",
   "notice_items",
+  "interview_questions",
 ] as const;
 
 /** 밀리초 시간값이라 BIGINT 여야 하는 컬럼 (진단용) */

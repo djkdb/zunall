@@ -161,7 +161,22 @@ export const profileExtractSchema = z.object({
 });
 export type ProfileExtract = z.infer<typeof profileExtractSchema>;
 
+/** 면접 예상 질문 */
+export const interviewQuestionsSchema = z.object({
+  questions: z
+    .array(
+      z.object({
+        question: z.string(),
+        why: z.string().optional().default(""),
+        hint: z.string().optional().default(""),
+      }),
+    )
+    .default([]),
+});
+export type InterviewQuestionsResult = z.infer<typeof interviewQuestionsSchema>;
+
 export type AIResultData =
+  | { kind: "interview"; data: InterviewQuestionsResult }
   | { kind: "announcement"; data: AnnouncementSummary }
   | { kind: "evaluation"; data: EvaluationResult }
   | { kind: "final_check"; data: FinalCheckResult }

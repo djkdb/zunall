@@ -139,6 +139,7 @@ export const AI_ACTIONS = {
   proofread: "문서 첨삭",
   improvements: "개선점 찾기",
   expected_questions: "예상 질문 생성",
+  interview_questions: "면접 예상 질문",
   final_check: "제출 전 최종 검토",
   essay_coach: "자기소개서 첨삭",
   extract_profile: "내 이력 분석",

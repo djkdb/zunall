@@ -27,6 +27,7 @@ import {
   profileExtractSchema,
   adviceResultSchema,
   opportunityRequirementsSchema,
+  interviewQuestionsSchema,
   type AIResultData,
 } from "./schemas";
 
@@ -267,6 +268,8 @@ function schemaFor(action: AIAction) {
       return { kind: "essay" as const, schema: essayCoachSchema };
     case "extract_profile":
       return { kind: "profile" as const, schema: profileExtractSchema };
+    case "interview_questions":
+      return { kind: "interview" as const, schema: interviewQuestionsSchema };
     default:
       return { kind: "advice" as const, schema: adviceResultSchema };
   }
@@ -347,6 +350,8 @@ async function persistResult(
     overallScore = result.data.score ?? null;
     maxScore = result.data.score !== null && result.data.score !== undefined ? 100 : null;
     summary = result.data.summary;
+  } else if (result.kind === "interview") {
+    summary = `면접 예상 질문 ${result.data.questions.length}개`;
   } else {
     summary = result.data.summary;
   }

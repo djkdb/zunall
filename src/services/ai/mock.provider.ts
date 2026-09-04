@@ -40,6 +40,8 @@ export class MockProvider implements AIProvider {
         return JSON.stringify(improvements(ctx));
       case "expected_questions":
         return JSON.stringify(expectedQuestions(ctx));
+      case "interview_questions":
+        return JSON.stringify(interviewQuestions(ctx));
       case "essay_coach":
         return JSON.stringify(essayCoach(ctx));
       case "extract_profile":
@@ -797,4 +799,66 @@ function extractProfile(ctx: AIContext): Record<string, unknown> {
     "붙여넣은 글에서 요약할 문장을 찾지 못했습니다.";
 
   return { headline, summary, skills, evidence };
+}
+/**
+ * 면접 예상 질문 (mock).
+ * 실제 모델이 없을 때도 "내가 쓴 글에서 뽑은 질문"처럼 보이도록,
+ * 제출 글의 문장과 평가 기준을 실제로 가져다 쓴다.
+ */
+function interviewQuestions(ctx: AIContext): { questions: Array<{ question: string; why: string; hint: string }> } {
+  const questions: Array<{ question: string; why: string; hint: string }> = [];
+
+  questions.push({
+    question: `${ctx.activityName}에 지원한 이유를 말씀해주세요.`,
+    why: "지원 동기는 어떤 면접에서도 첫 질문으로 나온다.",
+    hint: "이 활동이어야 하는 이유 + 내 경험과의 연결 한 가지",
+  });
+
+  // 지원자가 쓴 글에서 길고 구체적인 문장을 골라 파고드는 질문을 만든다
+  const sentences = ctx.submissionText
+    .split(/[.\n]/)
+    .map((line) => line.trim())
+    .filter((line) => line.length >= 25 && line.length <= 120)
+    .slice(0, 4);
+
+  for (const sentence of sentences) {
+    questions.push({
+      question: `"${sentence.slice(0, 60)}${sentence.length > 60 ? "…" : ""}" 라고 쓰셨는데, 구체적으로 본인이 한 일은 무엇인가요?`,
+      why: "지원자가 직접 쓴 문장이라 면접관이 근거를 확인하려 한다.",
+      hint: "상황 → 내 역할 → 한 행동 → 결과(가능하면 숫자) 순서로",
+    });
+  }
+
+  for (const criterion of ctx.criteria.slice(0, 3)) {
+    questions.push({
+      question: `${criterion.name} 관점에서 본인의 강점을 설명해주세요.`,
+      why: `평가 기준에 ${criterion.name}(배점 ${criterion.weight})이 있다.`,
+      hint: "기준과 직접 맞닿은 경험 하나를 골라 짧게",
+    });
+  }
+
+  questions.push(
+    {
+      question: "가장 어려웠던 순간과 그때 내린 판단을 말씀해주세요.",
+      why: "문제 상황에서의 사고 방식을 본다.",
+      hint: "판단 기준을 밝히고, 결과가 아쉬웠다면 배운 점까지",
+    },
+    {
+      question: "팀에서 의견이 갈렸을 때 어떻게 했나요?",
+      why: "협업 태도는 거의 모든 면접에서 확인한다.",
+      hint: "상대 의견을 어떻게 이해했는지부터",
+    },
+    {
+      question: "이 경험 이후 무엇을 다르게 하고 있나요?",
+      why: "성장 가능성을 본다.",
+      hint: "구체적인 습관·방법의 변화 한 가지",
+    },
+    {
+      question: "마지막으로 궁금한 점이 있나요?",
+      why: "역질문 준비 여부로 관심도를 판단한다.",
+      hint: "찾아보면 알 수 있는 것 말고, 직접 물어야 아는 것으로",
+    },
+  );
+
+  return { questions };
 }

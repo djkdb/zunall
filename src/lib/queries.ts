@@ -194,6 +194,7 @@ export async function getActivityTabCounts(
   submissions: number;
   ai: number;
   history: number;
+  interview: number;
 }> {
   // 모든 하위 집계를 user_id 로도 걸러, 남의 활동 id 를 넣어도 0 만 나온다.
   const rows = (await db.execute(sql`
@@ -203,7 +204,8 @@ export async function getActivityTabCounts(
       (SELECT count(*) FROM tasks WHERE activity_id = ${activityId} AND user_id = ${userId} AND status <> 'done') AS tasks,
       (SELECT count(*) FROM submissions WHERE activity_id = ${activityId} AND user_id = ${userId}) AS submissions,
       (SELECT count(*) FROM ai_reviews WHERE activity_id = ${activityId} AND user_id = ${userId} AND status = 'done') AS ai,
-      (SELECT count(*) FROM activity_history WHERE activity_id = ${activityId} AND user_id = ${userId}) AS history
+      (SELECT count(*) FROM activity_history WHERE activity_id = ${activityId} AND user_id = ${userId}) AS history,
+      (SELECT count(*) FROM interview_questions WHERE activity_id = ${activityId} AND user_id = ${userId} AND ready = 0) AS interview
   `)) as unknown as Array<Record<string, unknown>> | { rows?: Array<Record<string, unknown>> };
 
   const row = (Array.isArray(rows) ? rows[0] : rows.rows?.[0]) ?? {};
@@ -215,5 +217,6 @@ export async function getActivityTabCounts(
     submissions: num(row.submissions),
     ai: num(row.ai),
     history: num(row.history),
+    interview: num(row.interview),
   };
 }
