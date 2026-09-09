@@ -11,6 +11,7 @@ import { PushToggle } from "@/components/settings/push-toggle";
 import { NotifySettingsCard } from "@/components/settings/notify-settings-card";
 import { BackupCard } from "@/components/settings/backup-card";
 import { StudyProfileCard } from "@/components/settings/study-profile-card";
+import { PlanCard } from "@/components/settings/plan-card";
 import { PasswordCard } from "@/components/settings/password-card";
 import { DangerCard } from "@/components/settings/danger-card";
 import { getPushEnv, countPushDevices } from "@/actions/push";
@@ -18,6 +19,7 @@ import { getCareerContext } from "@/lib/career-queries";
 import { db, userSettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { parseNotifySettings } from "@/services/notification/settings";
+import { dailyLimit } from "@/services/ai/usage";
 
 const STORAGE_LABEL: Record<ReturnType<typeof storageBackend>, string> = {
   db: "DB 저장 (document_blobs)",
@@ -72,6 +74,8 @@ export default async function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+
+      <PlanCard aiDailyLimit={dailyLimit()} />
 
       <StudyProfileCard
         initialField={careerCtx.studyField}

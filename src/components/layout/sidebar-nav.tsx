@@ -15,6 +15,7 @@ import {
   Settings,
   Compass,
   Crosshair,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,13 @@ interface NavItem {
   badge?: number;
 }
 
-export function SidebarNav({ unreadCount }: { unreadCount: number }) {
+export function SidebarNav({
+  unreadCount,
+  showAdmin = false,
+}: {
+  unreadCount: number;
+  showAdmin?: boolean;
+}) {
   const pathname = usePathname();
 
   const items: NavItem[] = [
@@ -43,6 +50,9 @@ export function SidebarNav({ unreadCount }: { unreadCount: number }) {
     { href: "/stats", label: "통계", icon: BarChart3 },
     { href: "/settings", label: "설정", icon: Settings },
   ];
+
+  // 운영자에게만 보이는 지표 화면
+  if (showAdmin) items.push({ href: "/admin", label: "운영 지표", icon: ShieldCheck });
 
   return (
     <nav className="flex flex-1 flex-col gap-0.5 md:mt-4">

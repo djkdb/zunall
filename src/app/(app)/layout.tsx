@@ -8,6 +8,9 @@ import { logout } from "@/actions/auth";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ensureDeadlineNotifications } from "@/services/notification/generator";
+import { DemoBanner } from "@/components/layout/demo-banner";
+import { isDemoEmail } from "@/services/demo/seed";
+import { isAdmin } from "@/lib/admin";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -31,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="hidden text-base font-bold tracking-[0.18em] md:inline">CAVERO</span>
         </Link>
 
-        <SidebarNav unreadCount={unread} />
+        <SidebarNav unreadCount={unread} showAdmin={isAdmin(user.email)} />
 
         <div className="mt-auto flex flex-col gap-2">
           <div className="hidden items-center justify-between px-2 md:flex">
@@ -57,6 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </aside>
 
       <main className="ml-14 md:ml-56">
+        {isDemoEmail(user.email) && <DemoBanner />}
         <div className="mx-auto max-w-6xl px-4 py-6 md:px-8">{children}</div>
       </main>
     </div>

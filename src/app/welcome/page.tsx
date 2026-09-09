@@ -14,6 +14,7 @@ import {
 import { getCurrentUser } from "@/lib/auth/session";
 import { CaveroMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
+import { PLAN_FEATURES, PLAN_NOTE } from "@/lib/plans";
 
 export const metadata: Metadata = {
   title: "Cavero — 공모전·대외활동·인턴을 한곳에서",
@@ -60,10 +61,13 @@ export default async function WelcomePage() {
               무료로 시작하기 <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <Link href="/login">
+          <a href="/demo">
             <Button size="lg" variant="outline">
-              이미 계정이 있어요
+              가입 없이 둘러보기
             </Button>
+          </a>
+          <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
+            이미 계정이 있어요
           </Link>
         </div>
 
@@ -134,6 +138,44 @@ export default async function WelcomePage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* 요금 */}
+      <section className="border-t bg-secondary/40 py-10 dark:bg-secondary/20">
+        <div className="mx-auto max-w-5xl px-4">
+          <h2 className="text-lg font-bold tracking-tight">요금</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            지금은 <strong className="text-foreground">전부 무료</strong>입니다. 아래는 앞으로의 계획입니다.
+          </p>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[30rem] border-collapse text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="py-2 pr-4 font-medium text-muted-foreground">기능</th>
+                  <th className="py-2 pr-4 font-semibold">
+                    무료
+                    <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                      지금 이용 중
+                    </span>
+                  </th>
+                  <th className="py-2 font-semibold text-muted-foreground">Pro (예정)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PLAN_FEATURES.map((row) => (
+                  <tr key={row.label} className="border-b last:border-0">
+                    <td className="py-2 pr-4 text-muted-foreground">{row.label}</td>
+                    <td className="py-2 pr-4">{row.free}</td>
+                    <td className="py-2 text-muted-foreground">{row.pro}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted-foreground">{PLAN_NOTE}</p>
+        </div>
       </section>
 
       {/* 솔직한 안내 */}
