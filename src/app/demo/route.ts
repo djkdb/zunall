@@ -21,7 +21,9 @@ export async function GET(request: Request) {
     const response = NextResponse.redirect(new URL("/?demo=1", request.url));
     response.cookies.set(cookie.name, cookie.value, cookie.options);
     return response;
-  } catch {
+  } catch (error) {
+    // 삼키면 "둘러보기가 안 된다"는 것만 알고 이유를 영영 알 수 없다.
+    console.error("demo seed failed:", error instanceof Error ? error.message : error);
     return NextResponse.redirect(new URL("/welcome?error=demo", request.url));
   }
 }

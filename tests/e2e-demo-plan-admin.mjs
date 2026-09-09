@@ -94,6 +94,17 @@ try {
   step("일반 계정은 운영 지표 못 봄", denied.status() === 404, String(denied.status()));
   await ctx3.close();
 
+  // ── 3-1. 진단: 조용히 죽는 설정을 health 가 알려준다 ────────
+  const health = await (await fetch(`${BASE}/api/health`)).json();
+  step("health 가 기능 설정을 보고", typeof health.features === "object" && health.features !== null);
+  step("둘러보기 상태 보고", health.features?.demoMode === "on" || health.features?.demoMode === "off");
+  step("운영자 설정 보고", health.features?.adminEmailsSet === true,
+    `adminEmailsSet=${health.features?.adminEmailsSet}`);
+  step("설정값 자체는 노출하지 않음",
+    !JSON.stringify(health.features ?? {}).includes(ADMIN_EMAIL));
+  step("빠진 설정은 안내로 알려줌",
+    health.features?.cronKeySet === true || (health.notices ?? []).some((n) => n.includes("CRON_KEY")));
+
   // ── 4. 운영자 계정 ─────────────────────────────────────────
   const ctx4 = await b.newContext();
   const p4 = await ctx4.newPage(); p4.setDefaultTimeout(30000);

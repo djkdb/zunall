@@ -6,9 +6,15 @@ import { storageBackend } from "@/lib/storage";
 import { REQUIRED_TABLES, BIGINT_COLUMNS } from "@/lib/db/ddl";
 import { migrationStatus } from "@/lib/db/migrate";
 import { inspectDatabaseUrl } from "@/lib/db/url";
-import { getProviderName, providerFallbackReason } from "@/services/ai/provider";
+import {
+  getProviderName,
+  providerFallbackReason,
+} from "@/services/ai/provider";
 import { isCloudflareWorkers } from "@/lib/runtime";
 import { callbackUrl, googleConfigReport } from "@/lib/auth/google";
+
+import { adminEmails } from "@/lib/admin";
+import { dailyLimit } from "@/services/ai/usage";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +57,18 @@ export async function GET(request: Request) {
       redirectUriOverride: string | null;
       redirectUri: string;
     };
+    /**
+     * 없어도 앱은 멀쩡히 뜨지만 기능이 조용히 죽는 설정들.
+     * 배포 후 "왜 알림이 안 오지"를 추적할 수 있도록 설정 여부만 보고한다.
+     * 값은 절대 담지 않는다.
+     */
+    features: {
+      cronKeySet: boolean;
+      appUrlSet: boolean;
+      adminEmailsSet: boolean;
+      demoMode: "on" | "off";
+      aiDailyLimit: number;
+    };
   } = {
     ok: false,
     runtime: onWorkers ? "cloudflare-workers" : "node",
@@ -70,7 +88,31 @@ export async function GET(request: Request) {
       // 콘솔의 "승인된 리디렉션 URI" 에 이 값을 그대로 넣어야 한다
       redirectUri: callbackUrl(request.url, request.headers),
     },
+    features: {
+      cronKeySet: Boolean(process.env.CRON_KEY),
+      appUrlSet: Boolean(process.env.APP_URL),
+      adminEmailsSet: adminEmails().length > 0,
+      demoMode: process.env.DEMO_MODE === "off" ? "off" : "on",
+      aiDailyLimit: dailyLimit(),
+    },
   };
+
+  // 크론이 자기 자신을 부르지 못하면 마감 알림·공고 수집·주간 리포트가 통째로 멈춘다.
+  // 앱은 멀쩡해 보이므로 여기서 짚어주지 않으면 알아채기 어렵다.
+  if (!report.features.cronKeySet) {
+    report.notices.push(
+      "CRON_KEY 가 없어 매일 실행(마감 알림·공고 자동수집·주간 리포트·둘러보기 계정 정리)이 동작하지 않습니다.",
+    );
+  } else if (!report.features.appUrlSet) {
+    report.notices.push(
+      "APP_URL 이 없어 예약 실행이 자기 주소를 찾지 못할 수 있습니다. 배포 주소를 넣어주세요.",
+    );
+  }
+  if (!report.features.adminEmailsSet) {
+    report.notices.push(
+      "ADMIN_EMAILS 가 없어 운영 지표 화면(/admin)을 아무도 볼 수 없습니다.",
+    );
+  }
 
   if (report.google.enabled && !report.google.clientIdLooksValid) {
     report.notices.push(
@@ -104,7 +146,9 @@ export async function GET(request: Request) {
   try {
     const rows = (await db.execute(
       sql`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`,
-    )) as unknown as Array<{ table_name: string }> | { rows?: Array<{ table_name: string }> };
+    )) as unknown as
+      | Array<{ table_name: string }>
+      | { rows?: Array<{ table_name: string }> };
     const list = Array.isArray(rows) ? rows : (rows.rows ?? []);
     const present = new Set(list.map((r) => r.table_name));
     report.connected = true;
@@ -127,10 +171,20 @@ export async function GET(request: Request) {
       sql`SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public'`,
     )) as unknown as
       | Array<{ table_name: string; column_name: string; data_type: string }>
-      | { rows?: Array<{ table_name: string; column_name: string; data_type: string }> };
+      | {
+          rows?: Array<{
+            table_name: string;
+            column_name: string;
+            data_type: string;
+          }>;
+        };
     const colList = Array.isArray(colRows) ? colRows : (colRows.rows ?? []);
-    const columns = new Set(colList.map((c) => `${c.table_name}.${c.column_name}`));
-    const types = new Map(colList.map((c) => [`${c.table_name}.${c.column_name}`, c.data_type]));
+    const columns = new Set(
+      colList.map((c) => `${c.table_name}.${c.column_name}`),
+    );
+    const types = new Map(
+      colList.map((c) => [`${c.table_name}.${c.column_name}`, c.data_type]),
+    );
 
     // 시간(밀리초) 컬럼이 INTEGER 면 2038년 문제가 아니라 지금 당장 저장이 실패한다.
     // 코드가 아는 컬럼뿐 아니라, 이름이 _at 으로 끝나는 정수 컬럼도 모두 잡는다
@@ -140,7 +194,11 @@ export async function GET(request: Request) {
       return type !== undefined && type !== "bigint";
     }).map(([table, column]) => `${table}.${column}`);
     const namedNarrow = colList
-      .filter((c) => /_at$/.test(c.column_name) && ["integer", "smallint"].includes(c.data_type))
+      .filter(
+        (c) =>
+          /_at$/.test(c.column_name) &&
+          ["integer", "smallint"].includes(c.data_type),
+      )
       .map((c) => `${c.table_name}.${c.column_name}`);
     report.narrowColumns = [...new Set([...knownNarrow, ...namedNarrow])];
     if (report.narrowColumns.length > 0) {
