@@ -187,6 +187,137 @@ test("computeOpportunityFit: 목표와 무관+역량 부족이면 skip과 대안
   assert.ok(fit.weaknesses.length >= 2);
 });
 
+// ── "지금 나에게 좋은 기회인가" — 적합도만으로 정하지 않는다 ──────────────
+
+/** 두 역량에 근거가 몰려 있어 그 둘을 요구하는 공고에는 적합도가 높게 나오는 사용자 */
+function wellMatched() {
+  const skillScores = computeSkillScores(
+    [],
+    [
+      { id: "e1", kind: "award", title: "AI 수상", skills: ["AI 활용"] },
+      { id: "e2", kind: "project", title: "AI 서비스", skills: ["AI 활용", "Frontend"] },
+      { id: "e3", kind: "project", title: "웹앱", skills: ["Frontend"] },
+      { id: "e4", kind: "work", title: "개발 인턴", skills: ["Frontend", "AI 활용"] },
+    ],
+  );
+  return { skillScores, gaps: computeGaps(aiTemplate, skillScores) };
+}
+
+test("computeOpportunityFit: 마감까지 시간이 모자라면 적합도가 높아도 말린다", () => {
+  const { skillScores, gaps } = wellMatched();
+  // 시간만 있으면 지원할 만한 공고 (부족한 Cloud / 배포도 함께 채워진다)
+  const requirements = {
+    requiredSkills: ["AI 활용", "Frontend"],
+    preferredSkills: ["Cloud / 배포"],
+    qualifications: [],
+    submissionItems: ["기획서", "시연 영상", "코드", "발표자료", "포트폴리오"],
+  };
+
+  const roomy = computeOpportunityFit({
+    requirements,
+    skillScores,
+    gaps,
+    template: aiTemplate,
+    daysUntilDeadline: 60,
+  });
+  const rushed = computeOpportunityFit({
+    requirements,
+    skillScores,
+    gaps,
+    template: aiTemplate,
+    daysUntilDeadline: 2,
+  });
+
+  // 같은 공고인데 마감만 다르다 — 점수는 같고 판단만 뒤집혀야 한다
+  assert.equal(roomy.score, rushed.score, "적합도 자체는 마감과 무관");
+  assert.equal(roomy.recommendation, "apply", "시간이 있으면 지원할 만한 공고");
+  assert.equal(rushed.recommendation, "skip", "시간이 모자라면 말린다");
+  assert.ok(rushed.recommendationReason.includes("마감까지 2일"), rushed.recommendationReason);
+  assert.ok(rushed.alternative, "말릴 때는 대신 할 일을 준다");
+  assert.ok(rushed.weaknesses.some((w) => w.includes("시간")));
+});
+
+test("computeOpportunityFit: 마감이 지났으면 그 사실을 말한다", () => {
+  const { skillScores, gaps } = wellMatched();
+  const fit = computeOpportunityFit({
+    requirements: {
+      requiredSkills: ["AI 활용"],
+      preferredSkills: [],
+      qualifications: [],
+      submissionItems: ["기획서"],
+    },
+    skillScores,
+    gaps,
+    template: aiTemplate,
+    daysUntilDeadline: -3,
+  });
+  assert.equal(fit.recommendation, "skip");
+  assert.ok(fit.recommendationReason.includes("마감이 이미 지났"), fit.recommendationReason);
+});
+
+test("computeOpportunityFit: 마감을 모르면 시간을 이유로 말리지 않는다", () => {
+  const { skillScores, gaps } = wellMatched();
+  const fit = computeOpportunityFit({
+    requirements: {
+      requiredSkills: ["AI 활용", "Frontend"],
+      preferredSkills: [],
+      qualifications: [],
+      submissionItems: ["기획서", "시연 영상", "코드", "발표자료", "포트폴리오"],
+    },
+    skillScores,
+    gaps,
+    template: aiTemplate,
+    // daysUntilDeadline 없음
+  });
+  assert.ok(!fit.recommendationReason.includes("마감까지"), fit.recommendationReason);
+  assert.ok(!fit.weaknesses.some((w) => w.includes("남은 시간")));
+});
+
+test("computeOpportunityFit: 붙을 만해도 목표에 도움이 안 되면 말리고 대안을 준다", () => {
+  // 이미 잘하는 역량만 요구하는 공고 — 합격 가능성은 높지만 배울 게 없다
+  const { skillScores, gaps } = wellMatched();
+  const fit = computeOpportunityFit({
+    requirements: {
+      requiredSkills: ["AI 활용", "Frontend"],
+      preferredSkills: [],
+      qualifications: [],
+      submissionItems: ["기획서", "발표자료", "시연 영상", "보고서", "포트폴리오"],
+    },
+    skillScores,
+    gaps,
+    template: aiTemplate,
+    daysUntilDeadline: 90,
+  });
+
+  assert.ok(fit.score >= 68, `적합도는 높아야 한다 (${fit.score})`);
+  assert.notEqual(fit.recommendation, "apply", "시간만 쓰는 기회를 추천하면 안 된다");
+  if (fit.recommendation === "skip") {
+    assert.ok(fit.alternative, "말릴 때는 대신 할 일을 준다");
+  }
+  assert.ok(
+    /기여하지 않습니다|더 급한 준비가 없을 때/.test(fit.recommendationReason),
+    fit.recommendationReason,
+  );
+});
+
+test("computeOpportunityFit: 잘 맞고 시간도 있으면 그대로 추천한다", () => {
+  const { skillScores, gaps } = wellMatched();
+  const fit = computeOpportunityFit({
+    requirements: {
+      requiredSkills: ["AI 활용", "Frontend"],
+      preferredSkills: ["Cloud / 배포"],
+      qualifications: [],
+      submissionItems: ["기획서"],
+    },
+    skillScores,
+    gaps,
+    template: aiTemplate,
+    daysUntilDeadline: 45,
+  });
+  assert.equal(fit.recommendation, "apply");
+  assert.equal(fit.alternative, null, "추천할 때는 대안을 띄우지 않는다");
+});
+
 // ── mission ──────────────────────────────────────────────────
 test("pickMission: 가장 효율적인 행동을 고르고 이유를 설명한다", () => {
   const skillScores = computeSkillScores(

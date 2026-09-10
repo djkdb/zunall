@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { db, activities, aiReviews, opportunityAnalyses } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { logHistory } from "@/lib/history";
-import { newId, safeJsonParse } from "@/lib/utils";
+import { daysUntil, newId, safeJsonParse } from "@/lib/utils";
 import { runAIAction } from "@/services/ai/evaluator";
 import { opportunityRequirementsSchema } from "@/services/ai/schemas";
 import { normalizeSkillNames } from "@/services/career/skill-detect";
@@ -59,6 +59,8 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
     skillScores: ctx.skillScores,
     gaps: ctx.gaps,
     template: ctx.template,
+    // 마감이 코앞이면 적합도가 높아도 지금 시작할 일이 아니다
+    daysUntilDeadline: daysUntil(activity.applyDeadline),
   });
 
   // 3) 저장 (활동당 최신 1건 유지)

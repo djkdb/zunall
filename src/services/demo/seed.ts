@@ -17,6 +17,7 @@ import {
   userSkills,
   careerEvidence,
   notifications,
+  opportunityAnalyses,
   sessions,
 } from "@/lib/db";
 import { newId, toDateStr } from "@/lib/utils";
@@ -352,6 +353,79 @@ async function seedActivities(userId: string, now: number): Promise<void> {
     updatedAt: now,
   });
 
+  // 4) 말려야 하는 기회 — CAVERO 가 "지원하지 마세요"라고 말하는 경우.
+  //    둘러보기로 들어온 사람이 이 화면을 보지 못하면 이 서비스의 차이를 알 수 없다.
+  const skipId = newId();
+  const activitiesRows4 = db.insert(activities).values({
+    id: skipId,
+    userId,
+    name: "제9회 전국 대학생 광고 공모전",
+    organizer: "한국광고협회",
+    type: "contest",
+    status: "interested",
+    importance: "low",
+    color: "#94A3B8",
+    applyDeadline: day(9),
+    createdAt: now,
+    updatedAt: now,
+  });
+  const opportunityAnalysesRows = db.insert(opportunityAnalyses).values({
+    id: newId(),
+    userId,
+    activityId: skipId,
+    requirements: JSON.stringify({
+      summary: "20대를 겨냥한 광고 캠페인 기획안을 제출하는 공모전",
+      requiredSkills: ["마케팅", "기획"],
+      preferredSkills: [],
+      responsibilities: ["캠페인 컨셉 기획", "매체 전략 수립"],
+      qualifications: ["전국 대학생", "4인 이내 팀"],
+      submissionItems: [
+        "기획서",
+        "포스터 3종",
+        "영상 콘티",
+        "발표자료",
+        "팀 소개서",
+      ],
+      keywords: ["광고", "캠페인", "브랜딩"],
+    }),
+    fitScore: 76,
+    fitBreakdown: JSON.stringify({
+      breakdown: [
+        {
+          label: "요구 역량 '마케팅' 보유 — 수상 경력 근거 있음",
+          points: 14,
+          type: "plus",
+        },
+        { label: "요구 역량 '기획' 보유", points: 14, type: "plus" },
+        { label: "지원 자격 충족", points: 8, type: "plus" },
+        {
+          label: "목표 직무(서비스 기획)와 요구 역량이 거의 겹치지 않음",
+          points: -5,
+          type: "warn",
+        },
+      ],
+      strengths: [
+        "마케팅 — 이미 같은 분야로 수상한 경험이 있음",
+        "기획 — 근거 2건",
+      ],
+      weaknesses: [
+        "목표(서비스 기획)에 새로 채워지는 경험이 거의 없음",
+        "제출물 5종으로 준비 부담이 큼",
+      ],
+    }),
+    recommendation: "skip",
+    recommendationReason:
+      "합격 가능성은 높지만, 준비에 드는 28시간이 목표에 가까워지는 데는 거의 기여하지 않습니다(+0.2). 지금은 다른 행동이 효과적입니다.",
+    prepHours: 28,
+    gapEffect: 0.2,
+    alternative: JSON.stringify({
+      title: "서비스 기획 포트폴리오에 문제 정의 1건 추가하기",
+      effect: 4,
+      minutes: 180,
+    }),
+    createdAt: now,
+  });
+
   const notificationsRows = db.insert(notifications).values({
     id: newId(),
     userId,
@@ -376,6 +450,8 @@ async function seedActivities(userId: string, now: number): Promise<void> {
     activitiesRows2,
     retrospectivesRows,
     activitiesRows3,
+    activitiesRows4,
+    opportunityAnalysesRows,
     notificationsRows,
   ]);
 }
@@ -437,6 +513,9 @@ async function deleteDemoUser(userId: string): Promise<void> {
     db.delete(careerGoals).where(eq(careerGoals.userId, userId)),
     db.delete(careerProfiles).where(eq(careerProfiles.userId, userId)),
     db.delete(userSkills).where(eq(userSkills.userId, userId)),
+    db
+      .delete(opportunityAnalyses)
+      .where(eq(opportunityAnalyses.userId, userId)),
     db.delete(activities).where(eq(activities.userId, userId)),
     db.delete(sessions).where(eq(sessions.userId, userId)),
   ]);

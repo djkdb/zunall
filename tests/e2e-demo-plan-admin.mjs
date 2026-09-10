@@ -50,6 +50,23 @@ try {
   const essays = await p.locator("main").innerText();
   step("자기소개서 예시 2건", essays.includes("갈등") && essays.includes("지원 동기"));
 
+  // 이 서비스의 차이 — "지원하지 마세요"라고 말하는 화면이 둘러보기에 보여야 한다
+  await p.goto(`${BASE}/opportunities`);
+  await p.waitForTimeout(1000);
+  const opp = await p.locator("main").innerText();
+  step("말리는 공고가 목록에 있다", opp.includes("광고 공모전"), opp.split("\n")[0]);
+
+  await p.getByRole("link", { name: /광고 공모전/ }).first().click();
+  await p.waitForURL(/\/activities\/[a-z0-9]{20}/, { timeout: 30000 });
+  await p.goto(`${p.url().split("?")[0]}?tab=fit`);
+  await p.waitForTimeout(1200);
+  const fit = await p.locator("main").innerText();
+  step("적합도 점수가 보임", /\d+\s*\/\s*100/.test(fit));
+  step("지원 비추천이라고 말함", fit.includes("지원 비추천"), fit.includes("지원 비추천") ? "" : fit.slice(0, 80));
+  step("붙을 수는 있다고 인정함", fit.includes("합격 가능성은 높지만"));
+  step("준비 시간을 근거로 듦", fit.includes("28시간"));
+  step("대신 할 일을 제시함", fit.includes("지금 더 효과적인 대안") && fit.includes("문제 정의"));
+
   await p.goto(`${BASE}/calendar`);
   await p.waitForTimeout(800);
   step("캘린더에 일정", (await p.locator("main").innerText()).includes("마감"));
