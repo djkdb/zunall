@@ -55,7 +55,7 @@ export function TaskFormDialog({
     <>
       {triggerVariant === "button" ? (
         <Button size="sm" onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4" /> 작업 추가
+          <Plus className="h-4 w-4" /> 할 일 추가
         </Button>
       ) : (
         <button
@@ -68,7 +68,7 @@ export function TaskFormDialog({
         </button>
       )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} title={isEdit ? "작업 수정" : "작업 추가"}>
+      <Dialog open={open} onClose={() => setOpen(false)} title={isEdit ? "작업 수정" : "할 일 추가"}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="task-title">제목 *</Label>

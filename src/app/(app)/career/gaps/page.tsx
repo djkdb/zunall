@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ReadinessCard } from "@/components/career/readiness-card";
 import { AcceptActionButton } from "@/components/career/accept-action-button";
 
-export const metadata: Metadata = { title: "Career Gaps" };
+export const metadata: Metadata = { title: "부족한 부분" };
 
 export default async function GapsPage() {
   const user = await requireUser();
@@ -22,7 +22,7 @@ export default async function GapsPage() {
           href="/career"
           className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-3 w-3" /> Career Profile
+          <ArrowLeft className="h-3 w-3" /> 내 커리어
         </Link>
         <h1 className="text-xl font-bold tracking-tight">부족한 부분</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
@@ -36,11 +36,11 @@ export default async function GapsPage() {
           {ctx.gaps.length === 0 ? (
             <EmptyState
               icon={TrendingDown}
-              title="Gap이 없습니다"
+              title="부족한 부분이 없습니다"
               description={
                 ctx.goal
                   ? "모든 요구 역량이 목표 수준에 도달했습니다. 목표를 더 높여보세요!"
-                  : "먼저 Career Profile에서 목표를 설정해주세요."
+                  : "먼저 내 커리어에서 목표를 설정해주세요."
               }
             />
           ) : (

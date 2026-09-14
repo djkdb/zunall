@@ -36,7 +36,7 @@ try {
   await p.getByRole("button", { name: "다음" }).click();
   await p.getByRole("button", { name: "기획", exact: true }).click();
   await p.getByRole("button", { name: "내 커리어 시작하기" }).click();
-  await p.waitForSelector("text=Career Readiness", { timeout: 30000 });
+  await p.waitForSelector("text=목표 준비도", { timeout: 30000 });
 
   await p.goto(`${BASE}/guide`);
   text = await p.locator("main").innerText();

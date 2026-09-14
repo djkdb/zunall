@@ -38,22 +38,39 @@ export async function AITab({
     db
       .select()
       .from(submissions)
-      .where(and(eq(submissions.activityId, activity.id), eq(submissions.userId, userId)))
+      .where(
+        and(
+          eq(submissions.activityId, activity.id),
+          eq(submissions.userId, userId),
+        ),
+      )
       .orderBy(desc(submissions.createdAt)),
     db
       .select()
       .from(aiReviews)
-      .where(and(eq(aiReviews.activityId, activity.id), eq(aiReviews.userId, userId)))
+      .where(
+        and(
+          eq(aiReviews.activityId, activity.id),
+          eq(aiReviews.userId, userId),
+        ),
+      )
       .orderBy(desc(aiReviews.createdAt)),
     db
       .select({ id: documents.id })
       .from(documents)
-      .where(and(eq(documents.activityId, activity.id), eq(documents.category, "notice"))),
+      .where(
+        and(
+          eq(documents.activityId, activity.id),
+          eq(documents.category, "notice"),
+        ),
+      ),
   ]);
   const noticeDocCount = noticeDocs.length;
 
   const selectedReview =
-    (selectedReviewId ? reviews.find((r) => r.id === selectedReviewId) : null) ??
+    (selectedReviewId
+      ? reviews.find((r) => r.id === selectedReviewId)
+      : null) ??
     reviews.find((r) => r.status === "done") ??
     null;
   const selectedResult = selectedReview
@@ -70,11 +87,13 @@ export async function AITab({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary" /> AI Actions
+              <Sparkles className="h-4 w-4 text-primary" /> AI로 분석하기
             </CardTitle>
             <p className="text-xs text-muted-foreground">
               provider:{" "}
-              <Badge variant={provider === "claude" ? "default" : "secondary"}>{provider}</Badge>
+              <Badge variant={provider === "claude" ? "default" : "secondary"}>
+                {provider}
+              </Badge>
               {provider === "mock" && " (개발용 휴리스틱 분석)"}
             </p>
           </CardHeader>
@@ -130,7 +149,9 @@ export async function AITab({
             <CardContent className="space-y-3">
               {subs.map((submission) => (
                 <div key={submission.id} className="rounded-md border p-2.5">
-                  <p className="mb-2 truncate text-xs font-semibold">{submission.title}</p>
+                  <p className="mb-2 truncate text-xs font-semibold">
+                    {submission.title}
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
                     <RunAIButton
                       activityId={activity.id}
@@ -185,7 +206,9 @@ export async function AITab({
                 {reviews.slice(0, 15).map((review) => {
                   const pct =
                     review.overallScore != null && review.maxScore
-                      ? Math.round((review.overallScore / review.maxScore) * 100)
+                      ? Math.round(
+                          (review.overallScore / review.maxScore) * 100,
+                        )
                       : null;
                   const isActive = selectedReview?.id === review.id;
                   return (
@@ -194,12 +217,15 @@ export async function AITab({
                         href={`/activities/${activity.id}?tab=ai&review=${review.id}`}
                         className={cn(
                           "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs transition-colors",
-                          isActive ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
+                          isActive
+                            ? "bg-accent text-accent-foreground"
+                            : "hover:bg-accent/50",
                         )}
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">
-                            {AI_ACTIONS[review.action as AIAction] ?? review.action}
+                            {AI_ACTIONS[review.action as AIAction] ??
+                              review.action}
                             {review.submissionId &&
                               subNameById.get(review.submissionId) &&
                               ` · ${subNameById.get(review.submissionId)}`}
@@ -231,10 +257,13 @@ export async function AITab({
           <Card>
             <CardContent className="flex flex-col items-center justify-center px-6 py-16 text-center">
               <Sparkles className="mb-3 h-8 w-8 text-muted-foreground/50" />
-              <p className="text-sm font-medium">아직 실행한 AI 분석이 없습니다</p>
+              <p className="text-sm font-medium">
+                아직 실행한 AI 분석이 없습니다
+              </p>
               <p className="mt-1 max-w-md text-xs text-muted-foreground">
-                공고문을 업로드하고 &lsquo;공고문 분석&rsquo;으로 시작해보세요. 마감일과 평가 기준을
-                자동으로 추출하고, 제출물을 그 기준으로 평가할 수 있습니다.
+                공고문을 업로드하고 &lsquo;공고문 분석&rsquo;으로 시작해보세요.
+                마감일과 평가 기준을 자동으로 추출하고, 제출물을 그 기준으로
+                평가할 수 있습니다.
               </p>
             </CardContent>
           </Card>
@@ -246,15 +275,19 @@ export async function AITab({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{selectedReview.errorMessage}</p>
+              <p className="text-sm text-muted-foreground">
+                {selectedReview.errorMessage}
+              </p>
             </CardContent>
           </Card>
         ) : selectedResult ? (
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold">
-                {AI_ACTIONS[selectedReview.action as AIAction] ?? selectedReview.action}
-                {selectedReview.submissionId && subNameById.get(selectedReview.submissionId)
+                {AI_ACTIONS[selectedReview.action as AIAction] ??
+                  selectedReview.action}
+                {selectedReview.submissionId &&
+                subNameById.get(selectedReview.submissionId)
                   ? ` — ${subNameById.get(selectedReview.submissionId)}`
                   : ""}
               </h3>

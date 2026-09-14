@@ -30,7 +30,7 @@ try {
   await p.getByRole("button", { name: "다음" }).click();
   await p.getByRole("button", { name: "데이터 분석", exact: true }).click();
   await p.getByRole("button", { name: "내 커리어 시작하기" }).click();
-  await p.waitForSelector("text=Career Readiness", { timeout: 30000 });
+  await p.waitForSelector("text=목표 준비도", { timeout: 30000 });
 
   let text = await p.locator("main").innerText();
   const before = Number(text.match(/(\d+)\s*\/\s*100/)?.[1] ?? 0);

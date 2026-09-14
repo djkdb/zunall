@@ -14,7 +14,7 @@ import {
 } from "@/components/career/roadmap-controls";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Career Roadmap" };
+export const metadata: Metadata = { title: "커리어 로드맵" };
 
 function monthLabel(month: string): string {
   const [y, m] = month.split("-");
@@ -51,11 +51,11 @@ export default async function RoadmapPage() {
             href="/career"
             className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="h-3 w-3" /> Career Profile
+            <ArrowLeft className="h-3 w-3" /> 내 커리어
           </Link>
-          <h1 className="text-xl font-bold tracking-tight">Career Roadmap</h1>
+          <h1 className="text-xl font-bold tracking-tight">커리어 로드맵</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            목표 &ldquo;{ctx.goal?.name ?? "미설정"}&rdquo;을 향한 월 단위 계획. 각 항목은 Task로
+            목표 &ldquo;{ctx.goal?.name ?? "미설정"}&rdquo;을 향한 월 단위 계획. 각 항목은 할 일로
             연결할 수 있습니다.
           </p>
         </div>

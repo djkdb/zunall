@@ -255,7 +255,7 @@ function EvaluationView({
       {data.next_actions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>🚀 추천 개선 작업</CardTitle>
+            <CardTitle>🚀 이렇게 고치세요</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">

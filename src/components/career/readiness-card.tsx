@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import type { ReadinessResult } from "@/services/score/readiness";
 
 /**
- * Career Readiness 카드.
+ * 목표 준비도 카드.
  * 합격 확률이 아닌 "목표 대비 준비도"이며, 반드시 산출 근거를 함께 보여준다.
  */
 export function ReadinessCard({
@@ -27,7 +27,7 @@ export function ReadinessCard({
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-1.5">
-          <Gauge className="h-4 w-4 text-muted-foreground" /> Career Readiness
+          <Gauge className="h-4 w-4 text-muted-foreground" /> 목표 준비도
         </CardTitle>
         <p className="text-xs text-muted-foreground">
           목표 &ldquo;{templateLabel}&rdquo; 기준 준비도 — 합격 확률이 아닌 규칙 기반 추정치입니다.

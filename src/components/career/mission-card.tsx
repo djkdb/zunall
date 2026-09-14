@@ -48,14 +48,14 @@ export function MissionCard({
     <Card className="border-primary/40 bg-gradient-to-br from-accent/60 to-card">
       <CardContent className="p-5">
         <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary">
-          <Flame className="h-4 w-4" /> Today&apos;s Career Mission
+          <Flame className="h-4 w-4" /> 오늘의 한 걸음
         </p>
 
         {activeTask ? (
           <div className="mt-2">
             <p className="text-base font-semibold leading-snug">{activeTask.title}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              진행 중인 미션이 있습니다. 작업을 완료하면 커리어 점수가 갱신됩니다.
+              진행 중인 미션이 있습니다. 할 일을 완료하면 커리어 점수가 갱신됩니다.
             </p>
             <Link href="/?focus=tasks" className="mt-3 inline-block">
               <Button size="sm" variant="secondary">
@@ -87,7 +87,7 @@ export function MissionCard({
                 ) : (
                   <Check className="h-4 w-4" />
                 )}
-                이 미션 시작 (Task 생성)
+                이걸 할 일로 만들기
               </Button>
               <Button
                 size="sm"

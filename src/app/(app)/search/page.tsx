@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
-import { FileText, FolderKanban, StickyNote, PenLine, Search as SearchIcon } from "lucide-react";
+import {
+  FileText,
+  FolderKanban,
+  StickyNote,
+  PenLine,
+  Search as SearchIcon,
+} from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
-import { db, activities, documents, notes, essayDrafts, essayQuestions } from "@/lib/db";
+import {
+  db,
+  activities,
+  documents,
+  notes,
+  essayDrafts,
+  essayQuestions,
+} from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -11,6 +24,9 @@ import { SearchBox } from "@/components/search/search-box";
 import { ACTIVITY_TYPES, type ActivityType } from "@/lib/constants";
 
 export const metadata: Metadata = { title: "검색" };
+
+/** 눌러서 바로 검색되는 예시어 */
+const SEARCH_EXAMPLES = ["공모전", "마감", "지원 동기", "데이터 분석", "회고"];
 
 /** 검색어 주변 문장을 잘라 보여준다 */
 function snippet(text: string, query: string, span = 90): string {
@@ -36,15 +52,28 @@ export default async function SearchPage({
         <div>
           <h1 className="text-xl font-bold tracking-tight">검색</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            활동뿐 아니라 업로드한 문서 본문, 메모, 자소서 답변까지 함께 찾습니다.
+            활동뿐 아니라 업로드한 문서 본문, 메모, 자소서 답변까지 함께
+            찾습니다.
           </p>
         </div>
         <SearchBox defaultValue={query} />
         <EmptyState
           icon={SearchIcon}
           title="두 글자 이상 입력해주세요"
-          description="예: '데이터 분석', '마감', '지원 동기'"
+          description="무엇을 찾을 수 있는지 아래를 눌러 확인해보세요."
         />
+        {/* 처음 온 사람은 무엇이 검색되는지 모른다. 눌러보면 바로 알 수 있게 한다. */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {SEARCH_EXAMPLES.map((example) => (
+            <Link
+              key={example}
+              href={`/search?q=${encodeURIComponent(example)}`}
+              className="rounded-full border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {example}
+            </Link>
+          ))}
+        </div>
       </div>
     );
   }
@@ -79,7 +108,10 @@ export default async function SearchPage({
       .where(
         and(
           eq(documents.userId, user.id),
-          or(ilike(documents.name, like), ilike(sql`coalesce(${documents.extractedText}, '')`, like)),
+          or(
+            ilike(documents.name, like),
+            ilike(sql`coalesce(${documents.extractedText}, '')`, like),
+          ),
         ),
       )
       .orderBy(desc(documents.createdAt))
@@ -100,7 +132,9 @@ export default async function SearchPage({
       })
       .from(essayDrafts)
       .innerJoin(essayQuestions, eq(essayDrafts.questionId, essayQuestions.id))
-      .where(and(eq(essayDrafts.userId, user.id), ilike(essayDrafts.content, like)))
+      .where(
+        and(eq(essayDrafts.userId, user.id), ilike(essayDrafts.content, like)),
+      )
       .orderBy(desc(essayDrafts.createdAt))
       .limit(20),
     db
@@ -111,7 +145,8 @@ export default async function SearchPage({
 
   const activityNames = new Map(nameRows.map((a) => [a.id, a.name]));
 
-  const total = actRows.length + docRows.length + noteRows.length + essayRows.length;
+  const total =
+    actRows.length + docRows.length + noteRows.length + essayRows.length;
 
   return (
     <div className="space-y-5">
@@ -158,8 +193,12 @@ export default async function SearchPage({
             icon={StickyNote}
             items={noteRows.map((n) => ({
               key: n.id,
-              href: n.activityId ? `/activities/${n.activityId}?tab=notes` : "/activities",
-              title: n.activityId ? (activityNames.get(n.activityId) ?? "메모") : "메모",
+              href: n.activityId
+                ? `/activities/${n.activityId}?tab=notes`
+                : "/activities",
+              title: n.activityId
+                ? (activityNames.get(n.activityId) ?? "메모")
+                : "메모",
               badge: "",
               body: snippet(n.content, query),
             }))}
@@ -188,7 +227,13 @@ function ResultGroup({
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
-  items: Array<{ key: string; href: string; title: string; badge: string; body: string }>;
+  items: Array<{
+    key: string;
+    href: string;
+    title: string;
+    badge: string;
+    body: string;
+  }>;
 }) {
   if (items.length === 0) return null;
   return (
@@ -204,7 +249,9 @@ function ResultGroup({
               <CardContent className="p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-medium">{item.title}</p>
-                  {item.badge && <Badge variant="secondary">{item.badge}</Badge>}
+                  {item.badge && (
+                    <Badge variant="secondary">{item.badge}</Badge>
+                  )}
                 </div>
                 {item.body && (
                   <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">

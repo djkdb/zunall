@@ -117,15 +117,15 @@ try {
   await page.getByRole("button", { name: "AI 활용", exact: true }).click();
   await page.getByRole("button", { name: "Frontend", exact: true }).click();
   await page.getByRole("button", { name: "내 커리어 시작하기" }).click();
-  await page.waitForSelector("text=Career Readiness", { timeout: 30000 });
-  step("온보딩 완료 → Career Profile 생성", true);
+  await page.waitForSelector("text=목표 준비도", { timeout: 30000 });
+  step("온보딩 완료 → 내 커리어 생성", true);
   await page.screenshot({ path: `${SHOT}/01-career-profile.png` });
 
   text = await page.locator("main").textContent();
   const initialScore = readinessScore(text);
-  step("Career Score 표시 (규칙 기반 + 근거 안내)", initialScore !== null, `${initialScore}점`);
+  step("커리어 점수 표시 (규칙 기반 + 근거 안내)", initialScore !== null, `${initialScore}점`);
   step("목표 템플릿 매칭 (AI 엔지니어)", text.includes("AI 엔지니어"));
-  step("Today's Mission 추천 표시", text.includes("Today's Career Mission"));
+  step("오늘의 한 걸음 추천 표시", text.includes("오늘의 한 걸음"));
 
   // ── 3. 근거 추가 → 점수 상승
   await page.getByRole("button", { name: "근거 추가" }).click();
@@ -200,11 +200,11 @@ try {
     text.includes("코그니토랩스") && text.includes("글로우") && text.includes("지원 비추천"),
   );
 
-  // ── 8. Today's Mission → Task 생성 → 완료 → 알림
+  // ── 8. 오늘의 한 걸음 → 할 일 생성 → 완료 → 알림
   await page.goto(`${BASE}/`);
-  await page.getByRole("button", { name: "이 미션 시작 (Task 생성)" }).click();
+  await page.getByRole("button", { name: "이걸 할 일로 만들기" }).click();
   await page.waitForSelector("text=진행 중인 미션이 있습니다", { timeout: 20000 });
-  step("미션 수락 → Task 생성 + 진행 중 표시", true);
+  step("한 걸음 수락 → 할 일 생성 + 진행 중 표시", true);
 
   text = await page.locator("main").textContent();
   const missionVisible = text.includes("해야 할 일");
@@ -216,11 +216,11 @@ try {
   await page.waitForTimeout(2000);
   await page.goto(`${BASE}/notifications?filter=all`);
   text = await page.locator("main").textContent();
-  step("Task 완료 → 커리어 미션 완료 알림 + Score 갱신", text.includes("커리어 미션 완료"));
+  step("할 일 완료 → 커리어 미션 완료 알림 + 점수 갱신", text.includes("커리어 미션 완료"));
 
   await page.goto(`${BASE}/`);
   text = await page.locator("main").textContent();
-  step("완료 후 새 미션 추천 (루프 지속)", text.includes("Today's Career Mission"));
+  step("완료 후 새 미션 추천 (루프 지속)", text.includes("오늘의 한 걸음"));
 
   // ── 9. 로드맵 자동 생성
   await page.goto(`${BASE}/career/roadmap`);

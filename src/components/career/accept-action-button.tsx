@@ -6,7 +6,7 @@ import { ListPlus, Loader2, Check } from "lucide-react";
 import { acceptMission } from "@/actions/career";
 import { Button } from "@/components/ui/button";
 
-/** Gap 추천 행동을 Task로 등록하는 버튼 (범용) */
+/** 부족한 부분의 추천 행동을 할 일로 등록하는 버튼 (범용) */
 export function AcceptActionButton({
   skill,
   title,
@@ -62,7 +62,7 @@ export function AcceptActionButton({
         ) : (
           <ListPlus className="h-3 w-3" />
         )}
-        Task로 등록
+        할 일로 등록
       </Button>
       {error && <span className="mt-0.5 text-[10px] text-destructive">{error}</span>}
     </span>

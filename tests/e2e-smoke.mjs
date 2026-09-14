@@ -167,7 +167,7 @@ try {
   step("AI 제출물 평가 (기준별 점수)", hasScore && evalText.includes("항목별 평가"));
 
   // 8. AI 피드백 → 작업 생성
-  const taskButtons = page.getByRole("button", { name: "작업 만들기" });
+  const taskButtons = page.getByRole("button", { name: "할 일로 만들기" });
   if ((await taskButtons.count()) > 0) {
     await taskButtons.first().click();
     await page.waitForSelector("text=작업 등록됨", { timeout: 20000 });
@@ -176,7 +176,7 @@ try {
     const taskText = await page.locator("main").textContent();
     step("생성된 작업이 칸반에 표시", taskText.includes("AI"));
   } else {
-    step("AI 피드백 → 작업(Task) 생성", false, "작업 만들기 버튼 없음");
+    step("AI 피드백 → 작업(Task) 생성", false, "할 일로 만들기 버튼 없음");
   }
 
   // 9. 최종 검토 (Final Check)

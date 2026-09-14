@@ -144,8 +144,8 @@ export function RoadmapItemControls({
           variant="ghost"
           size="iconSm"
           disabled={pending}
-          title="Task로 등록"
-          aria-label="Task로 등록"
+          title="할 일로 등록"
+          aria-label="할 일로 등록"
           onClick={() =>
             startTransition(async () => {
               const result = await roadmapItemToTask(itemId);
@@ -157,7 +157,7 @@ export function RoadmapItemControls({
           <ListPlus className="h-3.5 w-3.5" />
         </Button>
       ) : (
-        <span title="Task 연결됨" className="px-1.5">
+        <span title="할 일로 등록됨" className="px-1.5">
           <Check className="h-3.5 w-3.5 text-emerald-500" />
         </span>
       )}

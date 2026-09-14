@@ -68,7 +68,7 @@ const LABELS: Record<string, string> = {
   activities: "활동",
   tags: "태그",
   events: "일정",
-  tasks: "작업",
+  tasks: "할 일",
   documents: "문서",
   submissions: "제출물",
   submissionVersions: "제출 버전",

@@ -53,7 +53,7 @@ export async function FitTab({ activity, userId }: { activity: ActivityRow; user
       <Card>
         <CardContent className="flex flex-col items-center px-6 py-12 text-center">
           <Crosshair className="mb-3 h-8 w-8 text-muted-foreground/50" />
-          <p className="text-sm font-medium">Career Profile이 필요합니다</p>
+          <p className="text-sm font-medium">내 커리어 정보가 필요합니다</p>
           <p className="mt-1 max-w-md text-xs text-muted-foreground">
             지원 적합도는 나의 목표·스킬·근거와 공고 요구사항을 비교해 계산됩니다. 먼저 커리어
             프로필을 만들어주세요.
@@ -73,7 +73,7 @@ export async function FitTab({ activity, userId }: { activity: ActivityRow; user
           <Crosshair className="mb-3 h-8 w-8 text-muted-foreground/50" />
           <p className="text-sm font-medium">아직 적합도 분석을 실행하지 않았습니다</p>
           <p className="mt-1 max-w-md text-xs text-muted-foreground">
-            AI가 공고에서 요구 역량을 추출하고, 내 Career Profile과 비교해 &ldquo;지금의 나에게
+            AI가 공고에서 요구 역량을 추출하고, 내 커리어 정보와 비교해 &ldquo;지금의 나에게
             좋은 기회인지&rdquo;를 판단합니다.
             {noticeDocCount === 0 &&
               " 정확한 분석을 위해 문서 탭에 '공고 / 안내' 파일을 먼저 업로드하는 것을 권장합니다."}

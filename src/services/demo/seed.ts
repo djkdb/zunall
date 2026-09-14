@@ -18,6 +18,8 @@ import {
   careerEvidence,
   notifications,
   opportunityAnalyses,
+  aiReviews,
+  aiReviewItems,
   sessions,
 } from "@/lib/db";
 import { newId, toDateStr } from "@/lib/utils";
@@ -305,6 +307,135 @@ async function seedActivities(userId: string, now: number): Promise<void> {
     })),
   );
 
+  // 1-2) 제출물을 공고의 공식 평가 기준에 맞춰 분석한 결과.
+  //      "기준에 맞춰 평가하고 고칠 것을 알려준다"는 두 번째 주장인데,
+  //      이게 비어 있으면 둘러보기로는 확인할 수 없다.
+  const reviewId = newId();
+  const aiReviewsRows = db.insert(aiReviews).values({
+    id: reviewId,
+    userId,
+    activityId: mainId,
+    action: "evaluate_submission",
+    provider: "demo",
+    status: "done",
+    overallScore: 71,
+    maxScore: 100,
+    confidence: 0.62,
+    summary:
+      "아이디어의 방향은 분명하지만, 심사 기준에서 배점이 가장 큰 창의성과 환경적 효과가 숫자로 뒷받침되지 않았습니다. 기존 사례와 무엇이 다른지, 실제로 줄어드는 양이 얼마인지 두 곳만 채우면 점수가 크게 올라갑니다.",
+    resultJson: JSON.stringify({
+      overall_score: 71,
+      max_score: 100,
+      confidence: 0.62,
+      summary:
+        "아이디어의 방향은 분명하지만, 배점이 큰 두 기준이 숫자로 뒷받침되지 않았습니다.",
+      critical_issues: [
+        "환경적 효과(25점)에 정량 근거가 전혀 없습니다 — 심사 기준에 '실제로 줄어드는 양'이 명시돼 있습니다.",
+      ],
+      next_actions: [
+        "기존 사례 2개와 비교해 무엇이 다른지 한 문단 추가",
+        "예상 절감량을 단위와 함께 제시 (예: 연 기준 kg CO2e)",
+        "8주 일정표를 주 단위로 쪼개 실현 가능성 보강",
+      ],
+      criteria: [
+        {
+          name: "창의성",
+          score: 26,
+          max_score: 40,
+          source: "official",
+          strengths: ["일상에서 겪은 문제에서 출발한 점이 설득력 있습니다."],
+          weaknesses: [
+            "기존 서비스와의 차이가 '더 편리하다' 수준으로만 서술돼 있습니다.",
+          ],
+          recommendations: [
+            "비슷한 기존 사례 2개를 명시하고 무엇을 다르게 했는지 대조해 쓰기",
+          ],
+        },
+        {
+          name: "실현 가능성",
+          score: 28,
+          max_score: 35,
+          source: "official",
+          strengths: [
+            "필요한 기술이 이미 있는 것들로 구성돼 있습니다.",
+            "팀 역할 분담이 구체적입니다.",
+          ],
+          weaknesses: [
+            "8주 일정이 '개발 4주'처럼 크게 묶여 있어 검증이 어렵습니다.",
+          ],
+          recommendations: ["주 단위로 쪼개고 각 주의 산출물을 한 줄씩 적기"],
+        },
+        {
+          name: "환경적 효과",
+          score: 17,
+          max_score: 25,
+          source: "official",
+          strengths: ["효과가 나타나는 경로를 그림으로 설명한 점은 좋습니다."],
+          weaknesses: [
+            "줄어드는 양이 숫자로 없습니다.",
+            "근거 출처가 없습니다.",
+          ],
+          recommendations: [
+            "공공데이터로 추정치를 계산해 단위까지 적기",
+            "추정에 쓴 가정을 각주로 남기기",
+          ],
+        },
+      ],
+    }),
+    createdAt: now - 3_600_000,
+    completedAt: now - 3_590_000,
+  });
+  const aiReviewItemsRows = db.insert(aiReviewItems).values(
+    [
+      {
+        name: "창의성",
+        score: 26,
+        maxScore: 40,
+        strengths: ["일상에서 겪은 문제에서 출발한 점이 설득력 있습니다."],
+        weaknesses: [
+          "기존 서비스와의 차이가 '더 편리하다' 수준으로만 서술돼 있습니다.",
+        ],
+        recommendations: [
+          "비슷한 기존 사례 2개를 명시하고 무엇을 다르게 했는지 대조해 쓰기",
+        ],
+      },
+      {
+        name: "실현 가능성",
+        score: 28,
+        maxScore: 35,
+        strengths: [
+          "필요한 기술이 이미 있는 것들로 구성돼 있습니다.",
+          "팀 역할 분담이 구체적입니다.",
+        ],
+        weaknesses: [
+          "8주 일정이 '개발 4주'처럼 크게 묶여 있어 검증이 어렵습니다.",
+        ],
+        recommendations: ["주 단위로 쪼개고 각 주의 산출물을 한 줄씩 적기"],
+      },
+      {
+        name: "환경적 효과",
+        score: 17,
+        maxScore: 25,
+        strengths: ["효과가 나타나는 경로를 그림으로 설명한 점은 좋습니다."],
+        weaknesses: ["줄어드는 양이 숫자로 없습니다.", "근거 출처가 없습니다."],
+        recommendations: [
+          "공공데이터로 추정치를 계산해 단위까지 적기",
+          "추정에 쓴 가정을 각주로 남기기",
+        ],
+      },
+    ].map((item, index) => ({
+      id: newId(),
+      reviewId,
+      name: item.name,
+      score: item.score,
+      maxScore: item.maxScore,
+      strengths: JSON.stringify(item.strengths),
+      weaknesses: JSON.stringify(item.weaknesses),
+      recommendations: JSON.stringify(item.recommendations),
+      position: index,
+    })),
+  );
+
   // 2) 끝난 활동 — 회고·포트폴리오가 채워진 상태
   const doneId = newId();
   const activitiesRows2 = db.insert(activities).values({
@@ -447,6 +578,8 @@ async function seedActivities(userId: string, now: number): Promise<void> {
     essayQuestionsRows,
     essayDraftsRows,
     interviewQuestionsRows,
+    aiReviewsRows,
+    aiReviewItemsRows,
     activitiesRows2,
     retrospectivesRows,
     activitiesRows3,
@@ -484,6 +617,12 @@ async function deleteDemoUser(userId: string): Promise<void> {
       .from(activities)
       .where(eq(activities.userId, userId))
   ).map((a) => a.id);
+  const reviewIds = (
+    await db
+      .select({ id: aiReviews.id })
+      .from(aiReviews)
+      .where(eq(aiReviews.userId, userId))
+  ).map((r) => r.id);
   const questionIds = (
     await db
       .select({ id: essayQuestions.id })
@@ -499,6 +638,10 @@ async function deleteDemoUser(userId: string): Promise<void> {
     ),
     ...questionIds.map((id) =>
       db.delete(essayDrafts).where(eq(essayDrafts.questionId, id)),
+    ),
+    // 리뷰 항목은 userId 가 없고 reviewId 로만 매달려 있다
+    ...reviewIds.map((id) =>
+      db.delete(aiReviewItems).where(eq(aiReviewItems.reviewId, id)),
     ),
   ]);
 
@@ -516,6 +659,7 @@ async function deleteDemoUser(userId: string): Promise<void> {
     db
       .delete(opportunityAnalyses)
       .where(eq(opportunityAnalyses.userId, userId)),
+    db.delete(aiReviews).where(eq(aiReviews.userId, userId)),
     db.delete(activities).where(eq(activities.userId, userId)),
     db.delete(sessions).where(eq(sessions.userId, userId)),
   ]);

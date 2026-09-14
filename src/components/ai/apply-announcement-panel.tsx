@@ -77,7 +77,7 @@ export function ApplyAnnouncementPanel({
             onChange={(e) => setApplySummary(e.target.checked)}
             className="h-4 w-4 rounded accent-[hsl(var(--primary))]"
           />
-          AI 요약을 활동 Overview에 표시
+          AI 요약을 활동 요약에 표시
         </label>
       </div>
       <div className="mt-3 flex items-center gap-2">

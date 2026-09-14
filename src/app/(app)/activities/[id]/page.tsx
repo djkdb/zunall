@@ -65,15 +65,15 @@ export default async function ActivityDetailPage({
   const deadline = nearestDeadlineOf(activity);
 
   const tabs = [
-    { key: "overview", label: "Overview" },
+    { key: "overview", label: "요약" },
     { key: "fit", label: "적합도" },
     { key: "calendar", label: "일정", count: counts.calendar },
     { key: "documents", label: "문서", count: counts.documents },
-    { key: "tasks", label: "작업", count: counts.tasks },
+    { key: "tasks", label: "할 일", count: counts.tasks },
     { key: "submissions", label: "제출물", count: counts.submissions },
     { key: "essay", label: "자소서" },
     { key: "interview", label: "면접", count: counts.interview },
-    { key: "ai", label: "AI 리뷰", count: counts.ai },
+    { key: "ai", label: "AI 분석", count: counts.ai },
     { key: "notes", label: "메모" },
     { key: "history", label: "기록", count: counts.history },
   ];

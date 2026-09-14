@@ -54,7 +54,7 @@ export function CreateTaskButton({
         ) : (
           <ListPlus className="h-3 w-3" />
         )}
-        작업 만들기
+        할 일로 만들기
       </Button>
       {error && <span className="text-[10px] text-destructive">{error}</span>}
     </span>

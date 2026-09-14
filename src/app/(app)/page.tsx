@@ -241,7 +241,7 @@ export default async function DashboardPage() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-1.5">
-                  <Target className="h-4 w-4 text-muted-foreground" /> Current Goal
+                  <Target className="h-4 w-4 text-muted-foreground" /> 지금 목표
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -348,7 +348,7 @@ export default async function DashboardPage() {
         />
         <StatCard
           icon={<ListTodo className="h-4 w-4" />}
-          label="열린 작업"
+          label="남은 할 일"
           value={String(openTasks.length)}
           sub={overallProgress !== null ? `전체 진행률 ${overallProgress}%` : undefined}
         />

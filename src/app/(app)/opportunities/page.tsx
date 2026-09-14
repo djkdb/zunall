@@ -104,7 +104,7 @@ export default async function OpportunitiesPage({
         <div className="rounded-lg border border-primary/40 bg-accent/40 p-4 text-sm">
           적합도 분석을 사용하려면 먼저{" "}
           <Link href="/career" className="font-medium text-primary hover:underline">
-            Career Profile
+            내 커리어
           </Link>
           을 만들어주세요.
         </div>

@@ -158,7 +158,7 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
           <CardContent>
             {openTasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {activityTasks.length > 0 ? "모든 작업을 완료했습니다 🎉" : "등록된 작업이 없습니다."}
+                {activityTasks.length > 0 ? "모든 할 일을 완료했습니다 🎉" : "등록된 작업이 없습니다."}
               </p>
             ) : (
               <ul className="space-y-1.5">

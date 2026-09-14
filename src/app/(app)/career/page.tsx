@@ -24,7 +24,7 @@ import { EVIDENCE_KINDS, GOAL_TYPES, type EvidenceKind, type GoalType } from "@/
 import { STUDY_FIELDS } from "@/lib/career-constants";
 import { safeJsonParse, relativeTime } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Career Profile" };
+export const metadata: Metadata = { title: "내 커리어" };
 
 export default async function CareerPage() {
   const user = await requireUser();

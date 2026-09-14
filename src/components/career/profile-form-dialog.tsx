@@ -48,7 +48,7 @@ export function ProfileFormDialog({
       <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>
         <Pencil className="h-3.5 w-3.5" /> 프로필 수정
       </Button>
-      <Dialog open={open} onClose={() => setOpen(false)} title="Career Profile">
+      <Dialog open={open} onClose={() => setOpen(false)} title="내 커리어">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="pf-headline">헤드라인</Label>

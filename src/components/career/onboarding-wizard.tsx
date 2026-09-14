@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * 신규 사용자 온보딩: 목표 → 프로필 → 스킬 선택 → 완료(근거 자동 임포트).
- * 완료하면 Career Score가 계산되기 시작한다.
+ * 완료하면 커리어 점수가 계산되기 시작한다.
  */
 export function OnboardingWizard({ userName }: { userName: string }) {
   const router = useRouter();

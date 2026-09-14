@@ -26,7 +26,7 @@ export default async function SkillsPage() {
           href="/career"
           className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-3 w-3" /> Career Profile
+          <ArrowLeft className="h-3 w-3" /> 내 커리어
         </Link>
         <h1 className="text-xl font-bold tracking-tight">스킬</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">

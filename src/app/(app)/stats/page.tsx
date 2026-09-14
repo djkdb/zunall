@@ -278,7 +278,7 @@ async function CareerStatsSection({ userId }: { userId: string }) {
 
   return (
     <section>
-      <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Career</h2>
+      <h2 className="mb-2 text-sm font-semibold text-muted-foreground">커리어</h2>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <MetricCard
           label="커리어 점수"

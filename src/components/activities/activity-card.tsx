@@ -78,7 +78,7 @@ export function ActivityCard({ activity }: { activity: ActivityMeta }) {
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" />
-              작업 {activity.taskDone}/{activity.taskTotal}
+              할 일 {activity.taskDone}/{activity.taskTotal}
             </span>
             <span>{progress}%</span>
           </div>

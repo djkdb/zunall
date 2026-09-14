@@ -253,7 +253,7 @@ try {
     ["기획서 초안 작성", "urgent"],
     ["팀 회의 일정 잡기", "medium"],
   ]) {
-    await page.getByRole("button", { name: "작업 추가" }).click();
+    await page.getByRole("button", { name: "할 일 추가" }).click();
     await page.getByLabel("제목 *").fill(title);
     await page.getByLabel("우선순위").selectOption(priority);
     await page.getByRole("button", { name: "추가", exact: true }).click();
@@ -303,9 +303,9 @@ try {
   await shot(page, "09-eval-v1");
 
   // AI 피드백 → 작업 생성
-  const btnCount = await page.getByRole("button", { name: "작업 만들기" }).count();
+  const btnCount = await page.getByRole("button", { name: "할 일로 만들기" }).count();
   if (btnCount > 0) {
-    await page.getByRole("button", { name: "작업 만들기" }).first().click();
+    await page.getByRole("button", { name: "할 일로 만들기" }).first().click();
     await page.waitForSelector("text=작업 등록됨");
     note("개선 피드백을 원클릭으로 작업 등록", true);
   } else {
