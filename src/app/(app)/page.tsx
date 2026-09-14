@@ -29,7 +29,7 @@ import {
   retrospectives,
 } from "@/lib/db";
 import { getActivitiesWithMeta } from "@/lib/queries";
-import { getCareerContext, getScoreTrend } from "@/lib/career-queries";
+import { getCareerContext, getScoreTrend, recordScoreSnapshot } from "@/lib/career-queries";
 import { ReadinessCard } from "@/components/career/readiness-card";
 import { MissionCard } from "@/components/career/mission-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,6 +78,13 @@ export default async function DashboardPage() {
     getScoreTrend(user.id),
     getActivitiesWithMeta(user.id),
   ]);
+  // 오늘의 점수를 기록해 둔다 (하루 한 점, 왕복 한 번).
+  // 커리어 탭을 편집할 때만 기록하면 활동을 등록·완료해서 오른 점수가 그래프에
+  // 남지 않는다. 앱의 첫 화면에서 남기면 어떤 경로로 바뀌었든 빠지지 않는다.
+  if (careerCtx.onboarded) {
+    await recordScoreSnapshot(user.id, careerCtx.readiness.score, careerCtx.readiness.items);
+  }
+
   // 사용자가 고른 대시보드 구성 (없으면 기본값)
   const widgets = parseWidgets(settingsRows[0]?.dashboardWidgets);
   const ongoing = allActivities.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status));

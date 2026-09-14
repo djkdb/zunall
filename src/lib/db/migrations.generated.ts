@@ -68,4 +68,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "015-share-and-ai-usage.sql",
     sql: "-- 포트폴리오 공유 링크와 AI 사용량 기록.\n-- Neon SQL Editor 등에 붙여넣고 실행하세요. 여러 번 실행해도 안전합니다.\n\nALTER TABLE users ADD COLUMN IF NOT EXISTS portfolio_token TEXT;\nCREATE UNIQUE INDEX IF NOT EXISTS idx_users_portfolio_token ON users(portfolio_token);\n\n-- 하루 단위 AI 호출 횟수 (사용자 × 날짜)\nCREATE TABLE IF NOT EXISTS ai_usage (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  day TEXT NOT NULL,\n  count INTEGER NOT NULL DEFAULT 0,\n  updated_at BIGINT NOT NULL\n);\nCREATE UNIQUE INDEX IF NOT EXISTS idx_ai_usage_user_day ON ai_usage(user_id, day);\n",
   },
+  {
+    name: "016-growth-snapshot.sql",
+    sql: "-- 성장 기록을 하루 한 점으로 고정한다.\n-- 지금까지는 \"같은 날이면 갱신\"을 SELECT 후 UPDATE 로 처리해 왕복이 두 번이었고,\n-- 같은 날 두 요청이 겹치면 행이 두 개 생길 수 있었다.\n-- day 컬럼 + 유니크 인덱스로 한 문장 upsert 가 가능해진다.\n-- 여러 번 실행해도 안전합니다.\n\nALTER TABLE score_snapshots ADD COLUMN IF NOT EXISTS day TEXT;\n\n-- 기존 행에 day 를 채운다 (epoch ms → UTC 날짜)\nUPDATE score_snapshots\n   SET day = to_char(to_timestamp(created_at / 1000.0) AT TIME ZONE 'UTC', 'YYYY-MM-DD')\n WHERE day IS NULL;\n\n-- 같은 사용자·같은 날 중복 행이 이미 있다면 최신 것만 남긴다\nDELETE FROM score_snapshots s\n USING score_snapshots t\n WHERE s.user_id = t.user_id\n   AND s.day = t.day\n   AND s.created_at < t.created_at;\n\nCREATE UNIQUE INDEX IF NOT EXISTS idx_snapshots_user_day ON score_snapshots(user_id, day);\n",
+  },
 ];

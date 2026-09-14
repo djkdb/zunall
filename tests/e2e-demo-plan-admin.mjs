@@ -50,6 +50,18 @@ try {
   const essays = await p.locator("main").innerText();
   step("자기소개서 예시 2건", essays.includes("갈등") && essays.includes("지원 동기"));
 
+  // 성장 기록 — "이걸 쓴 덕분에 나아졌나"에 답하는 자리
+  await p.goto(`${BASE}/career`);
+  await p.waitForTimeout(1500);
+  const growth = await p.locator("main").innerText();
+  step("성장 기록 카드", growth.includes("성장 기록"));
+  step("지금 점수와 변화량", /\d+ \/ 100/.test(growth) && /[+\-]\d+점/.test(growth));
+  step("언제부터 얼마였는지", /\d+일 전 \d+점에서 시작/.test(growth));
+  step("어느 항목에서 달라졌는지", growth.includes("어디서 달라졌나") && growth.includes("실전 경험"));
+  step("변화 방향을 색 없이도 읽을 수 있다", growth.includes("▲") || growth.includes("▼"));
+  step("가장 많이 오른 곳을 짚어줌", growth.includes("가장 많이 오른 곳은"));
+  step("추이선이 그려짐", (await p.locator("main svg polyline").count()) >= 1);
+
   // 이 서비스의 차이 — "지원하지 마세요"라고 말하는 화면이 둘러보기에 보여야 한다
   await p.goto(`${BASE}/opportunities`);
   await p.waitForTimeout(1000);

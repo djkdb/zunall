@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import {
   db,
   activities,
@@ -15,8 +15,9 @@ import {
   type CareerProfileRow,
   type EvidenceRow,
 } from "@/lib/db";
-import { newId, safeJsonParse, toDateStr, todayStr } from "@/lib/utils";
+import { newId, safeJsonParse, todayStr } from "@/lib/utils";
 import { FINISHED_STATUSES, ONGOING_STATUSES } from "@/lib/constants";
+import type { SnapshotInput } from "@/services/career/growth";
 import { matchTemplate } from "@/services/career/templates";
 import { computeSkillScores, type SkillScoreDetail } from "@/services/score/skill";
 import { computeReadiness, type ReadinessResult } from "@/services/score/readiness";
@@ -134,28 +135,49 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
 }
 
 /**
- * Career Score 스냅샷 기록 (하루 1개 이상이면 최신값으로 갱신).
- * 성장 그래프("72 → 81")의 데이터가 된다.
+ * 커리어 점수 스냅샷 기록 — 하루 한 점.
+ *
+ * 성장 그래프의 원천이다. 화면을 열 때마다 불리므로 왕복 한 번으로 끝낸다
+ * (user_id + day 유니크 인덱스 위의 upsert). 같은 날 여러 번 불려도
+ * 마지막 값으로 갱신되고 행은 늘지 않는다.
  */
-export async function recordScoreSnapshot(userId: string, score: number, breakdown: unknown): Promise<void> {
-  const latest = (await db
+export async function recordScoreSnapshot(
+  userId: string,
+  score: number,
+  breakdown: unknown,
+): Promise<void> {
+  const day = todayStr();
+  await db.execute(sql`
+    INSERT INTO score_snapshots (id, user_id, day, score, breakdown, created_at)
+    VALUES (${newId()}, ${userId}, ${day}, ${score}, ${JSON.stringify(breakdown)}, ${Date.now()})
+    ON CONFLICT (user_id, day)
+    DO UPDATE SET score = EXCLUDED.score,
+                  breakdown = EXCLUDED.breakdown,
+                  created_at = EXCLUDED.created_at
+  `);
+}
+
+/**
+ * 성장 기록 원천 데이터 (최근 n일).
+ * 하루 한 점이므로 90일이면 최대 90행 — 한 번의 조회로 충분하다.
+ */
+export async function getScoreHistory(
+  userId: string,
+  days = 90,
+): Promise<SnapshotInput[]> {
+  const since = Date.now() - days * 86_400_000;
+  const rows = await db
     .select()
     .from(scoreSnapshots)
-    .where(eq(scoreSnapshots.userId, userId))
-    .orderBy(desc(scoreSnapshots.createdAt))
-    .limit(1))[0];
+    .where(and(eq(scoreSnapshots.userId, userId), gte(scoreSnapshots.createdAt, since)))
+    .orderBy(scoreSnapshots.createdAt);
 
-  const breakdownJson = JSON.stringify(breakdown);
-  const latestDay = latest ? toDateStr(new Date(latest.createdAt)) : null;
-  if (latest && latestDay === todayStr()) {
-    // 같은 날에는 최신값으로 갱신만 한다
-    await db.update(scoreSnapshots)
-      .set({ score, breakdown: breakdownJson, createdAt: Date.now() })
-      .where(eq(scoreSnapshots.id, latest.id));
-    return;
-  }
-  await db.insert(scoreSnapshots)
-    .values({ id: newId(), userId, score, breakdown: breakdownJson, createdAt: Date.now() });
+  return rows.map((row) => ({
+    day: row.day,
+    score: row.score,
+    items: safeJsonParse<SnapshotInput["items"]>(row.breakdown, []),
+    createdAt: row.createdAt,
+  }));
 }
 
 export async function getScoreTrend(userId: string): Promise<{ first: number | null; latest: number | null; monthAgo: number | null }> {

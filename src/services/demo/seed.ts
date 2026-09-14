@@ -18,6 +18,7 @@ import {
   careerEvidence,
   notifications,
   opportunityAnalyses,
+  scoreSnapshots,
   aiReviews,
   aiReviewItems,
   sessions,
@@ -140,7 +141,45 @@ async function seedCareer(userId: string, now: number): Promise<void> {
     },
   ]);
 
-  await Promise.all([profile, goal, skillRows, evidence]);
+  // 두 달간의 성장 기록. 이게 없으면 성장 카드가 "내일 다시 오세요"만 보여준다.
+  // 항목별로도 올라가게 만들어, 어디서 달라졌는지가 드러나게 한다.
+  const trace: Array<[number, number, number, number, number, number]> = [
+    // [며칠 전, 총점, 목표 스킬 충족도(55), 실전 경험(15), 검증 가능한 근거(15), 준비 기본기(15)]
+    [58, 18, 4, 2, 0, 12],
+    [51, 21, 5, 4, 0, 12],
+    [44, 24, 6, 4, 2, 12],
+    [37, 27, 7, 5, 2, 13],
+    [30, 30, 8, 6, 3, 13],
+    [23, 31, 8, 7, 3, 13],
+    [16, 33, 9, 8, 3, 13],
+    [9, 34, 9, 9, 3, 13],
+    [2, 35, 7, 10, 3, 15],
+  ];
+  const snapshots = db.insert(scoreSnapshots).values(
+    trace.map(([ago, score, skill, exp, evidenceScore, basics]) => {
+      const at = now - ago * 86400000;
+      return {
+        id: newId(),
+        userId,
+        day: toDateStr(new Date(at)),
+        score,
+        breakdown: JSON.stringify([
+          { label: "목표 스킬 충족도", points: skill, max: 55, detail: "" },
+          { label: "실전 경험", points: exp, max: 15, detail: "" },
+          {
+            label: "검증 가능한 근거",
+            points: evidenceScore,
+            max: 15,
+            detail: "",
+          },
+          { label: "준비 기본기", points: basics, max: 15, detail: "" },
+        ]),
+        createdAt: at,
+      };
+    }),
+  );
+
+  await Promise.all([profile, goal, skillRows, evidence, snapshots]);
 }
 
 async function seedActivities(userId: string, now: number): Promise<void> {
@@ -659,6 +698,7 @@ async function deleteDemoUser(userId: string): Promise<void> {
     db
       .delete(opportunityAnalyses)
       .where(eq(opportunityAnalyses.userId, userId)),
+    db.delete(scoreSnapshots).where(eq(scoreSnapshots.userId, userId)),
     db.delete(aiReviews).where(eq(aiReviews.userId, userId)),
     db.delete(activities).where(eq(activities.userId, userId)),
     db.delete(sessions).where(eq(sessions.userId, userId)),

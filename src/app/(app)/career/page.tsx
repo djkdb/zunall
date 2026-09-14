@@ -4,7 +4,7 @@ import { ExternalLink, Target, ArrowRight, BookMarked } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/session";
 import { db, retrospectives, activities } from "@/lib/db";
-import { getCareerContext, getScoreTrend } from "@/lib/career-queries";
+import { getCareerContext, getScoreHistory, getScoreTrend } from "@/lib/career-queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { OnboardingWizard } from "@/components/career/onboarding-wizard";
@@ -13,6 +13,7 @@ import { ProfileCompleteness } from "@/components/career/profile-completeness";
 import { ReadinessCard } from "@/components/career/readiness-card";
 import { SkillList } from "@/components/career/skill-list";
 import { MissionCard } from "@/components/career/mission-card";
+import { GrowthCard } from "@/components/career/growth-card";
 import { GoalFormDialog } from "@/components/career/goal-form-dialog";
 import { ProfileFormDialog } from "@/components/career/profile-form-dialog";
 import {
@@ -23,6 +24,7 @@ import {
 import { EVIDENCE_KINDS, GOAL_TYPES, type EvidenceKind, type GoalType } from "@/lib/career-constants";
 import { STUDY_FIELDS } from "@/lib/career-constants";
 import { safeJsonParse, relativeTime } from "@/lib/utils";
+import { buildGrowth } from "@/services/career/growth";
 
 export const metadata: Metadata = { title: "내 커리어" };
 
@@ -34,13 +36,25 @@ export default async function CareerPage() {
     return <OnboardingWizard userName={user.name} />;
   }
 
-  const [trend, activityRows, retrospectiveRows] = await Promise.all([
+  const [trend, history, activityRows, retrospectiveRows] = await Promise.all([
     getScoreTrend(user.id),
+    getScoreHistory(user.id),
     db.select({ id: activities.id }).from(activities).where(eq(activities.userId, user.id)),
     db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id)),
   ]);
   const activityCount = activityRows.length;
   const retrospectiveCount = retrospectiveRows.length;
+  // 오늘 점수가 아직 안 남았을 수 있으니, 지금 값을 마지막 점으로 보태 그래프가
+  // 화면과 어긋나지 않게 한다 (기록에 오늘이 이미 있으면 buildGrowth 가 합친다).
+  const growth = buildGrowth([
+    ...history,
+    {
+      day: null,
+      score: ctx.readiness.score,
+      items: ctx.readiness.items,
+      createdAt: Date.now(),
+    },
+  ]);
   const goalRoles = safeJsonParse<string[]>(ctx.goal?.targetRoles, []);
   const goalCompanies = safeJsonParse<string[]>(ctx.goal?.targetCompanies, []);
   const desiredRoles = safeJsonParse<string[]>(ctx.profile?.desiredRoles, []);
@@ -225,6 +239,9 @@ export default async function CareerPage() {
             templateLabel={ctx.template.label}
             trend={{ monthAgo: trend.monthAgo, latest: trend.latest ?? ctx.readiness.score }}
           />
+
+          {/* 성장 기록 — "쓴 덕분에 나아졌나"에 답하는 자리 */}
+          <GrowthCard growth={growth} />
 
           <MissionCard
             mission={ctx.mission}

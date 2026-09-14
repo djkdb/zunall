@@ -524,8 +524,10 @@ export const scoreSnapshots = pgTable(
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
+    /** "YYYY-MM-DD" (UTC). 사용자 × 날짜로 유일하다 — 하루 한 점만 남는다 */
+    day: text("day"),
     score: doublePrecision("score").notNull(),
-    breakdown: text("breakdown"), // JSON
+    breakdown: text("breakdown"), // JSON: ReadinessItem[]
     createdAt: epochMs("created_at").notNull(),
   },
   (t) => [index("idx_snapshots_user").on(t.userId)],
