@@ -13,6 +13,10 @@ export interface SkillEvidenceInput {
   kind: string;
   title: string;
   skills: string[]; // 이 근거가 뒷받침하는 스킬명 목록
+  /** 종류별 기본 가중치 대신 쓸 값 (추정 근거는 낮춘다) */
+  weight?: number;
+  /** 사용자가 직접 남긴 근거가 아니라 활동 기록에서 추정한 것 */
+  inferred?: boolean;
 }
 
 export interface SkillInput {
@@ -33,6 +37,8 @@ export interface SkillScoreDetail {
   score: number; // 0~100
   confidence: number; // 0~1
   evidenceCount: number;
+  /** 등록한 활동에서 추정한 근거 수 (evidenceCount 에는 들어가지 않는다) */
+  inferredCount: number;
   contributions: SkillContribution[];
 }
 
@@ -76,9 +82,15 @@ export function computeSkillScores(
     let points = 0;
 
     for (const ev of related) {
-      const weight = EVIDENCE_WEIGHTS[(ev.kind as EvidenceKind) in EVIDENCE_WEIGHTS ? (ev.kind as EvidenceKind) : "etc"];
+      const weight =
+        ev.weight ??
+        EVIDENCE_WEIGHTS[(ev.kind as EvidenceKind) in EVIDENCE_WEIGHTS ? (ev.kind as EvidenceKind) : "etc"];
       points += weight;
-      contributions.push({ label: ev.title, points: weight, evidenceId: ev.id });
+      contributions.push({
+        label: ev.inferred ? `${ev.title} (등록한 활동에서 추정)` : ev.title,
+        points: weight,
+        evidenceId: ev.inferred ? undefined : ev.id,
+      });
     }
 
     // 자가 평가는 낮은 가중치의 참고 근거로만 반영 (최대 12포인트)
@@ -95,7 +107,8 @@ export function computeSkillScores(
       category: categoryOf(name, skill.category),
       score: pointsToScore(points),
       confidence: Math.round(confidence * 100) / 100,
-      evidenceCount: related.length,
+      evidenceCount: related.filter((e) => !e.inferred).length,
+      inferredCount: related.filter((e) => e.inferred).length,
       contributions: contributions.sort((a, b) => b.points - a.points),
     });
   }

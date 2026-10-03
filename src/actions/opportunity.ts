@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
-import { db, activities, aiReviews, opportunityAnalyses } from "@/lib/db";
+import { db, activities, aiReviews, documents, opportunityAnalyses } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { logHistory } from "@/lib/history";
 import { daysUntil, newId, safeJsonParse } from "@/lib/utils";
@@ -53,7 +53,21 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
   };
 
   // 2) 규칙 기반 Fit 계산
-  const ctx = await getCareerContext(user.id);
+  // 공고문을 읽었는지에 따라 준비 시간이 '확인한 값'인지 '짐작한 값'인지가 갈린다
+  const [ctx, noticeDocs] = await Promise.all([
+    getCareerContext(user.id),
+    db
+      .select({ text: documents.extractedText })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.activityId, activityId),
+          eq(documents.userId, user.id),
+          eq(documents.category, "notice"),
+        ),
+      ),
+  ]);
+  const noticeKnown = noticeDocs.some((d) => (d.text ?? "").trim().length > 50);
   const fit = computeOpportunityFit({
     requirements,
     skillScores: ctx.skillScores,
@@ -61,6 +75,7 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
     template: ctx.template,
     // 마감이 코앞이면 적합도가 높아도 지금 시작할 일이 아니다
     daysUntilDeadline: daysUntil(activity.applyDeadline),
+    noticeKnown,
   });
 
   // 3) 저장 (활동당 최신 1건 유지)

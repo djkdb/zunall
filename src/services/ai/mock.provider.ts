@@ -206,7 +206,7 @@ export function guessOrganizer(text: string): string | null {
 export function guessActivityType(text: string): string {
   const rules: Array<[RegExp, string]> = [
     [/해커톤|hackathon/i, "hackathon"],
-    [/서포터즈|기자단|앰버서더/, "supporters"],
+    [/서포터즈|기자단|앰버서더|앰배서더|홍보대사/, "supporters"],
     [/인턴/, "intern"],
     [/신입\s*채용|경력\s*채용|채용\s*공고/, "recruit"],
     [/부트캠프|교육\s*과정|아카데미|캠프/, "education"],

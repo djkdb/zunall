@@ -64,13 +64,18 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: 앱 기동
+        shell: bash
         run: |
-          npx next start &
+          nohup npx next start > app.log 2>&1 &
           for i in $(seq 1 60); do
-            curl -sf -o /dev/null http://localhost:3000/login && exit 0
+            curl -sf -o /dev/null http://localhost:3000/login && break
             sleep 2
           done
-          echo "앱이 뜨지 않았습니다"; exit 1
+          # 화면이 뜨는 것만으론 부족하다 — DB 연결·마이그레이션까지 끝나야 테스트를 시작한다
+          HEALTH=$(curl -s http://localhost:3000/api/health)
+          echo "$HEALTH"
+          echo "::notice title=앱 상태::$(echo "$HEALTH" | head -c 600)"
+          echo "$HEALTH" | grep -q '"ok":true' || { echo "::error title=앱 상태::DB 가 준비되지 않았습니다"; tail -30 app.log; exit 1; }
       - name: 가짜 외부 서버 기동 (구글 OAuth · 공고 사이트 · 공고 목록)
         run: sh tests/mocks/start.sh
       # 묶음 목록은 package.json 의 test:e2e 하나에서만 관리한다.
@@ -87,5 +92,7 @@ jobs:
             grep -E "^❌|^ *- .*\(예외|Error:|Timeout [0-9]+ms" e2e.log | head -15
             echo "--- 마지막 출력 ---"
             tail -12 e2e.log
+            echo "--- 앱 로그 끝부분 ---"
+            grep -vE "NOTICE|42P07|parse_utilcmd|^\s*$" app.log | tail -15
           } | sed 's/^/::error title=E2E 실패::/'
 

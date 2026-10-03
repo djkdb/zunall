@@ -18,6 +18,7 @@ import {
 import { newId, safeJsonParse, todayStr } from "@/lib/utils";
 import { FINISHED_STATUSES, ONGOING_STATUSES } from "@/lib/constants";
 import type { SnapshotInput } from "@/services/career/growth";
+import { inferEvidenceFromActivities } from "@/services/career/activity-evidence";
 import { matchTemplate } from "@/services/career/templates";
 import {
   computeSkillScores,
@@ -30,6 +31,7 @@ import {
 import { computeGaps, type GapItem } from "@/services/career/gap";
 import { pickMission, type MissionCandidate } from "@/services/career/mission";
 import {
+  EVIDENCE_WEIGHTS,
   STUDY_FIELDS,
   type RoleTemplate,
   type StudyField,
@@ -82,7 +84,13 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
         .where(eq(careerEvidence.userId, userId))
         .orderBy(desc(careerEvidence.createdAt)),
       db
-        .select({ status: activities.status })
+        .select({
+          id: activities.id,
+          name: activities.name,
+          organizer: activities.organizer,
+          type: activities.type,
+          status: activities.status,
+        })
         .from(activities)
         .where(eq(activities.userId, userId)),
       db.select().from(careerActions).where(eq(careerActions.userId, userId)),
@@ -101,18 +109,26 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
     profile?.roleKey,
   );
 
+  // 직접 남긴 근거 + 등록한 활동에서 추정한 근거.
+  // 서포터즈를 하고 있는데 "마케팅 경험이 거의 없음"이라고 말하면 앱을 믿지 않는다.
+  const explicitEvidence = evidence.map((e) => ({
+    id: e.id,
+    kind: e.kind,
+    title: e.title,
+    skills: safeJsonParse<string[]>(e.skills, []),
+  }));
+  const alreadyEvidenced = new Set(
+    evidence.filter((e) => e.sourceType === "activity" && e.sourceId).map((e) => e.sourceId as string),
+  );
+  const inferredEvidence = inferEvidenceFromActivities(acts, alreadyEvidenced, EVIDENCE_WEIGHTS);
+
   const skillScores = computeSkillScores(
     skills.map((s) => ({
       name: s.name,
       category: s.category,
       selfScore: s.selfScore,
     })),
-    evidence.map((e) => ({
-      id: e.id,
-      kind: e.kind,
-      title: e.title,
-      skills: safeJsonParse<string[]>(e.skills, []),
-    })),
+    [...explicitEvidence, ...inferredEvidence],
   );
 
   const readiness = computeReadiness({

@@ -21,3 +21,19 @@ export function launchBrowser(options = {}) {
     process.env.CHROMIUM_PATH || (existsSync(LOCAL_CHROMIUM) ? LOCAL_CHROMIUM : undefined);
   return chromium.launch({ ...(executablePath ? { executablePath } : {}), ...options });
 }
+
+/**
+ * 실패한 순간 화면이 무엇을 보여주고 있었는지 한 줄로 요약한다.
+ * CI 로그 전문을 열 수 없어도, 주석으로 올라간 이 한 줄에 검증 메시지나
+ * 오류 문구가 보이면 원인을 바로 알 수 있다.
+ */
+export async function describePage(page) {
+  if (!page) return "(페이지 없음)";
+  const url = page.url();
+  const text = await page
+    .locator("body")
+    .innerText({ timeout: 3000 })
+    .then((t) => t.replace(/\s+/g, " ").trim().slice(0, 400))
+    .catch(() => "(본문을 읽지 못함)");
+  return `주소 ${url} | 화면: ${text}`;
+}

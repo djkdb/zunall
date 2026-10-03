@@ -55,6 +55,19 @@ const MIN_EFFICIENCY = 0.03;
  */
 const COSTLY_HOURS = 15;
 
+/**
+ * 이 이상이면 "가장 부족한 역량을 채우는 기회"로 본다 (격차 18점 이상인 역량을 훈련).
+ * 이런 기회는 적합도가 낮아도 말리지 않는다. 마케팅 근거가 부족한 사람에게
+ * 마케팅 공모전을 말리면, 근거가 부족해서 → 경험을 못 쌓고 → 계속 부족한 순환이 된다.
+ */
+const GROWTH_EFFECT = 1.5;
+
+/**
+ * 준비 시간이 낼 수 있는 시간의 이 배수를 넘어야 "확실히 모자람"으로 본다.
+ * 준비 시간은 추정이라, 10시간 대 9시간 같은 1시간 차이로 단정하지 않는다.
+ */
+const SHORT_MARGIN = 1.3;
+
 const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v));
 
@@ -65,6 +78,8 @@ export function computeOpportunityFit(params: {
   template: RoleTemplate;
   /** 지원 마감까지 남은 일수. 양수=남음, 0=오늘, 음수=지남, null=모름 */
   daysUntilDeadline?: number | null;
+  /** 공고문을 읽고 분석했는가. false 면 제출물·준비 시간이 이름만 보고 짐작한 값이다 */
+  noticeKnown?: boolean;
 }): OpportunityFitResult {
   const {
     requirements,
@@ -72,6 +87,7 @@ export function computeOpportunityFit(params: {
     gaps,
     template,
     daysUntilDeadline = null,
+    noticeKnown = true,
   } = params;
   const scoreByName = new Map(skillScores.map((s) => [s.name, s]));
   const templateSkills = new Set(template.requirements.map((r) => r.skill));
@@ -117,7 +133,14 @@ export function computeOpportunityFit(params: {
         points: pts,
         type: "warn",
       });
-      weaknesses.push(`${skillName} 경험이 거의 없음`);
+      // 관련 활동이 하나라도 있으면 "거의 없음"은 사실이 아니다.
+      // 서포터즈를 하는 사람에게 "마케팅 경험이 거의 없음"이라고 하면 앱을 믿지 않는다.
+      const related = detail?.contributions.filter((c) => c.points > 0).length ?? 0;
+      weaknesses.push(
+        related > 0
+          ? `${skillName} 관련 활동은 있지만 근거가 더 필요함 (현재 ${current})`
+          : `${skillName} 경험이 거의 없음`,
+      );
     }
   }
 
@@ -206,21 +229,7 @@ export function computeOpportunityFit(params: {
   /** 마감까지 낼 수 있는 시간. 마감을 모르면 0 (아래에서 마감 여부를 먼저 본다) */
   const availableHours = Math.max(0, daysUntilDeadline ?? 0) * HOURS_PER_DAY;
 
-  if (daysUntilDeadline !== null && prepHours > availableHours) {
-    // 시간이 물리적으로 모자란다. 적합도가 아무리 높아도 지금 시작하면 다른 준비를 밀어낸다.
-    recommendation = "skip";
-    alternative = alternativeAction;
-    recommendationReason =
-      daysUntilDeadline <= 0
-        ? "지원 마감이 이미 지났습니다."
-        : `마감까지 ${daysUntilDeadline}일(하루 ${HOURS_PER_DAY}시간이면 약 ${availableHours}시간)인데 준비에는 ${prepHours}시간이 필요합니다. 지금 시작하면 다른 준비를 밀어냅니다.`;
-    breakdown.push({
-      label: `마감까지 ${Math.max(0, daysUntilDeadline)}일 — 준비 시간이 모자람`,
-      points: 0,
-      type: "warn",
-    });
-    weaknesses.push("마감까지 남은 시간이 부족함");
-  } else if (score >= 68 && gapEffect >= 0.8) {
+  if (score >= 68 && gapEffect >= 0.8) {
     recommendation = "apply";
     recommendationReason = `적합도가 높고, 준비하면서 ${trainedGaps.join("·")} 부족한 부분도 함께 채울 수 있습니다.`;
   } else if (score >= 68 && efficiency >= MIN_EFFICIENCY) {
@@ -244,10 +253,51 @@ export function computeOpportunityFit(params: {
   } else if (score >= 52) {
     recommendation = "hold";
     recommendationReason = `약점(${weaknesses[0] ?? "근거 부족"})을 보강한 뒤 지원하면 훨씬 유리합니다.`;
+  } else if (gapEffect >= GROWTH_EFFECT && prepHours <= COSTLY_HOURS * 2) {
+    // 지금은 약하지만 가장 부족한 역량을 정확히 채우는 기회 — 말리면 안 되는 경우
+    recommendation = "apply";
+    recommendationReason = `지금 역량으로 수상을 노리기는 어렵지만, 가장 부족한 부분(${trainedGaps.join("·")})을 채울 수 있는 기회입니다. 수상보다 결과물을 남기는 것을 목표로 지원하세요.`;
   } else {
     recommendation = "skip";
     alternative = alternativeAction;
-    recommendationReason = `예상 준비 시간 ${prepHours}시간 대비 목표에 가까워지는 정도가 +${gapEffect}로 낮습니다. 지금은 목표에 더 직접적인 행동이 효과적입니다.`;
+    recommendationReason = `적합도가 낮고(${score}점), 준비 ${prepHours}시간 동안 목표에 가까워지는 정도도 +${gapEffect}로 작습니다. 지금은 목표에 더 직접적인 행동이 효과적입니다.`;
+  }
+
+  // ── 마감 보정 ── 판단을 다 내린 뒤, 마감까지 낼 수 있는 시간으로 한 번 더 거른다
+  if (daysUntilDeadline !== null) {
+    if (daysUntilDeadline < 0) {
+      recommendation = "skip";
+      alternative = alternativeAction;
+      recommendationReason = "지원 마감이 이미 지났습니다.";
+      breakdown.push({ label: "지원 마감이 지남", points: 0, type: "warn" });
+      weaknesses.push("지원 마감이 지남");
+    } else if (prepHours > availableHours) {
+      const clearlyShort = prepHours > availableHours * SHORT_MARGIN;
+      const timeText =
+        daysUntilDeadline === 0
+          ? `오늘이 마감인데 준비에는 ${prepHours}시간쯤 필요합니다.`
+          : `마감까지 ${daysUntilDeadline}일(하루 ${HOURS_PER_DAY}시간이면 약 ${availableHours}시간)인데 준비에는 ${prepHours}시간쯤 필요합니다.`;
+      const estimateNote = noticeKnown
+        ? ""
+        : " 공고문이 없어 준비 시간은 짐작한 값입니다 — 공고문을 넣으면 정확히 판단합니다.";
+      breakdown.push({
+        label: `마감까지 ${daysUntilDeadline}일 — ${clearlyShort ? "준비 시간이 모자람" : "빠듯함"}`,
+        points: 0,
+        type: "warn",
+      });
+      weaknesses.push(clearlyShort ? "마감까지 남은 시간이 부족함" : "마감까지 빠듯함");
+
+      if (clearlyShort && noticeKnown) {
+        // 공고문으로 확인한 준비 시간이 확실히 모자란다
+        recommendation = "skip";
+        alternative = alternativeAction;
+        recommendationReason = `${timeText} 지금 시작하면 다른 준비를 밀어냅니다.`;
+      } else if (recommendation === "apply") {
+        // 빠듯하거나 준비 시간이 짐작일 때는 말리지 않고 주의만 준다
+        recommendation = "hold";
+        recommendationReason = `${recommendationReason} 다만 ${timeText} 다른 마감과 겹치면 하나를 미루세요.${estimateNote}`;
+      }
+    }
   }
 
   return {

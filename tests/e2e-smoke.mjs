@@ -5,12 +5,13 @@
  * E2E 스모크 테스트: 회원가입 → 활동 생성 → 공고 업로드 → AI 공고 분석 →
  * 분석 결과 반영 → 제출물 생성 → 버전 업로드 → AI 평가 → 작업 생성 → 최종 검토
  */
-import { launchBrowser } from "./browser.mjs";
+import { launchBrowser, describePage } from "./browser.mjs";
 import fs from "node:fs";
 
 const BASE = "http://localhost:3000";
 const results = [];
 let browser;
+let page;
 
 function step(name, ok, detail = "") {
   results.push({ name, ok, detail });
@@ -79,7 +80,7 @@ fs.writeFileSync(proposalPath, proposal);
 
 try {
   browser = await launchBrowser();
-  const page = await browser.newPage();
+  page = await browser.newPage();
   page.setDefaultTimeout(20000);
 
   // 1. 회원가입
@@ -205,6 +206,7 @@ try {
   step("대시보드에 활동/일정 반영", dashText.includes("제로원"));
 } catch (e) {
   step("E2E 실행", false, e.message?.slice(0, 300));
+  console.log(`❌ 실패 시점 — ${await describePage(page)}`);
   console.error(e);
 } finally {
   await browser?.close();

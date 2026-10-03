@@ -3,6 +3,7 @@
 
 import {
   GAP_ACTION_TEMPLATES,
+  ROLE_GAP_ACTIONS,
   type GapActionTemplate,
   type RoleTemplate,
 } from "@/lib/career-constants";
@@ -32,10 +33,14 @@ export function computeGaps(
     if (gap <= 0) continue;
 
     const evidenceCount = detail?.evidenceCount ?? 0;
+    const inferredCount = detail?.inferredCount ?? 0;
+    // 등록한 활동이 있는데 "경험이 없다"고 하면 사실이 아니다
     const whyLacking =
-      evidenceCount === 0
-        ? `이 역량을 뒷받침하는 경험이 아직 없습니다.`
-        : `연결된 근거가 ${evidenceCount}개뿐이라 목표 수준(${req.target})에 비해 검증이 부족합니다.`;
+      evidenceCount > 0
+        ? `연결된 근거가 ${evidenceCount}개뿐이라 목표 수준(${req.target})에 비해 검증이 부족합니다.`
+        : inferredCount > 0
+          ? `관련 활동 ${inferredCount}건이 있지만 무엇을 했는지 남긴 기록이 없어 목표 수준(${req.target})만큼 인정되지 않습니다. 그 활동에서 한 일을 근거로 남기면 점수가 오릅니다.`
+          : `이 역량을 뒷받침하는 경험이 아직 없습니다.`;
 
     gaps.push({
       skill: req.skill,
@@ -44,7 +49,7 @@ export function computeGaps(
       gap,
       whyNeeded: req.why,
       whyLacking,
-      actions: GAP_ACTION_TEMPLATES[req.skill] ?? [
+      actions: ROLE_GAP_ACTIONS[template.key]?.[req.skill] ?? GAP_ACTION_TEMPLATES[req.skill] ?? [
         {
           title: `${req.skill} 관련 결과물 1개 만들기`,
           minutes: 180,

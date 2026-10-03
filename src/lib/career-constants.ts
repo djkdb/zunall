@@ -480,6 +480,20 @@ export interface GapActionTemplate {
   reason: string;
 }
 
+/**
+ * 직무에 따라 같은 역량이라도 해야 할 일이 다르다.
+ * 디자이너에게 Frontend 는 "구현 이해도"인데, 공통 행동은 개발자용이라
+ * 산업디자인과 학생에게 "README 에 기술 설명 보강하기"를 권하고 있었다.
+ */
+export const ROLE_GAP_ACTIONS: Record<string, Partial<Record<string, GapActionTemplate[]>>> = {
+  designer: {
+    Frontend: [
+      { title: "시안 1개를 HTML·CSS로 직접 옮겨 보기 (반응형까지)", minutes: 180, effect: 3, reason: "구현 제약을 아는 디자이너는 개발자와 말이 통합니다." },
+      { title: "개발자에게 넘길 핸드오프 문서(간격·상태·인터랙션) 만들기", minutes: 120, effect: 2, reason: "구현 이해도를 가장 직접적으로 보여주는 산출물입니다." },
+    ],
+  },
+};
+
 export const GAP_ACTION_TEMPLATES: Record<string, GapActionTemplate[]> = {
   "글쓰기": [
     { title: "내 경험 하나를 1,000자 글로 정리해 공개하기", minutes: 90, effect: 4, reason: "글은 그 자체로 검증 가능한 근거가 됩니다." },
