@@ -114,3 +114,18 @@ export function safeJsonParse<T>(text: string | null | undefined, fallback: T): 
 export function truncate(s: string, max: number): string {
   return s.length > max ? s.slice(0, max) + "…" : s;
 }
+
+/**
+ * 사용자가 입력한 주소를 링크로 그려도 되는지.
+ * http/https 만 통과시킨다 — "javascript:" 같은 주소가 공유 페이지에 링크로
+ * 나가면 그 페이지를 연 다른 사람의 브라우저에서 실행될 수 있다.
+ */
+export function safeHttpUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}

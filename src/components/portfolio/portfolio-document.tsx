@@ -1,8 +1,9 @@
 import { and, desc, eq } from "drizzle-orm";
-import { db, users, activities, retrospectives, careerProfiles, careerGoals } from "@/lib/db";
+import { db, users, activities, retrospectives, careerProfiles, careerGoals, careerEvidence } from "@/lib/db";
 import { CaveroMark } from "@/components/brand/logo";
 import { ACTIVITY_TYPES, ACTIVITY_STATUSES, type ActivityType, type ActivityStatus } from "@/lib/constants";
-import { formatDate } from "@/lib/utils";
+import { formatDate, safeHttpUrl, safeJsonParse } from "@/lib/utils";
+import { EVIDENCE_KINDS, type EvidenceKind } from "@/lib/career-constants";
 
 /**
  * 포트폴리오 본문.
@@ -14,7 +15,7 @@ export async function PortfolioDocument({ userId }: { userId: string }) {
   const user = { name: owner.name };
 
   // 서로 독립적인 조회 — 한 번에 보낸다.
-  const [acts, retros, profileRows, goalRows] = await Promise.all([
+  const [acts, retros, profileRows, goalRows, evidenceRows] = await Promise.all([
     db
       .select()
       .from(activities)
@@ -27,6 +28,11 @@ export async function PortfolioDocument({ userId }: { userId: string }) {
       .from(careerGoals)
       .where(and(eq(careerGoals.userId, userId), eq(careerGoals.isActive, 1)))
       .limit(1),
+    db
+      .select()
+      .from(careerEvidence)
+      .where(eq(careerEvidence.userId, userId))
+      .orderBy(desc(careerEvidence.createdAt)),
   ]);
   const retroByActivity = new Map(retros.map((r) => [r.activityId, r]));
   const profile = profileRows[0];
@@ -43,6 +49,14 @@ export async function PortfolioDocument({ userId }: { userId: string }) {
       a.status === "won",
   );
 
+  // 커리어에 남긴 근거(프로젝트·수상·자격증 등).
+  // 개발자·디자이너에게 포트폴리오의 핵심은 프로젝트인데, 여기엔 활동 회고만 나와서
+  // 공유 링크를 만들어도 "아직 기록이 없습니다"만 보였다.
+  // 활동에서 가져온 근거는 아래 활동 항목과 겹치므로 뺀다.
+  const shownActivityIds = new Set(items.map((a) => a.id));
+  const projects = evidenceRows
+    .filter((e) => !(e.sourceType === "activity" && e.sourceId && shownActivityIds.has(e.sourceId)))
+    .sort((a, b) => kindRank(a.kind) - kindRank(b.kind));
 
   return (
       <article className="rounded-lg border bg-card p-6 print:border-0 print:p-0 print:shadow-none">
@@ -60,11 +74,57 @@ export async function PortfolioDocument({ userId }: { userId: string }) {
           {profile?.summary && <p className="mt-3 text-sm leading-relaxed">{profile.summary}</p>}
         </header>
 
-        {items.length === 0 ? (
+        {projects.length > 0 && (
+          <section className="mb-8">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              프로젝트와 기록
+            </h3>
+            <ul className="space-y-4">
+              {projects.map((item) => {
+                const skills = safeJsonParse<string[]>(item.skills, []);
+                // 공유 링크로 남에게 보이는 페이지다 — http/https 만 링크로 그린다
+                const link = safeHttpUrl(item.url);
+                return (
+                  <li key={item.id} className="break-inside-avoid">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <h4 className="text-base font-semibold">{item.title}</h4>
+                      <span className="text-xs text-muted-foreground">
+                        {EVIDENCE_KINDS[item.kind as EvidenceKind] ?? "기록"}
+                      </span>
+                    </div>
+                    {item.description && <p className="mt-1 text-sm leading-relaxed">{item.description}</p>}
+                    {link && (
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        className="mt-1 inline-block break-all text-xs text-primary hover:underline print:text-foreground"
+                      >
+                        {link}
+                      </a>
+                    )}
+                    {skills.length > 0 && (
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        {skills.map((skill) => `#${skill}`).join("  ")}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {projects.length > 0 && items.length > 0 && (
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">활동</h3>
+        )}
+
+        {items.length === 0 && projects.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            아직 기록이 없습니다. 활동 상세 → 기록 탭에서 회고와 성과를 남기면 여기 모입니다.
+            아직 기록이 없습니다. 커리어에서 프로젝트·수상을 근거로 남기거나, 활동 상세 → 기록 탭에서 회고를
+            남기면 여기 모입니다.
           </p>
-        ) : (
+        ) : items.length === 0 ? null : (
           <ol className="space-y-6">
             {items.map((activity) => {
               const retro = retroByActivity.get(activity.id);
@@ -133,4 +193,11 @@ export async function PortfolioDocument({ userId }: { userId: string }) {
         </footer>
       </article>
   );
+}
+
+/** 포트폴리오에서 먼저 보여줄 근거 종류 */
+const KIND_ORDER = ["award", "project", "work", "portfolio", "github", "certificate", "activity", "content", "education", "etc"];
+function kindRank(kind: string): number {
+  const index = KIND_ORDER.indexOf(kind);
+  return index === -1 ? KIND_ORDER.length : index;
 }

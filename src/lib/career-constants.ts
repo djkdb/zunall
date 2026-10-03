@@ -419,7 +419,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     key: "creator",
     label: "크리에이터 / 영상·디자인",
     field: "arts",
-    keywords: ["크리에이터", "영상", "유튜브", "편집자", "포토그래퍼", "촬영", "아트"],
+    keywords: ["크리에이터", "영상", "유튜브", "편집자", "포토그래퍼", "촬영", "아트", "콘텐츠"],
     requirements: [
       { skill: "영상 / 사진", target: 75, why: "결과물의 완성도" },
       { skill: "콘텐츠 제작", target: 75, why: "기획부터 배포까지" },

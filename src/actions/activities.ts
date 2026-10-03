@@ -25,6 +25,7 @@ import { logHistory } from "@/lib/history";
 import { deleteStoredFile } from "@/lib/storage";
 import { newId } from "@/lib/utils";
 import { activitySchema, portfolioSchema, type ActivityInput, type PortfolioInput } from "@/lib/validators";
+import { LOST_STAGES, type LostStage } from "@/services/score/outcome";
 import {
   ACTIVITY_COLORS,
   ACTIVITY_STATUSES,
@@ -212,7 +213,8 @@ export async function updateActivityStatus(activityId: string, status: string): 
   if (activity.status === status) return { ok: true };
 
   await db.update(activities)
-    .set({ status, updatedAt: Date.now() })
+    // 탈락이 아니게 되면 적어 둔 탈락 단계도 의미가 없어진다
+    .set({ status, ...(status === "lost" ? {} : { lostStage: null }), updatedAt: Date.now() })
     .where(eq(activities.id, activityId));
 
   await logHistory(
@@ -227,6 +229,27 @@ export async function updateActivityStatus(activityId: string, status: string): 
   revalidatePath("/activities");
   revalidatePath(`/activities/${activityId}`);
   revalidatePath("/");
+  return { ok: true };
+}
+
+/** 탈락한 지원이 어느 단계에서 끝났는지 적는다. 빈 값이면 지운다. */
+export async function setLostStage(activityId: string, stage: string): Promise<ActionResult> {
+  const user = await requireUser();
+  const activity = await getOwnedActivity(activityId, user.id);
+  if (!activity) return { ok: false, error: "활동을 찾을 수 없습니다." };
+  if (activity.status !== "lost") return { ok: false, error: "탈락한 활동에만 단계를 적을 수 있습니다." };
+  if (stage !== "" && !(stage in LOST_STAGES)) return { ok: false, error: "잘못된 단계입니다." };
+
+  const next = stage === "" ? null : stage;
+  if (activity.lostStage === next) return { ok: true };
+
+  await db.update(activities)
+    .set({ lostStage: next, updatedAt: Date.now() })
+    .where(and(eq(activities.id, activityId), eq(activities.userId, user.id)));
+
+  if (next) await logHistory(user.id, activityId, "status", `탈락 단계: ${LOST_STAGES[next as LostStage]}`);
+  revalidatePath(`/activities/${activityId}`);
+  revalidatePath("/stats");
   return { ok: true };
 }
 

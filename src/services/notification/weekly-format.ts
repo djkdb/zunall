@@ -45,8 +45,8 @@ export function buildWeeklyReport(input: {
     const changed = scoreWeekAgo !== null && scoreWeekAgo !== scoreLatest;
     lines.push(
       changed
-        ? `Career Score ${scoreWeekAgo} → ${scoreLatest} (최근 30일)`
-        : `Career Score ${scoreLatest}`,
+        ? `커리어 점수 ${scoreWeekAgo} → ${scoreLatest} (최근 30일)`
+        : `커리어 점수 ${scoreLatest}`,
     );
   }
 

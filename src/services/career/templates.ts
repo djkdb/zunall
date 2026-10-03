@@ -22,17 +22,26 @@ export function matchTemplate(goal: GoalLike | null, roleKey?: string | null): R
   }
   if (!goal) return general;
 
-  const haystack = [goal.name, ...goal.targetRoles].join(" ").toLowerCase();
-  let best: { template: RoleTemplate; hits: number } | null = null;
+  return templateHits([goal.name, ...goal.targetRoles].join(" "))[0]?.template ?? general;
+}
 
-  for (const template of ROLE_TEMPLATES) {
-    if (template.key === "general") continue;
-    const hits = template.keywords.filter((k) => haystack.includes(k.toLowerCase())).length;
-    if (hits > 0 && (!best || hits > best.hits)) {
-      best = { template, hits };
-    }
-  }
-  return best?.template ?? general;
+/**
+ * 키워드가 맞는 직무를 많이 맞은 순서로 (같으면 목록 순서).
+ * "pr", "ae", "ib" 같은 짧은 영문 키워드는 단어 단위로만 맞춘다 —
+ * 그냥 포함 여부로 보면 "product", "library" 안에서도 걸렸다.
+ */
+export function templateHits(text: string): { template: RoleTemplate; hits: number }[] {
+  const haystack = text.toLowerCase();
+  const matches = (keyword: string) => {
+    const k = keyword.toLowerCase();
+    if (/^[a-z&]{1,4}$/.test(k)) return new RegExp(`(^|[^a-z])${k}([^a-z]|$)`).test(haystack);
+    return haystack.includes(k);
+  };
+
+  return ROLE_TEMPLATES.filter((t) => t.key !== "general")
+    .map((template) => ({ template, hits: template.keywords.filter(matches).length }))
+    .filter((m) => m.hits > 0)
+    .sort((a, b) => b.hits - a.hits);
 }
 
 /** 계열에 해당하는 희망 직무 목록 (계열이 없으면 전체). general 은 항상 마지막. */

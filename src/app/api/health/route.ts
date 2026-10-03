@@ -214,6 +214,8 @@ export async function GET(request: Request) {
       "career_profiles.study_field",
       "career_profiles.role_key",
       "users.terms_agreed_at",
+      // 활동 목록 조회 전체가 이 컬럼을 읽는다 (017-lost-stage.sql)
+      "activities.lost_stage",
     ];
     report.missingColumns = REQUIRED_COLUMNS.filter((c) => !columns.has(c));
     if (report.missingColumns.length > 0) {

@@ -126,6 +126,8 @@ export const activities = pgTable(
     achievement: text("achievement"),
     learned: text("learned"),
     skills: text("skills"),
+    // 탈락했다면 어느 단계에서 (document | test | interview | final)
+    lostStage: text("lost_stage"),
     createdAt: epochMs("created_at").notNull(),
     updatedAt: epochMs("updated_at").notNull(),
   },

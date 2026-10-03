@@ -157,6 +157,36 @@ export async function saveStudyProfile(input: StudyProfileInput): Promise<Action
   return { ok: true };
 }
 
+/**
+ * 희망 직무만 정한다 (진로 탐색 카드의 "이 직무로 정하기").
+ * saveStudyProfile 은 계열·전공까지 함께 덮어쓰므로 여기서 쓰면 안 된다.
+ */
+export async function chooseRole(roleKey: string): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!ROLE_TEMPLATES.some((t) => t.key === roleKey && t.key !== "general")) {
+    return { ok: false, error: "알 수 없는 직무입니다." };
+  }
+
+  const existing = (await db
+    .select({ id: careerProfiles.id })
+    .from(careerProfiles)
+    .where(eq(careerProfiles.userId, user.id))
+    .limit(1))[0];
+  if (existing) {
+    await db
+      .update(careerProfiles)
+      .set({ roleKey, updatedAt: Date.now() })
+      .where(and(eq(careerProfiles.id, existing.id), eq(careerProfiles.userId, user.id)));
+  } else {
+    await db.insert(careerProfiles).values({ id: newId(), userId: user.id, roleKey, updatedAt: Date.now() });
+  }
+
+  await snapshot(user.id);
+  revalidateCareer();
+  revalidatePath("/settings");
+  return { ok: true };
+}
+
 export async function saveProfileBasics(input: ProfileInput): Promise<ActionResult> {
   const user = await requireUser();
   const parsed = profileSchema.safeParse(input);
@@ -283,7 +313,11 @@ const evidenceSchema = z.object({
   kind: z.enum(Object.keys(EVIDENCE_KINDS) as [string, ...string[]]),
   title: z.string().trim().min(1, "제목을 입력해주세요.").max(150),
   description: z.string().max(1000).optional(),
-  url: z.string().max(500).optional(),
+  url: z
+    .string()
+    .max(500)
+    .optional()
+    .refine((v) => !v?.trim() || /^https?:\/\//i.test(v.trim()), "링크는 http:// 또는 https:// 로 시작해야 합니다."),
   skillsText: z.string().max(300).optional(),
 });
 export type EvidenceInput = z.input<typeof evidenceSchema>;
@@ -372,7 +406,7 @@ export async function acceptMission(input: MissionInput): Promise<ActionResult> 
       userId: user.id,
       activityId: null,
       title: data.title,
-      description: `[Career Mission · ${data.skill}] ${data.reason ?? ""}\n예상 효과: Career Score +${data.expectedEffect} · 예상 소요: ${Math.round(data.expectedMinutes / 60 * 10) / 10}시간`,
+      description: `[커리어 한 걸음 · ${data.skill}] ${data.reason ?? ""}\n예상 효과: 커리어 점수 +${data.expectedEffect} · 예상 소요: ${Math.round(data.expectedMinutes / 60 * 10) / 10}시간`,
       dueDate,
       priority: "high",
       status: "todo",

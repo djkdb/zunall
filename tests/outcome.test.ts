@@ -41,7 +41,7 @@ check("전체 합격률 계산", many.overallWinRate === 50, `${many.overallWinR
 check("적합도 구간별 집계", many.byFit.find((b) => b.label === "적합도 80+")?.won === 3);
 check("적합도 높은 쪽이 낫다는 인사이트", many.insights.some((i) => i.includes("적합도 80 이상")), many.insights[0]?.slice(0, 40));
 check("비추천 판정 인사이트", many.insights.some((i) => i.includes("지원 비추천")), "");
-check("표본 충분하면 안내 문구 없음", many.notice === null);
+check("표본 충분하면 표본 부족 안내 없음", !(many.notice ?? "").includes("쌓이면"), many.notice ?? "");
 
 // 미분석 활동도 별도 구간으로 보인다
 const mixed = computeOutcomeLearning([
@@ -57,6 +57,70 @@ const typed = computeOutcomeLearning(
   { intern: "인턴" },
 );
 check("유형 라벨 반영", typed.byType[0].label === "인턴", typed.byType[0].label);
+
+// 페르소나 5(다은): 인턴만 지원, 탈락 5 · 대기 2 — "어디서 계속 떨어지는 거지?"
+const daeunRows = [
+  ...["document", "document", "document", "document", "interview"].map((lostStage, i) =>
+    row({ name: `인턴 ${i + 1}`, type: "intern", status: "lost", lostStage }),
+  ),
+  row({ type: "intern", status: "waiting" }),
+  row({ type: "intern", status: "waiting" }),
+];
+const daeun = computeOutcomeLearning(daeunRows, { intern: "인턴" });
+check(
+  "탈락 단계 집계",
+  daeun.lostByStage.length === 2 &&
+    daeun.lostByStage[0].label === "서류" &&
+    daeun.lostByStage[0].count === 4 &&
+    daeun.lostStageUnknown === 0,
+  JSON.stringify(daeun.lostByStage),
+);
+check(
+  "서류에서 막히면 서류부터 하라고 말함",
+  daeun.insights.some((i) => i.includes("탈락 5건 중 4건이 서류") && i.includes("자기소개서")),
+  daeun.insights.join(" / ").slice(0, 80),
+);
+check(
+  "유형이 하나뿐이면 0% 유형을 '가장 좋았던 유형'으로 보여주지 않음",
+  !daeun.insights.some((i) => i.includes("0%")),
+  daeun.insights.join(" / ").slice(0, 80),
+);
+
+// 단계를 안 적었으면 적으라고 안내하고, 바로 갈 수 있는 활동을 준다
+const unstaged = computeOutcomeLearning([
+  row({ name: "A사 인턴", status: "lost" }),
+  row({ name: "B사 인턴", status: "lost" }),
+  row({ name: "C사 인턴", status: "lost" }),
+]);
+check(
+  "단계 미기록 안내",
+  unstaged.notice?.includes("어느 단계였는지") === true && unstaged.lostWithoutStage.length === 3,
+  unstaged.notice ?? "",
+);
+check(
+  "단계 미기록이면 단계 결론을 내지 않음",
+  !unstaged.insights.some((i) => i.includes("단계였습니다")),
+);
+
+// 한 건만 적었으면 단정하지 않는다
+const oneStaged = computeOutcomeLearning([
+  row({ status: "lost", lostStage: "interview" }),
+  row({ status: "won" }),
+  row({ status: "won" }),
+]);
+check("단계 기록이 1건이면 결론 없음", !oneStaged.insights.some((i) => i.includes("단계였습니다")));
+
+// 잘못된 단계 값은 무시
+const bogus = computeOutcomeLearning([row({ status: "lost", lostStage: "<script>" })]);
+check("모르는 단계 값은 미기록으로 취급", bogus.lostByStage.length === 0 && bogus.lostStageUnknown === 1);
+
+// 단계가 흩어져 있으면(절반 미만) 단정하지 않는다
+const spread = computeOutcomeLearning([
+  row({ status: "lost", lostStage: "document" }),
+  row({ status: "lost", lostStage: "test" }),
+  row({ status: "lost", lostStage: "interview" }),
+]);
+check("단계가 흩어지면 결론 없음", !spread.insights.some((i) => i.includes("단계였습니다")));
 
 console.log(failed === 0 ? "\n모든 테스트 통과" : `\n${failed}개 실패`);
 process.exit(failed === 0 ? 0 : 1);

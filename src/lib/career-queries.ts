@@ -20,6 +20,7 @@ import { FINISHED_STATUSES, ONGOING_STATUSES } from "@/lib/constants";
 import type { SnapshotInput } from "@/services/career/growth";
 import { inferEvidenceFromActivities } from "@/services/career/activity-evidence";
 import { matchTemplate } from "@/services/career/templates";
+import { exploreCandidates, isExploringGoal, type ExploreCandidate } from "@/services/career/explore";
 import {
   computeSkillScores,
   type SkillScoreDetail,
@@ -51,6 +52,13 @@ export interface CareerContext {
   /** 진행 중(accepted)인 미션 액션 */
   activeAction: typeof careerActions.$inferSelect | null;
   onboarded: boolean;
+  /**
+   * 진로를 아직 정하지 못했다 ("잘 모르겠어요", "~쪽?") — 직무를 직접 고르지 않은 경우만.
+   * 이때 template 은 임시 기준이고, 화면은 점수 대신 후보 비교를 보여준다.
+   */
+  exploring: boolean;
+  /** 탐색 중일 때 나란히 비교할 후보 직무 (아니면 빈 배열) */
+  candidates: ExploreCandidate[];
 }
 
 /** 저장된 값이 아는 계열일 때만 돌려준다 (알 수 없는 값이면 무시). */
@@ -155,7 +163,24 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
   const excludeTitles = new Set(
     actions.filter((a) => a.status !== "suggested").map((a) => a.title),
   );
-  const mission = pickMission(gaps, excludeTitles);
+  const studyField = parseStudyField(profile?.studyField);
+  const exploring = !profile?.roleKey && isExploringGoal(goal?.name);
+  const candidates = exploring && goal ? exploreCandidates(goal.name, studyField, skillScores) : [];
+
+  // 정하지 못한 사람에게 임시 기준의 격차를 메우라고 하지 않는다 — 후보를 작게 먼저 해 보게 한다
+  const experiment = candidates.find((c) => !excludeTitles.has(c.experiment.title));
+  const mission: MissionCandidate | null = exploring
+    ? experiment
+      ? {
+          skill: "진로 탐색",
+          title: experiment.experiment.title,
+          reason: experiment.experiment.why,
+          expectedEffect: 0,
+          expectedMinutes: experiment.experiment.minutes,
+          why: `'${experiment.label}' 쪽이 나에게 맞는지 알아보는 작은 실험입니다. ${experiment.experiment.why}`,
+        }
+      : null
+    : pickMission(gaps, excludeTitles);
   const activeAction =
     actions
       .filter((a) => a.status === "accepted")
@@ -169,10 +194,12 @@ export async function getCareerContext(userId: string): Promise<CareerContext> {
     evidence,
     readiness,
     gaps,
-    studyField: parseStudyField(profile?.studyField),
+    studyField,
     mission,
     activeAction,
     onboarded: !!profile?.onboardedAt && !!goal,
+    exploring,
+    candidates,
   };
 }
 

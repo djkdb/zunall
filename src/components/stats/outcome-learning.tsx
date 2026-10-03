@@ -1,3 +1,5 @@
+import * as React from "react";
+import Link from "next/link";
 import { TrendingUp, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +51,8 @@ export function OutcomeLearningCard({ learning }: { learning: OutcomeLearning })
           </ul>
         )}
 
+        <LostStages learning={learning} />
+
         <BucketTable title="적합도 구간별" buckets={learning.byFit} />
         {learning.byRecommendation.length > 0 && (
           <BucketTable title="AI 판정별" buckets={learning.byRecommendation} />
@@ -56,6 +60,39 @@ export function OutcomeLearningCard({ learning }: { learning: OutcomeLearning })
         <BucketTable title="활동 유형별" buckets={learning.byType} />
       </CardContent>
     </Card>
+  );
+}
+
+/** 어디서 떨어지는가 — 단계별 탈락 수와, 아직 단계를 안 적은 탈락으로 가는 바로가기 */
+function LostStages({ learning }: { learning: OutcomeLearning }) {
+  if (learning.lostByStage.length === 0 && learning.lostWithoutStage.length === 0) return null;
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-semibold text-muted-foreground">탈락 단계</p>
+      {learning.lostByStage.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5">
+          {learning.lostByStage.map((s) => (
+            <li key={s.stage} className="rounded-md border px-2.5 py-1 text-sm">
+              {s.label} <span className="font-semibold">{s.count}건</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {learning.lostWithoutStage.length > 0 && (
+        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+          단계를 아직 적지 않은 탈락 {learning.lostStageUnknown}건:{" "}
+          {learning.lostWithoutStage.map((a, i) => (
+            <React.Fragment key={a.activityId}>
+              {i > 0 && ", "}
+              <Link href={`/activities/${a.activityId}`} className="text-primary hover:underline">
+                {a.name}
+              </Link>
+            </React.Fragment>
+          ))}
+          {learning.lostStageUnknown > learning.lostWithoutStage.length && " 등"}
+        </p>
+      )}
+    </div>
   );
 }
 

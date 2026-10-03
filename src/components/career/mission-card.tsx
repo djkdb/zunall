@@ -9,14 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { MissionCandidate } from "@/services/career/mission";
 
-/** 🔥 Today's Career Mission — 수락하면 Task가 생성된다 */
+/** 오늘의 한 걸음 — 수락하면 할 일이 생긴다 */
 export function MissionCard({
   mission,
   activeTask,
+  deferredBy,
 }: {
   mission: MissionCandidate | null;
   /** 이미 진행 중인 미션 (career_actions accepted) */
   activeTask: { title: string; taskId: string | null } | null;
+  /** 마감이 코앞인 활동이 있으면 그 이름 — 이 추천은 그 뒤로 미룬다 */
+  deferredBy?: string | null;
 }) {
   const router = useRouter();
   const [pending, setPending] = React.useState<"accept" | "dismiss" | null>(null);
@@ -48,8 +51,13 @@ export function MissionCard({
     <Card className="border-primary/40 bg-gradient-to-br from-accent/60 to-card">
       <CardContent className="p-5">
         <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary">
-          <Flame className="h-4 w-4" /> 오늘의 한 걸음
+          <Flame className="h-4 w-4" /> {deferredBy ? "마감 뒤에 할 한 걸음" : "오늘의 한 걸음"}
         </p>
+        {deferredBy && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            오늘은 {deferredBy} 마감을 먼저 끝내세요. 이건 그다음입니다.
+          </p>
+        )}
 
         {activeTask ? (
           <div className="mt-2">
@@ -71,11 +79,13 @@ export function MissionCard({
           <div className="mt-2">
             <p className="text-base font-semibold leading-snug">{mission.title}</p>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span>
-                예상 효과 <b className="text-emerald-600 dark:text-emerald-400">+{mission.expectedEffect} 커리어 점수</b>
-              </span>
+              {mission.expectedEffect > 0 && (
+                <span>
+                  예상 효과 <b className="text-emerald-600 dark:text-emerald-400">+{mission.expectedEffect} 커리어 점수</b>
+                </span>
+              )}
               <span>예상 소요 {hours}시간</span>
-              <span>관련 역량: {mission.skill}</span>
+              <span>{mission.expectedEffect > 0 ? `관련 역량: ${mission.skill}` : mission.skill}</span>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               <b className="text-foreground/80">이 행동을 추천한 이유</b> — {mission.why}

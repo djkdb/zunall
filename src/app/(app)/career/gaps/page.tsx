@@ -29,6 +29,15 @@ export default async function GapsPage() {
           목표 &ldquo;{ctx.goal?.name ?? "미설정"}&rdquo; ({ctx.template.label} 기준) 대비 부족한
           역량과, 그 격차를 줄이는 가장 효과적인 행동입니다.
         </p>
+        {ctx.exploring && (
+          <p className="mt-2 rounded-md bg-secondary px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+            아직 진로를 정하는 중이라 &lsquo;{ctx.template.label}&rsquo; 기준을 임시로 적용한 결과입니다. 판정이 아니라
+            참고용입니다.{" "}
+            <Link href="/career" className="text-primary hover:underline">
+              후보 직무 비교하기
+            </Link>
+          </p>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

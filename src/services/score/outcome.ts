@@ -17,6 +17,34 @@ export interface OutcomeInput {
   fitScore: number | null;
   /** apply | hold | skip (분석하지 않았으면 null) */
   recommendation: string | null;
+  /** 탈락했다면 어느 단계에서 (모르면 null) */
+  lostStage?: string | null;
+}
+
+/**
+ * 탈락 단계. "탈락" 하나로만 기록하면 "어디서 계속 떨어지는지"에 답할 수 없다.
+ * 서류에서 떨어지는 사람과 면접에서 떨어지는 사람은 해야 할 일이 완전히 다르다.
+ */
+export const LOST_STAGES = {
+  document: "서류",
+  test: "과제·코테·인적성",
+  interview: "면접",
+  final: "최종",
+} as const;
+export type LostStage = keyof typeof LOST_STAGES;
+
+/** 그 단계에서 막힐 때 먼저 할 일 */
+const STAGE_ADVICE: Record<LostStage, string> = {
+  document: "면접 준비보다 자기소개서·이력서를 먼저 다듬는 편이 효과적입니다. 문항 은행에서 같은 유형의 답변을 나란히 비교해 보세요.",
+  test: "과제·코딩테스트·인적성 대비가 먼저입니다. 떨어진 공고의 유형을 모아 같은 형식으로 연습해 보세요.",
+  interview: "서류는 통과하고 있습니다. 활동마다 예상 질문을 만들고 답변을 적어 두는 면접 준비가 먼저입니다.",
+  final: "최종까지는 가고 있습니다. 역량보다는 '왜 이 회사인가'를 설명하는 지원 동기를 다듬어 보세요.",
+};
+
+export interface StageBreakdown {
+  stage: LostStage;
+  label: string;
+  count: number;
 }
 
 export interface OutcomeBucket {
@@ -38,6 +66,12 @@ export interface OutcomeLearning {
   byFit: OutcomeBucket[];
   byRecommendation: OutcomeBucket[];
   byType: OutcomeBucket[];
+  /** 탈락한 지원의 단계별 수 (단계를 적은 것만) */
+  lostByStage: StageBreakdown[];
+  /** 탈락했지만 단계를 적지 않은 수 */
+  lostStageUnknown: number;
+  /** 단계를 적지 않은 탈락 (바로 가서 적을 수 있도록 최대 5건) */
+  lostWithoutStage: { activityId: string; name: string }[];
   /** 데이터로 확인된 사실만 문장으로. 없으면 빈 배열 */
   insights: string[];
   /** 아직 결론을 못 내는 이유 */
@@ -137,7 +171,38 @@ export function computeOutcomeLearning(
     }
   }
 
-  const bestType = byType.filter((b) => b.enough && b.winRate !== null).sort((a, b) => (b.winRate ?? 0) - (a.winRate ?? 0))[0];
+  // 탈락 단계 — "어디서 막히는가"
+  const lostRows = applied.filter((r) => r.status === "lost");
+  const stageCounts = new Map<LostStage, number>();
+  for (const row of lostRows) {
+    if (row.lostStage && row.lostStage in LOST_STAGES) {
+      const stage = row.lostStage as LostStage;
+      stageCounts.set(stage, (stageCounts.get(stage) ?? 0) + 1);
+    }
+  }
+  const lostByStage: StageBreakdown[] = (Object.keys(LOST_STAGES) as LostStage[])
+    .filter((stage) => stageCounts.has(stage))
+    .map((stage) => ({ stage, label: LOST_STAGES[stage], count: stageCounts.get(stage)! }));
+  const unstaged = lostRows.filter((r) => !(r.lostStage && r.lostStage in LOST_STAGES));
+  const lostStageUnknown = unstaged.length;
+  const lostWithoutStage = unstaged.slice(0, 5).map((r) => ({ activityId: r.activityId, name: r.name }));
+  const knownLost = lostRows.length - lostStageUnknown;
+  const topStage = [...lostByStage].sort((a, b) => b.count - a.count)[0];
+  // 단계를 적은 탈락이 2건 이상이고, 한 단계에 절반 이상 몰렸을 때만 단정한다
+  if (topStage && knownLost >= 2 && topStage.count * 2 >= knownLost) {
+    insights.push(
+      `탈락 ${knownLost}건 중 ${topStage.count}건이 ${topStage.label} 단계였습니다. ${STAGE_ADVICE[topStage.stage]}`,
+    );
+  }
+
+  // 가장 결과가 좋았던 유형 — 비교할 유형이 둘 이상이고 실제로 붙은 적이 있을 때만.
+  // 유형이 하나뿐이면 "인턴 유형에서 0/5건 합격(0%)"이 '최고'로 뽑혀, 지친 사람에게
+  // 0%를 한 번 더 보여주는 꼴이 됐다.
+  const comparableTypes = byType.filter((b) => b.enough && b.winRate !== null);
+  const bestType =
+    comparableTypes.length >= 2
+      ? comparableTypes.sort((a, b) => (b.winRate ?? 0) - (a.winRate ?? 0)).find((b) => (b.winRate ?? 0) > 0)
+      : undefined;
   if (bestType) {
     insights.push(
       `${bestType.label} 유형에서 ${bestType.won}/${bestType.won + bestType.lost}건 합격(${bestType.winRate}%)했습니다.`,
@@ -154,7 +219,9 @@ export function computeOutcomeLearning(
   const notice =
     decided < MIN_SAMPLE
       ? `결과가 기록된 지원이 ${decided}건입니다. ${MIN_SAMPLE}건 이상 쌓이면 어떤 조건에서 결과가 좋았는지 알려드립니다.`
-      : null;
+      : lostStageUnknown >= 2 && knownLost < 2
+        ? `탈락한 지원 ${lostStageUnknown}건에 어느 단계였는지 적으면, 어디서 막히는지와 먼저 할 일을 알려드립니다.`
+        : null;
 
   return {
     totalApplied: applied.length,
@@ -163,6 +230,9 @@ export function computeOutcomeLearning(
     byFit,
     byRecommendation,
     byType,
+    lostByStage,
+    lostStageUnknown,
+    lostWithoutStage,
     insights,
     notice,
   };

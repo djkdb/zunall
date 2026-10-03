@@ -22,6 +22,14 @@ import {
 } from "@/lib/constants";
 import { cn, ddayColorClass, ddayDotClass, ddayLabel } from "@/lib/utils";
 
+/** 대학생 공고가 많이 모이는 곳 (바깥 사이트 — 새 창으로 연다) */
+const NOTICE_SITES = [
+  { name: "링커리어", url: "https://linkareer.com", what: "대외활동·공모전·인턴" },
+  { name: "위비티", url: "https://www.wevity.com", what: "공모전" },
+  { name: "씽굿", url: "https://www.thinkcontest.com", what: "공모전" },
+  { name: "캠퍼스픽", url: "https://www.campuspick.com", what: "대외활동·공모전" },
+];
+
 export const metadata: Metadata = { title: "Opportunities" };
 
 const REC_BADGES: Record<string, { label: string; className: string }> = {
@@ -77,7 +85,10 @@ export default async function OpportunitiesPage({
           <p className="mt-0.5 text-sm text-muted-foreground">
             &ldquo;좋은 기회인가?&rdquo;가 아니라 &ldquo;지금의 나에게 좋은 기회인가?&rdquo;를
             판단합니다.
-            {ctx.goal && ` 기준 목표: ${ctx.goal.name}`}
+            {ctx.goal &&
+              (ctx.exploring
+                ? ` 진로를 정하는 중이라 ‘${ctx.template.label}’ 기준을 임시로 적용해 판단합니다.`
+                : ` 기준 목표: ${ctx.goal.name}`)}
           </p>
         </div>
         <Link href="/activities/new">
@@ -111,18 +122,43 @@ export default async function OpportunitiesPage({
       )}
 
       {sorted.length === 0 ? (
-        <EmptyState
-          icon={Crosshair}
-          title="진행 중인 기회가 없습니다"
-          description="공모전, 대외활동, 채용 공고를 등록하면 내 커리어 목표 기준으로 지원 가치를 분석해드립니다."
-          action={
-            <Link href="/activities/new">
-              <Button size="sm" variant="outline">
-                <Plus className="h-4 w-4" /> 기회 등록
-              </Button>
-            </Link>
-          }
-        />
+        <>
+          <EmptyState
+            icon={Crosshair}
+            title="진행 중인 기회가 없습니다"
+            description="공모전, 대외활동, 채용 공고를 등록하면 내 커리어 목표 기준으로 지원 가치를 분석해드립니다."
+            action={
+              <Link href="/activities/new">
+                <Button size="sm" variant="outline">
+                  <Plus className="h-4 w-4" /> 기회 등록
+                </Button>
+              </Link>
+            }
+          />
+          {/* 처음 온 사람은 "공고를 어디서 찾지?"에서 막힌다 */}
+          <div className="rounded-lg border p-4 text-sm">
+            <p className="font-semibold">공고는 이런 곳에 모여 있습니다</p>
+            <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+              {NOTICE_SITES.map((site) => (
+                <li key={site.url}>
+                  <a
+                    href={site.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {site.name}
+                  </a>{" "}
+                  <span className="text-xs text-muted-foreground">{site.what}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              마음에 드는 공고의 주소를 복사해 &lsquo;기회 등록&rsquo;에 붙여넣으면 마감일과 제출 서류를 읽어 옵니다.
+              사이트에 따라 일부는 직접 입력해야 할 수 있습니다.
+            </p>
+          </div>
+        </>
       ) : (
         <ul className="space-y-3">
           {sorted.map((activity) => {

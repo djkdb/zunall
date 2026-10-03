@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { TaskQuickToggle } from "@/components/tasks/task-quick-toggle";
 import { AISummaryCard } from "@/components/ai/ai-summary-card";
+import { LostStageCard } from "@/components/activities/lost-stage-card";
 import {
   cn,
   daysUntil,
@@ -80,6 +81,8 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
+        {activity.status === "lost" && <LostStageCard activityId={activity.id} stage={activity.lostStage} />}
+
         {/* D-day 카드 */}
         {dateCards.length > 0 && (
           <div className="grid gap-3 sm:grid-cols-3">

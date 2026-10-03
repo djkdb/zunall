@@ -16,6 +16,7 @@ import { requireUser } from "@/lib/auth/session";
 import { parseWidgets, type WidgetKey } from "@/lib/dashboard-widgets";
 import { DashboardSettingsButton } from "@/components/dashboard/settings-button";
 import { GuideCard } from "@/components/dashboard/guide-card";
+import { UrgentDeadlineCard } from "@/components/dashboard/urgent-deadline";
 import {
   db,
   events,
@@ -31,6 +32,7 @@ import {
 import { getActivitiesWithMeta } from "@/lib/queries";
 import { getCareerContext, getScoreTrend, recordScoreSnapshot } from "@/lib/career-queries";
 import { ReadinessCard } from "@/components/career/readiness-card";
+import { ExploreCard } from "@/components/career/explore-card";
 import { MissionCard } from "@/components/career/mission-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -121,9 +123,6 @@ export default async function DashboardPage() {
       db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id)),
     ]);
 
-  // 이번 주 일정
-  const todayEvents = weekEvents.filter((e) => e.date === today);
-
   // 오늘/지난 마감 작업
   const dueTasks = openTasks
     .filter((t) => t.dueDate && t.dueDate <= weekEnd)
@@ -170,6 +169,15 @@ export default async function DashboardPage() {
   const imminent = ongoing
     .filter((a) => a.nearestDeadline && a.nearestDeadline.days <= 7)
     .sort((a, b) => a.nearestDeadline!.days - b.nearestDeadline!.days);
+  // 3일 안에 내야 하는 것 — 이게 있으면 커리어 추천보다 먼저 보여준다.
+  // 이미 제출했거나 결과만 기다리는 활동, 발표일은 "할 일"이 아니므로 뺀다.
+  const urgent =
+    imminent.find(
+      (a) =>
+        a.nearestDeadline!.days <= 3 &&
+        !a.nearestDeadline!.label.includes("발표") &&
+        !["submitted", "waiting"].includes(a.status),
+    ) ?? null;
   const recentActivities = [...allActivities]
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, 3);
@@ -177,11 +185,12 @@ export default async function DashboardPage() {
   const activityNameById = new Map(allActivities.map((a) => [a.id, a.name]));
 
   // 추천 기회: 분석 완료 + 지원 추천/보강 상위 3개
-  const oppAnalyses = (await db
+  const allOppAnalyses = await db
     .select()
     .from(opportunityAnalyses)
-    .where(eq(opportunityAnalyses.userId, user.id))
-    )
+    .where(eq(opportunityAnalyses.userId, user.id));
+  const urgentAnalysis = urgent ? (allOppAnalyses.find((a) => a.activityId === urgent.id) ?? null) : null;
+  const oppAnalyses = allOppAnalyses
     .filter((a) => a.recommendation === "apply" || a.recommendation === "hold")
     .sort((a, b) => (b.fitScore ?? 0) - (a.fitScore ?? 0));
   const recommendedOpps = oppAnalyses
@@ -206,7 +215,7 @@ export default async function DashboardPage() {
             <p className="mt-0.5 text-sm font-medium text-primary">{careerCtx.profile.headline}</p>
           ) : null}
           <p className="mt-1 text-sm text-muted-foreground">
-            오늘 마감 일정 {todayEvents.length}개 · 이번 주 해야 할 일 {dueTasks.length}개
+            이번 주 마감 {imminent.length}개 · 이번 주 할 일 {dueTasks.length}개
             {unreadCount > 0 && ` · 읽지 않은 알림 ${unreadCount}개`}
           </p>
         </div>
@@ -232,10 +241,34 @@ export default async function DashboardPage() {
         />
       )}
 
+      {/* 3일 안에 내야 하는 것이 있으면 무엇보다 먼저 */}
+      {urgent && (
+        <UrgentDeadlineCard
+          activity={{ id: urgent.id, name: urgent.name }}
+          deadline={urgent.nearestDeadline!}
+          analysis={
+            urgentAnalysis
+              ? {
+                  recommendation: urgentAnalysis.recommendation,
+                  recommendationReason: urgentAnalysis.recommendationReason,
+                }
+              : null
+          }
+        />
+      )}
+
       {/* Career OS 영역 */}
       {show("careerStart") && (careerCtx.onboarded ? (
         <>
           <div className="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
+            {careerCtx.exploring && careerCtx.goal ? (
+              <ExploreCard
+                className="lg:col-span-2"
+                goalName={careerCtx.goal.name}
+                candidates={careerCtx.candidates}
+              />
+            ) : (
+            <>
             <ReadinessCard
               compact
               readiness={careerCtx.readiness}
@@ -278,8 +311,11 @@ export default async function DashboardPage() {
                 </Link>
               </CardContent>
             </Card>
+            </>
+            )}
             {show("mission") && (
             <MissionCard
+              deferredBy={urgent?.name ?? null}
               mission={careerCtx.mission}
               activeTask={
                 careerCtx.activeAction
@@ -379,7 +415,9 @@ export default async function DashboardPage() {
             <CardContent>
               {weekEvents.length === 0 && imminent.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  이번 주 마감 일정이 없습니다. 여유를 즐기세요 ✨
+                  {allActivities.length === 0
+                    ? "아직 챙길 마감이 없습니다. 관심 있는 공고를 하나 등록하면 마감을 대신 챙깁니다."
+                    : "이번 주에는 마감이 없습니다. 다음 마감이 다가오면 여기에 먼저 보여드립니다."}
                 </p>
               ) : (
                 <ul className="space-y-2.5">

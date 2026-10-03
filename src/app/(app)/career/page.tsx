@@ -11,6 +11,7 @@ import { OnboardingWizard } from "@/components/career/onboarding-wizard";
 import { ProfileImport } from "@/components/career/profile-import";
 import { ProfileCompleteness } from "@/components/career/profile-completeness";
 import { ReadinessCard } from "@/components/career/readiness-card";
+import { ExploreCard } from "@/components/career/explore-card";
 import { SkillList } from "@/components/career/skill-list";
 import { MissionCard } from "@/components/career/mission-card";
 import { GrowthCard } from "@/components/career/growth-card";
@@ -23,7 +24,7 @@ import {
 } from "@/components/career/evidence-manager";
 import { EVIDENCE_KINDS, GOAL_TYPES, type EvidenceKind, type GoalType } from "@/lib/career-constants";
 import { STUDY_FIELDS } from "@/lib/career-constants";
-import { safeJsonParse, relativeTime } from "@/lib/utils";
+import { safeHttpUrl, safeJsonParse, relativeTime } from "@/lib/utils";
 import { buildGrowth } from "@/services/career/growth";
 
 export const metadata: Metadata = { title: "내 커리어" };
@@ -79,7 +80,7 @@ export default async function CareerPage() {
             const basis = [
               ctx.studyField ? STUDY_FIELDS[ctx.studyField] : null,
               ctx.profile?.major,
-              ctx.template.key === "general" ? null : ctx.template.label,
+              ctx.exploring ? "진로 탐색 중" : ctx.template.key === "general" ? null : ctx.template.label,
             ].filter(Boolean);
             return (
               <p className="mt-1.5 text-xs text-muted-foreground">
@@ -118,13 +119,15 @@ export default async function CareerPage() {
           </div>
           {ctx.goal && (
             <>
-              <Badge variant="secondary">{GOAL_TYPES[ctx.goal.type as GoalType] ?? ctx.goal.type}</Badge>
+              <Badge variant="secondary">
+                {ctx.exploring ? "탐색 중" : (GOAL_TYPES[ctx.goal.type as GoalType] ?? ctx.goal.type)}
+              </Badge>
               {ctx.goal.targetPeriod && (
                 <span className="text-xs text-muted-foreground">목표 시기 {ctx.goal.targetPeriod}</span>
               )}
-              <span className="text-xs text-muted-foreground">
-                기준 템플릿: {ctx.template.label}
-              </span>
+              {!ctx.exploring && (
+                <span className="text-xs text-muted-foreground">기준 직무: {ctx.template.label}</span>
+              )}
               {goalCompanies.length > 0 && (
                 <span className="text-xs text-muted-foreground">
                   희망 기업: {goalCompanies.join(", ")}
@@ -134,6 +137,8 @@ export default async function CareerPage() {
           )}
         </CardContent>
       </Card>
+
+      {ctx.exploring && ctx.goal && <ExploreCard goalName={ctx.goal.name} candidates={ctx.candidates} />}
 
       <div className="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
         {/* 왼쪽: 스킬 + 근거 */}
@@ -193,9 +198,9 @@ export default async function CareerPage() {
                             ) : (
                               <p className="truncate text-sm font-medium">{ev.title}</p>
                             )}
-                            {ev.url && (
+                            {safeHttpUrl(ev.url) && (
                               <a
-                                href={ev.url}
+                                href={safeHttpUrl(ev.url)!}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="shrink-0 text-muted-foreground hover:text-primary"
@@ -234,11 +239,13 @@ export default async function CareerPage() {
             retrospectiveCount={retrospectiveCount}
             readiness={ctx.readiness}
           />
-          <ReadinessCard
-            readiness={ctx.readiness}
-            templateLabel={ctx.template.label}
-            trend={{ monthAgo: trend.monthAgo, latest: trend.latest ?? ctx.readiness.score }}
-          />
+          {!ctx.exploring && (
+            <ReadinessCard
+              readiness={ctx.readiness}
+              templateLabel={ctx.template.label}
+              trend={{ monthAgo: trend.monthAgo, latest: trend.latest ?? ctx.readiness.score }}
+            />
+          )}
 
           {/* 성장 기록 — "쓴 덕분에 나아졌나"에 답하는 자리 */}
           <GrowthCard growth={growth} />
@@ -252,6 +259,7 @@ export default async function CareerPage() {
             }
           />
 
+          {!ctx.exploring && (
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle>가장 부족한 부분</CardTitle>
@@ -278,6 +286,7 @@ export default async function CareerPage() {
               )}
             </CardContent>
           </Card>
+          )}
         </div>
       </div>
     </div>

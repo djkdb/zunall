@@ -125,7 +125,7 @@ export async function updateTaskStatus(taskId: string, status: string): Promise<
         userId: user.id,
         type: "system",
         title: "커리어 미션 완료 🔥",
-        body: `"${existing.title}" 완료 — Career Score가 갱신되었습니다. 프로필에 근거를 추가하면 점수에 반영됩니다.`,
+        body: `"${existing.title}" 완료 — 커리어 점수를 다시 계산했습니다. 프로필에 근거를 추가하면 점수에 반영됩니다.`,
       });
       revalidatePath("/career");
       revalidatePath("/career/gaps");

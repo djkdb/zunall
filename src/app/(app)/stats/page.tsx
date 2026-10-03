@@ -75,6 +75,7 @@ export default async function StatsPage() {
       status: a.status,
       fitScore: latestAnalysis.get(a.id)?.fitScore ?? null,
       recommendation: latestAnalysis.get(a.id)?.recommendation ?? null,
+      lostStage: a.lostStage,
     })),
     ACTIVITY_TYPES,
   );
