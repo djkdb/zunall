@@ -152,13 +152,13 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
               href={`/activities/${activity.id}?tab=tasks`}
               className="text-xs text-primary hover:underline"
             >
-              작업 보드
+              할 일 보기
             </Link>
           </CardHeader>
           <CardContent>
             {openTasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {activityTasks.length > 0 ? "모든 할 일을 완료했습니다 🎉" : "등록된 작업이 없습니다."}
+                {activityTasks.length > 0 ? "모든 할 일을 완료했습니다 🎉" : "등록된 할 일이 없습니다."}
               </p>
             ) : (
               <ul className="space-y-1.5">
@@ -181,7 +181,7 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
           </CardHeader>
           <CardContent>
             {progress === null ? (
-              <p className="text-sm text-muted-foreground">작업을 추가하면 진행률이 표시됩니다.</p>
+              <p className="text-sm text-muted-foreground">할 일을 추가하면 진행률이 표시됩니다.</p>
             ) : (
               <div className="space-y-2">
                 <div className="flex items-end justify-between">
@@ -211,7 +211,7 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
                   href={`/activities/${activity.id}?tab=ai`}
                   className="inline-block text-xs font-medium text-primary hover:underline"
                 >
-                  AI 리뷰 실행하기 →
+                  AI 분석 실행하기 →
                 </Link>
               </div>
             ) : (

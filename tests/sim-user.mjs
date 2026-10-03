@@ -219,7 +219,7 @@ try {
   await page.goto(`${activityUrl}?tab=ai`);
   await page.getByRole("button", { name: "공고문 분석" }).click();
   await page.waitForURL(/review=/, { timeout: 60000 });
-  await page.waitForSelector("text=AI Summary", { timeout: 30000 });
+  await page.waitForSelector("text=공고 한눈에 보기", { timeout: 30000 });
   text = await page.locator("main").textContent();
   note(
     "공고 분석: 지원 마감=기간 종료일(2026.09.20) + 배점표 5개 추출",
@@ -232,12 +232,12 @@ try {
   await page.waitForSelector("text=활동에 반영되었습니다");
   note("사용자 확인 후 일정·기준 반영", true);
 
-  // Overview에서 D-day와 AI Summary 확인
+  // 요약 탭에서 D-day와 공고 요약 확인
   await page.goto(activityUrl);
   text = await page.locator("main").textContent();
   note(
-    "Overview에 D-day 카드·AI Summary·평가 기준 표시",
-    text.includes("AI Summary") && text.includes("사회적 가치") && text.includes("지원 마감"),
+    "요약 탭에 D-day 카드·공고 요약·평가 기준 표시",
+    text.includes("공고 한눈에 보기") && text.includes("사회적 가치") && text.includes("지원 마감"),
   );
   await shot(page, "07-overview-after-apply");
 

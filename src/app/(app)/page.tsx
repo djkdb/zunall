@@ -474,7 +474,7 @@ export default async function DashboardPage() {
             <CardContent>
               {dueTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  이번 주 마감인 작업이 없습니다.
+                  이번 주 마감인 할 일이 없습니다.
                 </p>
               ) : (
                 <ul className="space-y-1.5">

@@ -84,7 +84,9 @@ export default async function ActivityDetailPage({
     <div className="space-y-5">
       {/* 헤더 */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-3">
+        {/* 폰에서는 버튼 4개가 폭을 다 가져가 제목이 한 글자씩 세로로 쪼개졌다.
+            좁은 화면에서는 버튼을 제목 아래로 내린다. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div className="flex min-w-0 items-start gap-3">
             <span
               className="mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full"
@@ -92,7 +94,7 @@ export default async function ActivityDetailPage({
               aria-hidden
             />
             <div className="min-w-0">
-              <h1 className="text-xl font-bold leading-tight tracking-tight">{activity.name}</h1>
+              <h1 className="break-keep text-xl font-bold leading-tight tracking-tight">{activity.name}</h1>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                 {activity.organizer && (
                   <span className="flex items-center gap-1">

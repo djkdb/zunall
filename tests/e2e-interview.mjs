@@ -42,6 +42,7 @@ try {
   step("질문이 생성됨", /질문 \d+개/.test(text), text.split("\n").find((l) => l.includes("질문")) ?? "");
   step("지원 동기 질문 포함", text.includes("지원한 이유"));
   step("내가 쓴 문장에서 파고든 질문", text.includes("결측치") || text.includes("정확도"), "자소서 근거 반영");
+  step("문항 문장을 지원자 답변처럼 인용하지 않음", !text.includes("[문항]") && !/"[^"]*작성해주세요[^"]*" 라고 쓰셨는데/.test(text));
   step("왜 나오는지 설명", text.includes("왜 나오나"));
   step("답변 포인트 제시", text.includes("답변 포인트"));
 

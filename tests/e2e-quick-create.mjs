@@ -52,7 +52,7 @@ try {
 
   await p.goto(`${p.url().split("?")[0]}?tab=ai`);
   text = await p.locator("main").innerText();
-  step("공고문이 문서로 저장되고 분석까지 완료", text.includes("공고문 분석") || text.includes("AI Summary"));
+  step("공고문이 문서로 저장되고 분석까지 완료", text.includes("공고문 분석") || text.includes("공고 한눈에 보기"));
 
   const criteriaPage = await p.goto(`${p.url().split("?")[0]}?tab=overview`);
   text = await p.locator("main").innerText();

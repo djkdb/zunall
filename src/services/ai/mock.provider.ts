@@ -8,6 +8,7 @@ import type {
   OpportunityRequirements,
 } from "./schemas";
 import { detectSkills } from "@/services/career/skill-detect";
+import { extractListNear } from "@/services/notice/sections";
 
 /**
  * Claude CLI가 없는 개발/데모 환경용 Mock provider.
@@ -118,29 +119,6 @@ function extractCriteriaFromText(
   return [];
 }
 
-function extractListNear(text: string, keywords: string[], max = 6): string[] {
-  const lines = text.split("\n");
-  const out: string[] = [];
-  let capture = false;
-  let captureRemaining = 0;
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (keywords.some((k) => trimmed.includes(k))) {
-      capture = true;
-      captureRemaining = 8;
-      continue;
-    }
-    if (capture && captureRemaining > 0) {
-      // 다음 섹션 머리글(■, 【 등)을 만나면 수집 종료 — 섹션 경계를 넘지 않는다.
-      if (/^[■□◆▶►●#【\[]/.test(trimmed)) break;
-      captureRemaining--;
-      const item = trimmed.replace(/^[-•*·▶►○●\d.)\s]+/, "").trim();
-      if (item.length >= 4 && item.length <= 120) out.push(item);
-      if (out.length >= max) break;
-    }
-  }
-  return out;
-}
 
 // ─── 액션별 결과 생성 ────────────────────────────────────────
 
@@ -154,7 +132,7 @@ function analyzeAnnouncement(ctx: AIContext): AnnouncementSummary {
 
   const criteria = hasText ? extractCriteriaFromText(text) : [];
   const requirements = hasText
-    ? extractListNear(text, ["제출물", "제출 서류", "제출서류", "필수 제출", "제출 형식"])
+    ? extractListNear(text, ["제출물", "제출 서류", "제출서류", "필수 제출", "제출 형식"], 6, { split: true })
     : [];
   const cautions = hasText
     ? extractListNear(text, ["유의사항", "유의 사항", "주의사항", "주의 사항"])
@@ -263,7 +241,7 @@ function analyzeOpportunity(ctx: AIContext): OpportunityRequirements {
     ? extractListNear(text, ["주요 업무", "담당 업무", "활동 내용", "역할", "하는 일", "미션"], 5)
     : [];
   const submissionItems = hasText
-    ? extractListNear(text, ["제출물", "제출 서류", "제출서류", "필수 제출", "제출 형식"], 5)
+    ? extractListNear(text, ["제출물", "제출 서류", "제출서류", "필수 제출", "제출 형식"], 5, { split: true })
     : [];
 
   return {
@@ -808,14 +786,23 @@ function extractProfile(ctx: AIContext): Record<string, unknown> {
 function interviewQuestions(ctx: AIContext): { questions: Array<{ question: string; why: string; hint: string }> } {
   const questions: Array<{ question: string; why: string; hint: string }> = [];
 
+  // 채용·인턴은 공고 이름("네이버 2026 하반기 신입 백엔드")이 아니라 회사에 지원한다
+  const appliesToCompany =
+    (ctx.activityType === "recruit" || ctx.activityType === "intern") && !!ctx.organizer;
   questions.push({
-    question: `${ctx.activityName}에 지원한 이유를 말씀해주세요.`,
+    question: `${appliesToCompany ? ctx.organizer : ctx.activityName}에 지원한 이유를 말씀해주세요.`,
     why: "지원 동기는 어떤 면접에서도 첫 질문으로 나온다.",
     hint: "이 활동이어야 하는 이유 + 내 경험과의 연결 한 가지",
   });
 
   // 지원자가 쓴 글에서 길고 구체적인 문장을 골라 파고드는 질문을 만든다
-  const sentences = ctx.submissionText
+  // 실제 모델을 위해 "[문항] 질문" 줄을 같이 넘기는데, 그 줄은 지원자가 쓴 문장이 아니다.
+  // 빼지 않으면 "'[문항] 지원 동기를 작성해주세요' 라고 쓰셨는데" 같은 질문이 나온다.
+  const answerText = ctx.submissionText
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("[문항]"))
+    .join("\n");
+  const sentences = answerText
     .split(/[.\n]/)
     .map((line) => line.trim())
     .filter((line) => line.length >= 25 && line.length <= 120)

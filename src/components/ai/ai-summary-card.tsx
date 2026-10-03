@@ -10,7 +10,7 @@ export function AISummaryCard({ summary }: { summary: AnnouncementSummary }) {
     <Card className="border-primary/30 bg-accent/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5 text-primary">
-          <Sparkles className="h-4 w-4" /> AI Summary
+          <Sparkles className="h-4 w-4" /> 공고 한눈에 보기
         </CardTitle>
         {summary.summary && (
           <p className="text-xs text-muted-foreground">{summary.summary}</p>

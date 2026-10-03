@@ -58,7 +58,8 @@ try {
   await p.waitForTimeout(3000);
 
   const jargon = ["Career Score", "Evidence", "Career Gap", "Opportunities", "Your Career",
-    "Career Readiness", "Career Profile", "Current Goal", "AI Actions", "Overview", "Task로"];
+    "Career Readiness", "Career Profile", "Current Goal", "AI Actions", "Overview", "Task로",
+    "AI Summary", "칸반"];
   for (const [name, path] of [["커리어", "/career"], ["대시보드", "/"], ["기회", "/opportunities"], ["부족한 부분", "/career/gaps"], ["스킬", "/career/skills"], ["통계", "/stats"]]) {
     await p.goto(`${BASE}${path}`);
     const text = await p.locator("main").innerText();

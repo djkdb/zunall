@@ -168,7 +168,7 @@ export default async function StatsPage() {
           highlight
         />
         <MetricCard
-          label="작업 완료율"
+          label="할 일 완료율"
           value={taskRate !== null ? `${taskRate}%` : "-"}
           sub={allTasks.length > 0 ? `${doneTaskCount}/${allTasks.length}` : undefined}
         />

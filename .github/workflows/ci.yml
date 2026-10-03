@@ -76,5 +76,16 @@ jobs:
       # 묶음 목록은 package.json 의 test:e2e 하나에서만 관리한다.
       # 여기에 따로 나열했더니 새 묶음이 추가될 때마다 빠져서 10개가 CI 밖에 있었다.
       - name: 브라우저 E2E 전체
-        run: npm run test:e2e
+        shell: bash
+        run: npm run test:e2e 2>&1 | tee e2e.log
+      # 로그 전문을 열지 않아도 무엇이 깨졌는지 보이도록, 실패 항목을 주석으로 올린다
+      - name: 실패 항목을 주석으로 남기기
+        if: failure()
+        shell: bash
+        run: |
+          {
+            grep -E "^❌|^ *- .*\(예외|Error:|Timeout [0-9]+ms" e2e.log | head -15
+            echo "--- 마지막 출력 ---"
+            tail -12 e2e.log
+          } | sed 's/^/::error title=E2E 실패::/'
 

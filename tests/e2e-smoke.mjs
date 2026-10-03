@@ -124,7 +124,7 @@ try {
   await page.goto(`${activityUrl}?tab=ai`);
   await page.getByRole("button", { name: "공고문 분석" }).click();
   await page.waitForURL(/review=/, { timeout: 60000 });
-  await page.waitForSelector("text=AI Summary", { timeout: 30000 });
+  await page.waitForSelector("text=공고 한눈에 보기", { timeout: 30000 });
   const summaryText = await page.locator("main").textContent();
   step(
     "AI 공고문 분석 (평가 기준/일정 추출)",

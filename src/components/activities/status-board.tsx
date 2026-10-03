@@ -60,7 +60,9 @@ export function StatusBoard({ items }: { items: BoardItem[] }) {
         )}
       </div>
 
-      <div className="scrollbar-thin flex gap-3 overflow-x-auto pb-2">
+      {/* relative: 카드 안의 sr-only 라벨(position:absolute)이 이 상자를 기준으로 잡혀야
+          스크롤 영역 밖으로 새지 않는다. 없으면 오른쪽 열의 라벨이 페이지 폭을 128px 늘렸다. */}
+      <div className="scrollbar-thin relative flex gap-3 overflow-x-auto pb-2">
         {COLUMNS.map((column) => {
           const columnItems = items.filter((item) => statusOf(item) === column);
           return (

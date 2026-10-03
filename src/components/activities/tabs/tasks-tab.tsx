@@ -32,8 +32,8 @@ export async function TasksTab({ activity, userId }: { activity: ActivityRow; us
       {activityTasks.length === 0 ? (
         <EmptyState
           icon={ListTodo}
-          title="등록된 작업이 없습니다"
-          description="공고문 읽기, 기획서 작성, 결과물 검토 등 해야 할 일을 등록하고 칸반으로 관리하세요."
+          title="등록된 할 일이 없습니다"
+          description="공고문 읽기, 기획서 작성, 결과물 검토처럼 해야 할 일을 적어두고 할 일 · 진행 중 · 완료로 옮기며 관리하세요."
         />
       ) : (
         <TaskBoard tasks={activityTasks} />

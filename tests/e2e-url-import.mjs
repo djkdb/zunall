@@ -46,7 +46,7 @@ try {
   await page.goto(`${activityUrl}?tab=ai`);
   await page.getByRole("button", { name: "공고문 분석" }).click();
   await page.waitForURL(/review=/, { timeout: 90000 });
-  await page.waitForSelector("text=AI Summary", { timeout: 30000 });
+  await page.waitForSelector("text=공고 한눈에 보기", { timeout: 30000 });
   text = await page.locator("main").innerText();
   step(
     "가져온 공고에서 마감일 추출",
