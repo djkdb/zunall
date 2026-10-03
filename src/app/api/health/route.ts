@@ -37,6 +37,7 @@ export async function GET(request: Request) {
       scheme: string | null;
       hostSuffix: string | null;
       hasCredentials: boolean;
+      cloudRegion: string | null;
       cleaned: boolean;
       issues: string[];
     };
@@ -49,6 +50,8 @@ export async function GET(request: Request) {
     aiProvider: string;
     problems: string[];
     notices: string[];
+    /** DB 왕복 한 번에 걸린 시간 (ms). 화면은 보통 왕복 2~3번이라 이 값이 크면 화면 이동이 느리다 */
+    dbRoundTripMs?: number;
     google: {
       enabled: boolean;
       clientIdSet: boolean;
@@ -152,6 +155,23 @@ export async function GET(request: Request) {
     const list = Array.isArray(rows) ? rows : (rows.rows ?? []);
     const present = new Set(list.map((r) => r.table_name));
     report.connected = true;
+    // 연결·마이그레이션 준비가 끝난 뒤의 순수 왕복 시간을 잰다 (두 번 재서 작은 값)
+    const times: number[] = [];
+    for (let i = 0; i < 2; i++) {
+      const started = Date.now();
+      await db.execute(sql`SELECT 1`);
+      times.push(Date.now() - started);
+    }
+    report.dbRoundTripMs = Math.min(...times);
+    if (onWorkers && report.dbRoundTripMs >= 40) {
+      const region = report.databaseUrl?.cloudRegion;
+      report.notices.push(
+        `DB 왕복이 ${report.dbRoundTripMs}ms 걸립니다. 화면 하나가 왕복 2~3번이라 이동이 느리게 느껴질 수 있습니다. ` +
+          (region
+            ? `wrangler.jsonc 의 "placement" 를 { "region": "${region}" } 로 바꾸면 Worker 가 DB 근처에서 실행됩니다.`
+            : `wrangler.jsonc 의 "placement" 에 DB 가 있는 리전(예: "aws:us-east-2")을 적으면 Worker 가 DB 근처에서 실행됩니다.`),
+      );
+    }
     report.migrations = await migrationStatus(db);
     if (report.migrations.pending.length > 0) {
       report.notices.push(

@@ -1,5 +1,5 @@
 /** DATABASE_URL 정리·점검 단위 테스트. 실행: npx tsx tests/db-url.test.ts */
-import { inspectDatabaseUrl, normalizeDatabaseUrl } from "../src/lib/db/url";
+import { cloudRegionOf, inspectDatabaseUrl, normalizeDatabaseUrl } from "../src/lib/db/url";
 
 let failed = 0;
 function check(name: string, condition: boolean, detail = "") {
@@ -12,6 +12,13 @@ const GOOD = "postgresql://neondb_owner:npg_secret@ep-cool-1.ap-southeast-1.aws.
 check("정상 주소는 그대로 통과", inspectDatabaseUrl(GOOD).issues.length === 0);
 check("정상 주소의 호스트 접미사", inspectDatabaseUrl(GOOD).hostSuffix === "neon.tech");
 
+// DB 리전 — Worker 를 DB 근처에 두는 설정(placement)에 쓴다
+check("Neon 리전", cloudRegionOf("ep-cool-dark-123456.us-east-2.aws.neon.tech") === "aws:us-east-2");
+check("Neon 풀러·셀 접두", cloudRegionOf("ep-cool-dark-123456-pooler.c-2.ap-southeast-1.aws.neon.tech") === "aws:ap-southeast-1");
+check("Neon Azure", cloudRegionOf("ep-x-1.eastus2.azure.neon.tech") === "azure:eastus2");
+check("Supabase 풀러", cloudRegionOf("aws-0-ap-northeast-2.pooler.supabase.com") === "aws:ap-northeast-2");
+check("모르는 호스트는 null", cloudRegionOf("localhost") === null && cloudRegionOf("db.example.com") === null);
+check("주소 검사 결과에 리전 포함", inspectDatabaseUrl("postgresql://u:p@ep-a-1.eu-central-1.aws.neon.tech/db").cloudRegion === "aws:eu-central-1");
 check("따옴표로 감싼 값 정리", normalizeDatabaseUrl(`"${GOOD}"`) === GOOD);
 check("psql 접두사 제거", normalizeDatabaseUrl(`psql '${GOOD}'`) === GOOD);
 check("env 한 줄 통째 붙여넣기 정리", normalizeDatabaseUrl(`DATABASE_URL=${GOOD}`) === GOOD);

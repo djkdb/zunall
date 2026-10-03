@@ -33,6 +33,10 @@ export const metadata: Metadata = { title: "통계" };
 
 export default async function StatsPage() {
   const user = await requireUser();
+  // 아래 커리어 통계 칸은 자식 컴포넌트라 페이지 조회가 끝난 뒤에야 시작됐다 — 지금 같이 시작한다
+  const careerStats = loadCareerStats(user.id);
+  // 페이지 조회가 먼저 실패하면 이 약속은 아무도 기다리지 않는다 — 처리되지 않은 거부로 남지 않게
+  careerStats.catch(() => {});
 
   // 통계 원본은 서로 독립적이라 한 번에 모아 온다.
   const [acts, allTasks, doneReviews, analyses] = await Promise.all([
@@ -151,7 +155,7 @@ export default async function StatsPage() {
       </div>
 
       {/* Career 지표 */}
-      <CareerStatsSection userId={user.id} />
+      <CareerStatsSection data={careerStats} />
 
       {/* 지원 결과 학습 */}
       <OutcomeLearningCard learning={learning} />
@@ -252,11 +256,10 @@ export default async function StatsPage() {
   );
 }
 
-async function CareerStatsSection({ userId }: { userId: string }) {
-  const ctx = await getCareerContext(userId);
-  if (!ctx.onboarded) return null;
-
-  const [trend, actionRows, fitRows] = await Promise.all([
+/** 커리어 통계에 필요한 조회를 한 번에 보낸다 (페이지가 자기 조회와 동시에 시작한다) */
+function loadCareerStats(userId: string) {
+  return Promise.all([
+    getCareerContext(userId),
     getScoreTrend(userId),
     db.select({ status: careerActions.status }).from(careerActions).where(eq(careerActions.userId, userId)),
     db
@@ -264,6 +267,12 @@ async function CareerStatsSection({ userId }: { userId: string }) {
       .from(opportunityAnalyses)
       .where(eq(opportunityAnalyses.userId, userId)),
   ]);
+}
+
+async function CareerStatsSection({ data }: { data: ReturnType<typeof loadCareerStats> }) {
+  const [ctx, trend, actionRows, fitRows] = await data;
+  if (!ctx.onboarded) return null;
+
   const monthAgo = trend.monthAgo != null ? Math.round(trend.monthAgo) : null;
   const latest = Math.round(trend.latest ?? ctx.readiness.score);
 

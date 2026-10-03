@@ -17,3 +17,20 @@ export function LinkPendingDot({ className }: { className?: string }) {
     />
   );
 }
+
+/**
+ * <Link> 안에 두면, 그 링크로 이동하는 동안 화면 맨 위에 얇은 진행 막대를 띄운다.
+ * 서버 응답을 기다리는 동안 화면이 그대로라 "눌렸나?" 싶어 다시 누르게 되는 것을 막는다.
+ * (0.1초 안에 끝나는 이동에서는 보이지 않게 애니메이션을 조금 늦게 시작한다)
+ */
+export function LinkPendingBar() {
+  const { pending } = useLinkStatus();
+  if (!pending) return null;
+  return (
+    <span
+      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 origin-left animate-nav-progress bg-primary"
+      role="progressbar"
+      aria-label="화면을 불러오는 중"
+    />
+  );
+}

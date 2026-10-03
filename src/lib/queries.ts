@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, sql, inArray } from "drizzle-orm";
+import { and, desc, eq, sql, isNotNull, type SQL } from "drizzle-orm";
 import {
   db,
   activities,
@@ -26,39 +26,32 @@ export interface ActivityMeta extends ActivityRow {
 
 /** 활동 목록 + 메타(태그, 작업 진행률, AI 점수, 임박 마감) 조회 */
 export async function getActivitiesWithMeta(userId: string): Promise<ActivityMeta[]> {
-  const acts = await db
-    .select()
-    .from(activities)
-    .where(eq(activities.userId, userId))
-    .orderBy(desc(activities.updatedAt));
-  if (acts.length === 0) return [];
-
-  const actIds = acts.map((a) => a.id);
-
-  // 태그·작업·AI 평가는 서로 독립적이라 한 번에 보낸다.
-  const [tagRows, taskRows, reviewRows] = await Promise.all([
+  // 활동 목록을 받은 뒤 그 ID 로 태그·작업·평가를 다시 묻으면 왕복이 두 번이다.
+  // 모두 사용자 기준으로 걸러 한 번에 보낸다 (Workers ↔ DB 왕복 하나가 수백 ms 일 수 있다).
+  const [acts, tagRows, taskRows, reviewRows] = await Promise.all([
+    db.select().from(activities).where(eq(activities.userId, userId)).orderBy(desc(activities.updatedAt)),
     db
       .select({ activityId: activityTags.activityId, name: tags.name })
       .from(activityTags)
       .innerJoin(tags, eq(activityTags.tagId, tags.id))
-      .where(inArray(activityTags.activityId, actIds)),
+      .where(eq(tags.userId, userId)),
     db
       .select({ activityId: tasks.activityId, status: tasks.status })
       .from(tasks)
-      .where(and(eq(tasks.userId, userId), inArray(tasks.activityId, actIds))),
+      .where(and(eq(tasks.userId, userId), isNotNull(tasks.activityId))),
     db
       .select()
       .from(aiReviews)
       .where(
         and(
           eq(aiReviews.userId, userId),
-          inArray(aiReviews.activityId, actIds),
           eq(aiReviews.action, "evaluate_submission"),
           eq(aiReviews.status, "done"),
         ),
       )
       .orderBy(desc(aiReviews.createdAt)),
   ]);
+  if (acts.length === 0) return [];
 
   return acts.map((act) => {
     const tagNames = tagRows.filter((t) => t.activityId === act.id).map((t) => t.name);
@@ -120,6 +113,32 @@ export async function getActivityTagNames(userId: string, activityId: string): P
     .innerJoin(activities, eq(activityTags.activityId, activities.id))
     .where(and(eq(activityTags.activityId, activityId), eq(activities.userId, userId)));
   return rows.map((t) => t.name);
+}
+
+/**
+ * 활동 상세 머리말(활동·태그·탭 배지)을 **소유자 확인 없이** 한 번에 읽는다.
+ *
+ * 로그인 확인(세션 조회)이 끝나야 사용자 ID 를 알 수 있어, 그걸 기다렸다 머리말을 읽으면
+ * 탭을 누를 때마다 DB 왕복이 하나 더 생긴다. 그래서 세션 조회와 **동시에** 읽고,
+ * 호출하는 쪽이 반드시 `activity.userId === user.id` 를 확인한 뒤에만 결과를 쓴다.
+ * (확인 전에는 아무것도 화면에 내보내지 않는다 — 남의 활동이면 404)
+ */
+export async function getActivityHeaderUnchecked(activityId: string): Promise<{
+  activity: ActivityRow | undefined;
+  tagNames: string[];
+  counts: Awaited<ReturnType<typeof getActivityTabCounts>>;
+}> {
+  const [activityRows, tagRows, counts] = await Promise.all([
+    db.select().from(activities).where(eq(activities.id, activityId)).limit(1),
+    db
+      .select({ name: tags.name })
+      .from(activityTags)
+      .innerJoin(tags, eq(activityTags.tagId, tags.id))
+      .where(eq(activityTags.activityId, activityId)),
+    // 집계 대상은 그 활동 주인의 행으로 한정한다
+    getActivityTabCounts(sql`(SELECT user_id FROM activities WHERE id = ${activityId})`, activityId),
+  ]);
+  return { activity: activityRows[0], tagNames: tagRows.map((t) => t.name), counts };
 }
 
 /** 제출물의 최신 버전 + 문서 조회 (AI 평가에서 사용) */
@@ -185,7 +204,7 @@ export async function getGuideCounts(userId: string): Promise<{
 }
 
 export async function getActivityTabCounts(
-  userId: string,
+  userId: string | SQL,
   activityId: string,
 ): Promise<{
   calendar: number;

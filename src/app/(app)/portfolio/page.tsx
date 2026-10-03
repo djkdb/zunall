@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/session";
-import { db, users } from "@/lib/db";
 import { PrintButton } from "@/components/portfolio/print-button";
 import { PortfolioDocument } from "@/components/portfolio/portfolio-document";
 import { ShareLinkCard } from "@/components/portfolio/share-link-card";
@@ -14,10 +12,8 @@ export const metadata: Metadata = { title: "포트폴리오" };
  * 브라우저의 '인쇄 → PDF로 저장' 으로 그대로 파일이 된다.
  */
 export default async function PortfolioPage() {
+  // 로그인 확인이 사용자 행 전체를 돌려주므로 공유 토큰을 다시 묻지 않는다
   const user = await requireUser();
-  const row = (
-    await db.select({ token: users.portfolioToken }).from(users).where(eq(users.id, user.id)).limit(1)
-  )[0];
 
   return (
     <div className="space-y-5">
@@ -32,7 +28,7 @@ export default async function PortfolioPage() {
       </div>
 
       <div className="print:hidden">
-        <ShareLinkCard token={row?.token ?? null} />
+        <ShareLinkCard token={user.portfolioToken ?? null} />
       </div>
 
       <PortfolioDocument userId={user.id} />

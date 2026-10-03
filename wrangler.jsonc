@@ -20,10 +20,16 @@
     "binding": "ASSETS"
   },
   // "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "cavero-uploads" }],
+  // Worker 를 사용자 근처가 아니라 DB 근처에서 실행한다.
+  // 화면 하나가 DB 왕복 2~3번인데, 서울에서 미국 리전 DB 까지는 왕복이 150~200ms 라
+  // 그대로면 탭 이동마다 1초 안팎이 더해진다. smart 는 트래픽을 보고 위치를 고른다.
+  // 배포 후 /api/health 의 notices 에 DB 리전이 나오면 아래처럼 정확히 지정하는 편이 확실하다:
+  //   "placement": { "region": "aws:us-east-2" }
+  "placement": { "mode": "smart" },
   // 매일 08:00 KST (23:00 UTC) 에 마감 알림을 보낸다
   "triggers": { "crons": ["0 23 * * *"] },
   "vars": {
     "AI_PROVIDER": "anthropic",
-    "ANTHROPIC_MODEL": "claude-opus-5"
+    "ANTHROPIC_MODEL": "claude-opus-5-5"
   }
 }

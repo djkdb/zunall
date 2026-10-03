@@ -10,12 +10,9 @@ import { EVIDENCE_KINDS, type EvidenceKind } from "@/lib/career-constants";
  * 내 화면(/portfolio)과 공유 링크(/p/<토큰>)가 같은 내용을 보여주도록 한 곳에 둔다.
  */
 export async function PortfolioDocument({ userId }: { userId: string }) {
-  const owner = (await db.select().from(users).where(eq(users.id, userId)).limit(1))[0];
-  if (!owner) return null;
-  const user = { name: owner.name };
-
-  // 서로 독립적인 조회 — 한 번에 보낸다.
-  const [acts, retros, profileRows, goalRows, evidenceRows] = await Promise.all([
+  // 서로 독립적인 조회 — 주인 확인까지 한 번에 보낸다.
+  const [ownerRows, acts, retros, profileRows, goalRows, evidenceRows] = await Promise.all([
+    db.select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1),
     db
       .select()
       .from(activities)
@@ -34,6 +31,9 @@ export async function PortfolioDocument({ userId }: { userId: string }) {
       .where(eq(careerEvidence.userId, userId))
       .orderBy(desc(careerEvidence.createdAt)),
   ]);
+  const owner = ownerRows[0];
+  if (!owner) return null;
+  const user = { name: owner.name };
   const retroByActivity = new Map(retros.map((r) => [r.activityId, r]));
   const profile = profileRows[0];
   const goal = goalRows[0];

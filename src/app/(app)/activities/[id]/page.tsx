@@ -4,9 +4,7 @@ import { notFound } from "next/navigation";
 import { Building2, Pencil, ExternalLink } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import {
-  getActivity,
-  getActivityTagNames,
-  getActivityTabCounts,
+  getActivityHeaderUnchecked,
   nearestDeadlineOf,
 } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
@@ -45,23 +43,18 @@ export default async function ActivityDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const user = await requireUser();
-  const { id } = await params;
-  const sp = await searchParams;
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
+  // 로그인 확인과 활동 머리말을 동시에 읽는다 (탭을 누를 때마다 DB 왕복 하나를 아낀다).
+  // 머리말은 소유자 확인 없이 읽었으므로, 아래에서 주인을 확인하기 전에는 쓰지 않는다.
+  const [user, header] = await Promise.all([requireUser(), getActivityHeaderUnchecked(id)]);
+  if (!header.activity || header.activity.userId !== user.id) notFound();
+  const { activity, tagNames, counts } = header;
 
   const rawTab = typeof sp.tab === "string" ? sp.tab : "overview";
   const tab: TabKey = (TAB_KEYS as readonly string[]).includes(rawTab)
     ? (rawTab as TabKey)
     : "overview";
 
-  // 활동·태그·탭 배지를 한 번에 조회한다. 셋 다 userId 로 걸러 남의 자료는 잡히지 않는다.
-  // 탭 배지 숫자는 그중 한 번의 쿼리로 여섯 개를 모두 센다.
-  const [activity, tagNames, counts] = await Promise.all([
-    getActivity(user.id, id),
-    getActivityTagNames(user.id, id),
-    getActivityTabCounts(user.id, id),
-  ]);
-  if (!activity) notFound();
   const deadline = nearestDeadlineOf(activity);
 
   const tabs = [

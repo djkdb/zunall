@@ -46,9 +46,15 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(4px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        // 화면 이동 중 위쪽 진행 막대 — 끝을 모르니 85% 까지만 천천히 찬다
+        "nav-progress": {
+          from: { transform: "scaleX(0)" },
+          to: { transform: "scaleX(0.85)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.2s ease-out",
+        "nav-progress": "nav-progress 2.5s cubic-bezier(0.1, 0.7, 0.3, 1) 0.1s both",
       },
     },
   },

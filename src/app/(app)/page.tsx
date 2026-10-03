@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { after } from "next/server";
+import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import {
   FolderKanban,
   CalendarClock,
@@ -72,56 +73,74 @@ export default async function DashboardPage() {
   const today = todayStr();
   const weekEnd = toDateStr(new Date(Date.now() + 7 * 86400000));
 
-  // 서로 의존하지 않는 조회는 한 번에 보낸다.
-  // 서버리스 DB 는 쿼리마다 왕복이 생겨, 순서대로 기다리면 대시보드가 눈에 띄게 느려진다.
-  const [settingsRows, careerCtx, scoreTrend, allActivities] = await Promise.all([
+  // 대시보드가 쓰는 조회를 전부 한 번에 보낸다.
+  // 운영(Workers ↔ Neon)에서는 쿼리 하나가 왕복 하나이고 왕복 하나가 수백 ms 일 수 있다.
+  // 예전에는 단계가 6번 이어져 첫 화면이 2초 가까이 걸렸다 — 앞 결과에 기대는 조회를 없앴다.
+  const [
+    settingsRows,
+    careerCtx,
+    scoreTrend,
+    allActivities,
+    weekEvents,
+    openTasks,
+    allSubs,
+    notificationRows,
+    unreadRows,
+    allTaskRows,
+    doneReviews,
+    retroRows,
+    versionRows,
+    allOppAnalyses,
+  ] = await Promise.all([
     db.select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1),
     getCareerContext(user.id),
     getScoreTrend(user.id),
     getActivitiesWithMeta(user.id),
+    db
+      .select()
+      .from(events)
+      .where(and(eq(events.userId, user.id), gte(events.date, today), lte(events.date, weekEnd)))
+      .orderBy(events.date),
+    db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.userId, user.id), inArray(tasks.status, ["todo", "in_progress", "review"])))
+      .orderBy(tasks.dueDate),
+    db.select().from(submissions).where(eq(submissions.userId, user.id)).orderBy(submissions.dueDate),
+    db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, user.id))
+      .orderBy(desc(notifications.createdAt))
+      .limit(5),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0))),
+    db.select({ status: tasks.status }).from(tasks).where(eq(tasks.userId, user.id)),
+    db
+      .select()
+      .from(aiReviews)
+      .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.status, "done"))),
+    db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id)),
+    // 버전이 올라간 제출물 — 제출물 목록을 받은 뒤 다시 묻지 않고 사용자 기준으로 바로 찾는다
+    db
+      .selectDistinct({ submissionId: submissionVersions.submissionId })
+      .from(submissionVersions)
+      .innerJoin(submissions, eq(submissionVersions.submissionId, submissions.id))
+      .where(eq(submissions.userId, user.id)),
+    db.select().from(opportunityAnalyses).where(eq(opportunityAnalyses.userId, user.id)),
   ]);
-  // 오늘의 점수를 기록해 둔다 (하루 한 점, 왕복 한 번).
+  // 오늘의 점수를 기록해 둔다 (하루 한 점). 화면을 그리는 데 필요 없으므로 응답을 보낸 뒤에 한다.
   // 커리어 탭을 편집할 때만 기록하면 활동을 등록·완료해서 오른 점수가 그래프에
   // 남지 않는다. 앱의 첫 화면에서 남기면 어떤 경로로 바뀌었든 빠지지 않는다.
   if (careerCtx.onboarded) {
-    await recordScoreSnapshot(user.id, careerCtx.readiness.score, careerCtx.readiness.items);
+    after(() => recordScoreSnapshot(user.id, careerCtx.readiness.score, careerCtx.readiness.items));
   }
 
   // 사용자가 고른 대시보드 구성 (없으면 기본값)
   const widgets = parseWidgets(settingsRows[0]?.dashboardWidgets);
   const ongoing = allActivities.filter((a) => (ONGOING_STATUSES as string[]).includes(a.status));
-
-  // 위젯별 데이터는 서로 의존하지 않는다.
-  // 서버리스 DB 는 쿼리 하나가 왕복 하나라, 순서대로 기다리면 대시보드가 눈에 띄게 느려진다.
-  const [weekEvents, openTasks, allSubs, notificationRows, unreadRows, allTaskRows, doneReviews, retroRows] =
-    await Promise.all([
-      db
-        .select()
-        .from(events)
-        .where(and(eq(events.userId, user.id), gte(events.date, today), lte(events.date, weekEnd)))
-        .orderBy(events.date),
-      db
-        .select()
-        .from(tasks)
-        .where(and(eq(tasks.userId, user.id), inArray(tasks.status, ["todo", "in_progress", "review"])))
-        .orderBy(tasks.dueDate),
-      db.select().from(submissions).where(eq(submissions.userId, user.id)).orderBy(submissions.dueDate),
-      db
-        .select()
-        .from(notifications)
-        .where(eq(notifications.userId, user.id))
-        .orderBy(desc(notifications.createdAt)),
-      db
-        .select({ id: notifications.id })
-        .from(notifications)
-        .where(and(eq(notifications.userId, user.id), eq(notifications.read, 0))),
-      db.select({ status: tasks.status }).from(tasks).where(eq(tasks.userId, user.id)),
-      db
-        .select()
-        .from(aiReviews)
-        .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.status, "done"))),
-      db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id)),
-    ]);
 
   // 오늘/지난 마감 작업
   const dueTasks = openTasks
@@ -130,17 +149,7 @@ export default async function DashboardPage() {
 
   // AI 평가가 필요한 제출물: 버전은 있는데 완료 전 상태
   const subs = allSubs.filter((s) => s.status === "draft" || s.status === "review_needed");
-  const subIds = subs.map((s) => s.id);
-  const versionedSubIds = new Set(
-    subIds.length > 0
-      ? (
-          await db
-            .select({ submissionId: submissionVersions.submissionId })
-            .from(submissionVersions)
-            .where(inArray(submissionVersions.submissionId, subIds))
-        ).map((v) => v.submissionId)
-      : [],
-  );
+  const versionedSubIds = new Set(versionRows.map((v) => v.submissionId));
   const needsReview = subs.filter((s) => versionedSubIds.has(s.id)).slice(0, 4);
 
   // 제출 예정 (마감일 있는 미제출 제출물)
@@ -149,8 +158,8 @@ export default async function DashboardPage() {
     .slice(0, 4);
 
   // 최근 알림
-  const recentNotifications = notificationRows.slice(0, 5);
-  const unreadCount = unreadRows.length;
+  const recentNotifications = notificationRows;
+  const unreadCount = Number(unreadRows[0]?.count ?? 0);
 
   // 전체 진행률
   const overallProgress =
@@ -185,10 +194,6 @@ export default async function DashboardPage() {
   const activityNameById = new Map(allActivities.map((a) => [a.id, a.name]));
 
   // 추천 기회: 분석 완료 + 지원 추천/보강 상위 3개
-  const allOppAnalyses = await db
-    .select()
-    .from(opportunityAnalyses)
-    .where(eq(opportunityAnalyses.userId, user.id));
   const urgentAnalysis = urgent ? (allOppAnalyses.find((a) => a.activityId === urgent.id) ?? null) : null;
   const oppAnalyses = allOppAnalyses
     .filter((a) => a.recommendation === "apply" || a.recommendation === "hold")

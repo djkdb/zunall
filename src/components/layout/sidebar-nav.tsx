@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LinkPendingBar } from "@/components/ui/link-pending";
 import {
   BookMarked,
   LifeBuoy,
@@ -74,6 +75,7 @@ export function SidebarNav({
           >
             <item.icon className="h-4 w-4 shrink-0" />
             <span className="hidden md:inline">{item.label}</span>
+            <LinkPendingBar />
             {item.badge !== undefined && item.badge > 0 && (
               <span className="ml-auto hidden rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground md:inline">
                 {item.badge > 99 ? "99+" : item.badge}

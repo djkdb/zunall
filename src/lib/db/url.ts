@@ -28,6 +28,11 @@ export interface DatabaseUrlReport {
   hostSuffix: string | null;
   /** 사용자/비밀번호가 들어있는지 (값은 노출하지 않음) */
   hasCredentials: boolean;
+  /**
+   * DB 가 있는 클라우드 리전 (예: aws:us-east-2). 호스트 이름에서 읽는다 — 비밀값이 아니다.
+   * Worker 를 이 리전 근처에서 돌리면(wrangler placement) DB 왕복이 수백 ms → 수 ms 로 준다.
+   */
+  cloudRegion: string | null;
   /** 정리 과정에서 실제로 걷어낸 군더더기가 있었는지 */
   cleaned: boolean;
   /** 사람이 읽을 수 있는 문제 목록 */
@@ -40,6 +45,7 @@ export function inspectDatabaseUrl(raw: string): DatabaseUrlReport {
     scheme: null,
     hostSuffix: null,
     hasCredentials: false,
+    cloudRegion: null,
     cleaned: normalized !== raw.trim(),
     issues: [],
   };
@@ -67,6 +73,7 @@ export function inspectDatabaseUrl(raw: string): DatabaseUrlReport {
   const labels = url.hostname.split(".");
   report.hostSuffix = labels.slice(-2).join(".") || null;
   report.hasCredentials = Boolean(url.username && url.password);
+  report.cloudRegion = cloudRegionOf(url.hostname);
 
   if (!["postgres", "postgresql"].includes(report.scheme)) {
     report.issues.push(
@@ -87,4 +94,19 @@ export function inspectDatabaseUrl(raw: string): DatabaseUrlReport {
   }
 
   return report;
+}
+
+/**
+ * 관리형 Postgres 호스트 이름에서 클라우드 리전을 읽는다 (모르면 null).
+ * - Neon:     ep-xxx[-pooler][.c-N].us-east-2.aws.neon.tech  → aws:us-east-2
+ *             ep-xxx.eastus2.azure.neon.tech                 → azure:eastus2
+ * - Supabase: aws-0-ap-northeast-2.pooler.supabase.com        → aws:ap-northeast-2
+ */
+export function cloudRegionOf(hostname: string): string | null {
+  const host = hostname.toLowerCase();
+  const neon = host.match(/\.([a-z0-9-]+)\.(aws|azure)\.neon\.tech$/);
+  if (neon) return `${neon[2]}:${neon[1]}`;
+  const supabase = host.match(/^aws-\d+-([a-z]+-[a-z]+-\d+)\.pooler\.supabase\.com$/);
+  if (supabase) return `aws:${supabase[1]}`;
+  return null;
 }

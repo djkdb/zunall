@@ -31,18 +31,19 @@ export const metadata: Metadata = { title: "내 커리어" };
 
 export default async function CareerPage() {
   const user = await requireUser();
-  const ctx = await getCareerContext(user.id);
-
-  if (!ctx.onboarded) {
-    return <OnboardingWizard userName={user.name} />;
-  }
-
-  const [trend, history, activityRows, retrospectiveRows] = await Promise.all([
+  // 한 번에 보낸다 — 커리어 맥락을 받은 뒤 나머지를 다시 묻으면 왕복이 하나 더 생긴다.
+  // (온보딩 전이면 뒤의 셋은 버려지지만, 가볍고 그 경우는 한 번뿐이다)
+  const [ctx, trend, history, activityRows, retrospectiveRows] = await Promise.all([
+    getCareerContext(user.id),
     getScoreTrend(user.id),
     getScoreHistory(user.id),
     db.select({ id: activities.id }).from(activities).where(eq(activities.userId, user.id)),
     db.select({ id: retrospectives.id }).from(retrospectives).where(eq(retrospectives.userId, user.id)),
   ]);
+  if (!ctx.onboarded) {
+    return <OnboardingWizard userName={user.name} />;
+  }
+
   const activityCount = activityRows.length;
   const retrospectiveCount = retrospectiveRows.length;
   // 오늘 점수가 아직 안 남았을 수 있으니, 지금 값을 마지막 점으로 보태 그래프가

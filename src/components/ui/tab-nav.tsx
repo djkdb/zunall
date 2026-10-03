@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { LinkPendingDot } from "@/components/ui/link-pending";
+import { LinkPendingBar, LinkPendingDot } from "@/components/ui/link-pending";
 
 export interface TabItem {
   key: string;
@@ -46,6 +46,7 @@ export function TabNav({
         >
           {tab.label}
           <LinkPendingDot />
+          <LinkPendingBar />
           {tab.count !== undefined && tab.count > 0 && (
             <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">
               {tab.count}

@@ -81,7 +81,8 @@ function createPostgresDb(url: string, workers: boolean): AppDb {
   // prepared statement 비활성화, 커넥션 수 최소화.
   const client = postgres(url, {
     prepare: false,
-    max: workers ? 1 : 5,
+    // 로컬: 기본 5. 운영(Neon HTTP)처럼 쿼리를 모두 동시에 보내 보려면 DB_POOL_MAX 로 늘린다.
+    max: workers ? 1 : Number(process.env.DB_POOL_MAX) || 5,
     idle_timeout: 20,
     connect_timeout: 15,
   });
