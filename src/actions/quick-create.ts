@@ -125,6 +125,16 @@ export async function quickCreateActivity(input: {
         ? announcementSummarySchema.safeParse(JSON.parse(review.resultJson))
         : null;
       if (parsed?.success) {
+        // 종류는 처음에 글자 규칙으로 짐작한 값이다. 공고를 읽은 AI 판단이 다르면 그쪽을 따른다.
+        const aiType = parsed.data.activityType;
+        if (aiType && aiType !== type && aiType in ACTIVITY_TYPES) {
+          await db
+            .update(activities)
+            .set({ type: aiType, updatedAt: Date.now() })
+            .where(and(eq(activities.id, activityId), eq(activities.userId, user.id)));
+          const i = filled.findIndex((f) => f.startsWith("종류 "));
+          if (i !== -1) filled[i] = `종류 ${ACTIVITY_TYPES[aiType as keyof typeof ACTIVITY_TYPES]}`;
+        }
         const dates = [
           parsed.data.keyDates.applyDeadline && "지원 마감일",
           parsed.data.keyDates.submitDeadline && "제출 마감일",

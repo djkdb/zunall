@@ -184,7 +184,7 @@ try {
   await page.goto(`${activityUrl}?tab=submissions`);
   await page.getByRole("button", { name: "제출 전 최종 검토" }).click();
   await page.waitForURL(/tab=ai&review=/, { timeout: 60000 });
-  await page.waitForSelector("text=Final Check", { timeout: 30000 });
+  await page.waitForSelector("text=체크리스트", { timeout: 30000 });
   const checkText = await page.locator("main").textContent();
   step("제출 전 최종 검토 (체크리스트)", checkText.includes("체크리스트"));
 

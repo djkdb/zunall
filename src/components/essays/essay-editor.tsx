@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Sparkles, Trash2, Check, AlertTriangle, ArrowRight } from "lucide-react";
 import { coachEssayDraft, deleteEssayQuestion, saveEssayDraft } from "@/actions/essays";
 import { Button } from "@/components/ui/button";
+import { AIWaitHint } from "@/components/ai/ai-wait-hint";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -144,6 +145,7 @@ export function EssayEditor({ question, drafts }: { question: Question; drafts: 
             </Button>
           </div>
         </div>
+        <AIWaitHint active={pending === "coach"} className="text-right" />
 
         {error && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>

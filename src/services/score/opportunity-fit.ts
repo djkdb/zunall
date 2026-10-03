@@ -80,6 +80,8 @@ export function computeOpportunityFit(params: {
   daysUntilDeadline?: number | null;
   /** 공고문을 읽고 분석했는가. false 면 제출물·준비 시간이 이름만 보고 짐작한 값이다 */
   noticeKnown?: boolean;
+  /** 활동 종류 (intern·recruit 이면 지원 자체로는 역량이 늘지 않는 '채용'으로 본다) */
+  activityType?: string | null;
 }): OpportunityFitResult {
   const {
     requirements,
@@ -88,7 +90,10 @@ export function computeOpportunityFit(params: {
     template,
     daysUntilDeadline = null,
     noticeKnown = true,
+    activityType = null,
   } = params;
+  // 공모전은 떨어져도 결과물이 남지만, 채용 지원은 서류를 내는 것만으로 역량이 늘지 않는다
+  const isJob = activityType === "intern" || activityType === "recruit";
   const scoreByName = new Map(skillScores.map((s) => [s.name, s]));
   const templateSkills = new Set(template.requirements.map((r) => r.skill));
 
@@ -145,7 +150,10 @@ export function computeOpportunityFit(params: {
   }
 
   // 2) 우대 역량 매치
-  for (const skillName of requirements.preferredSkills.slice(0, 4)) {
+  // AI 가 같은 역량을 요구·우대 양쪽에 넣기도 한다 — 두 번 세지 않는다
+  for (const skillName of requirements.preferredSkills
+    .filter((s) => !requirements.requiredSkills.includes(s))
+    .slice(0, 4)) {
     const current = scoreByName.get(skillName)?.score ?? 0;
     if (current >= 55) {
       const pts = 3;
@@ -184,11 +192,12 @@ export function computeOpportunityFit(params: {
 
   score = clamp(Math.round(score), 5, 97);
 
-  // 4) 준비 시간 추정
+  // 4) 준비 시간 추정 — 신청서·동의서 같은 서류는 기획서·포트폴리오처럼 시간이 들지 않는다.
+  //    (실제 AI 는 제출물에 서류까지 빠짐없이 적어서, 서류 두 장이 8시간으로 계산됐다)
+  const workItems = requirements.submissionItems.filter((item) => !isPaperwork(item)).length;
+  const paperwork = requirements.submissionItems.length - workItems;
   const prepHours =
-    Math.round(
-      (4 + requirements.submissionItems.length * 4 + missingRequired * 6) * 10,
-    ) / 10;
+    Math.round((4 + workItems * 4 + paperwork * 0.5 + missingRequired * 6) * 10) / 10;
 
   // 5) Career Gap 감소 효과: 이 기회가 훈련시키는 역량이 내 Gap과 겹치는가
   let gapEffect = 0;
@@ -253,6 +262,10 @@ export function computeOpportunityFit(params: {
   } else if (score >= 52) {
     recommendation = "hold";
     recommendationReason = `약점(${weaknesses[0] ?? "근거 부족"})을 보강한 뒤 지원하면 훨씬 유리합니다.`;
+  } else if (gapEffect >= GROWTH_EFFECT && prepHours <= COSTLY_HOURS * 2 && isJob) {
+    // 채용은 "결과물을 남기자"가 성립하지 않는다. 말리지는 않되, 서류에서 막힐 지점을 먼저 짚는다.
+    recommendation = "hold";
+    recommendationReason = `목표에 맞는 공고지만, 공고가 요구하는 ${trainedGaps.join("·")} 근거가 아직 부족해 서류 통과가 쉽지 않습니다. 관련 프로젝트나 결과물을 하나 남겨 두고 지원하면 훨씬 유리합니다.`;
   } else if (gapEffect >= GROWTH_EFFECT && prepHours <= COSTLY_HOURS * 2) {
     // 지금은 약하지만 가장 부족한 역량을 정확히 채우는 기회 — 말리면 안 되는 경우
     recommendation = "apply";
@@ -311,4 +324,10 @@ export function computeOpportunityFit(params: {
     recommendationReason,
     alternative,
   };
+}
+
+/** 양식을 채우거나 떼어 오기만 하면 되는 서류 */
+const PAPERWORK = /신청서|동의서|증명서|확인서|서약서|사본|등본|성적표|통장|신분증|추천서|이력서 양식/;
+export function isPaperwork(item: string): boolean {
+  return PAPERWORK.test(item);
 }

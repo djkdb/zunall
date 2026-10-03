@@ -345,9 +345,9 @@ try {
 
   await page.getByRole("button", { name: "제출 전 최종 검토" }).click();
   await page.waitForURL(/tab=ai&review=/, { timeout: 60000 });
-  await page.waitForSelector("text=Final Check", { timeout: 30000 });
+  await page.waitForSelector("text=체크리스트", { timeout: 30000 });
   text = await page.locator("main").textContent();
-  note("Final Check 체크리스트(마감·형식·개인정보 등)", text.includes("체크리스트") && text.includes("개인정보"));
+  note("최종 검토 체크리스트(마감·형식·개인정보 등)", text.includes("체크리스트") && text.includes("개인정보"));
   await shot(page, "11-final-check");
 
   // 상태를 '제출 완료'로

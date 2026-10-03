@@ -8,7 +8,9 @@ import type {
   OpportunityRequirements,
 } from "./schemas";
 import { detectSkills } from "@/services/career/skill-detect";
-import { extractListNear } from "@/services/notice/sections";
+import { extractListNear, guessActivityType } from "@/services/notice/sections";
+
+export { guessActivityType };
 
 /**
  * Claude CLI가 없는 개발/데모 환경용 Mock provider.
@@ -203,24 +205,6 @@ export function guessOrganizer(text: string): string | null {
 }
 
 /** 공고 성격에 맞는 활동 종류를 고른다 */
-export function guessActivityType(text: string): string {
-  const rules: Array<[RegExp, string]> = [
-    [/해커톤|hackathon/i, "hackathon"],
-    [/서포터즈|기자단|앰버서더|앰배서더|홍보대사/, "supporters"],
-    [/인턴/, "intern"],
-    [/신입\s*채용|경력\s*채용|채용\s*공고/, "recruit"],
-    [/부트캠프|교육\s*과정|아카데미|캠프/, "education"],
-    [/오픈소스|open ?source|컨트리뷰션/i, "opensource"],
-    [/공모전|경진대회|아이디어\s*공모|대회/, "contest"],
-    [/대외활동|봉사|동아리/, "external"],
-    [/프로젝트/, "project"],
-  ];
-  for (const [pattern, type] of rules) {
-    if (pattern.test(text)) return type;
-  }
-  return "etc";
-}
-
 function analyzeOpportunity(ctx: AIContext): OpportunityRequirements {
   const text = ctx.announcementText;
   const hasText = text.trim().length > 50;

@@ -1,6 +1,6 @@
 /** 공고문 섹션 읽기 테스트. 실행: npx tsx tests/announcement-parse.test.ts */
 import assert from "node:assert/strict";
-import { extractListNear, isSectionHeading, splitListLine } from "@/services/notice/sections";
+import { extractListNear, guessActivityType, isSectionHeading, splitListLine } from "@/services/notice/sections";
 
 let passed = 0;
 const test = (name: string, fn: () => void) => {
@@ -75,6 +75,15 @@ test("내용 줄을 머리글로 오인하지 않는다", () => {
 test("나누지 않는 목록은 예전처럼 한 줄을 한 항목으로", () => {
   const items = extractListNear(fromWeb, ["지원 자격"], 5);
   assert.deepEqual(items, ["전국 대학생 및 대학원생, 3인 이내 팀"]);
+});
+
+test("활동 종류는 제목 줄로 먼저 정한다 (혜택 문구의 '인턴'에 끌려가지 않음)", () => {
+  const contest = `제7회 대학생 브랜드 마케팅 아이디어 공모전\n■ 시상: 대상 300만원 / 수상팀 소담코스메틱 인턴 지원 시 서류 우대`;
+  assert.equal(guessActivityType(contest), "contest");
+  assert.equal(guessActivityType("[가람페이] 2026 하반기 서버 개발 체험형 인턴 모집\n■ 전형: 서류"), "intern");
+  assert.equal(guessActivityType("2026 공공서비스 UX 개선 아이디어 공모전\n■ 주최: 새솔디자인재단"), "contest");
+  assert.equal(guessActivityType("모집 안내\n대학생 서포터즈 10기를 모집합니다"), "supporters", "제목에 없으면 본문으로");
+  assert.equal(guessActivityType("안내문\n내용 없음"), "etc");
 });
 
 console.log(`\n${passed}개 통과`);

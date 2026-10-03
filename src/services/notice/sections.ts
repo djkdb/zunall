@@ -100,3 +100,29 @@ export function extractListNear(
   }
   return out.slice(0, max);
 }
+
+/** 공고문에서 활동 종류를 짐작한다 (AI 없이도 동작해야 하는 첫 추정) */
+export function guessActivityType(text: string): string {
+  // 제목 줄이 가장 정확하다. 본문 전체로 먼저 보면 "수상팀 인턴 지원 시 우대" 같은
+  // 혜택 문구 때문에 공모전이 인턴으로 분류됐다.
+  const title = text.split("\n").map((line) => line.trim()).find(Boolean) ?? "";
+  return matchActivityType(title) ?? matchActivityType(text) ?? "etc";
+}
+
+function matchActivityType(text: string): string | null {
+  const rules: Array<[RegExp, string]> = [
+    [/해커톤|hackathon/i, "hackathon"],
+    [/서포터즈|기자단|앰버서더|앰배서더|홍보대사/, "supporters"],
+    [/인턴/, "intern"],
+    [/신입\s*채용|경력\s*채용|채용\s*공고/, "recruit"],
+    [/부트캠프|교육\s*과정|아카데미|캠프/, "education"],
+    [/오픈소스|open ?source|컨트리뷰션/i, "opensource"],
+    [/공모전|경진대회|아이디어\s*공모|대회/, "contest"],
+    [/대외활동|봉사|동아리/, "external"],
+    [/프로젝트/, "project"],
+  ];
+  for (const [pattern, type] of rules) {
+    if (pattern.test(text)) return type;
+  }
+  return null;
+}

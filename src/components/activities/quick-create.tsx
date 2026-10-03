@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Link2, ClipboardPaste, Loader2, Wand2, Check } from "lucide-react";
 import { quickCreateActivity } from "@/actions/quick-create";
 import { Button } from "@/components/ui/button";
+import { AIWaitHint } from "@/components/ai/ai-wait-hint";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,6 +118,7 @@ export function QuickCreate() {
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
           {pending ? "공고를 읽는 중…" : "자동으로 활동 만들기"}
         </Button>
+        <AIWaitHint active={pending} className="text-center" />
       </CardContent>
     </Card>
   );

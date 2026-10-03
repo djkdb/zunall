@@ -8,12 +8,11 @@ import {
   aiReviews,
   aiReviewItems,
   submissions,
-  users,
   careerGoals,
   careerProfiles,
 } from "@/lib/db";
 import { logHistory, pushNotification } from "@/lib/history";
-import { newId, daysUntil, safeJsonParse } from "@/lib/utils";
+import { newId, daysUntil, formatBytes, safeJsonParse } from "@/lib/utils";
 import { getLatestVersionDocument } from "@/lib/queries";
 import { AI_ACTIONS, type AIAction } from "@/lib/constants";
 import { getProvider, type AIContext, type AIRequest } from "./provider";
@@ -192,7 +191,8 @@ async function buildContext(
       else if (days !== null && days <= 2) flags.push("DEADLINE_SOON");
       // 플래그는 [대괄호] 형태로만 표기한다 — mock provider가 substring 검사로 판별하므로
       // 설명 문구에 플래그 토큰이 그대로 들어가면 오탐이 발생한다.
-      extraInstruction = `파일명: ${latest.doc.originalName}, 크기: ${(latest.doc.size / 1024 / 1024).toFixed(2)}MB, 형식: ${latest.doc.mime}. 상태 플래그: ${flags.length > 0 ? flags.map((f) => `[${f}]`).join(" ") : "(문제 없음)"}. 플래그 의미 — SIZE_OVER: 파일 크기 초과, DEADLINE_PASSED: 마감 지남, DEADLINE_SOON: 마감 임박.`;
+      // "0.00MB" 로 적으면 1KB 짜리 글도 "비어 있을 수 있다"는 오판이 나왔다 — 읽을 수 있는 단위와 본문 길이를 준다
+      extraInstruction = `파일명: ${latest.doc.originalName}, 크기: ${formatBytes(latest.doc.size)}, 추출된 본문 ${submissionText.replace(/\s/g, "").length}자(공백 제외), 형식: ${latest.doc.mime}. 상태 플래그: ${flags.length > 0 ? flags.map((f) => `[${f}]`).join(" ") : "(문제 없음)"}. 플래그 의미 — SIZE_OVER: 파일 크기 초과, DEADLINE_PASSED: 마감 지남, DEADLINE_SOON: 마감 임박.`;
     }
   } else if (needsSubmission && action !== "expected_questions") {
     return { error: "이 액션은 제출물을 선택해야 합니다." };
@@ -215,8 +215,8 @@ async function buildContext(
       .join("\n\n---\n\n");
   }
 
-  // 지원자 프로필: 이름 + 활동 이력 + 커리어 목표/헤드라인 (있으면)
-  const user = (await db.select().from(users).where(eq(users.id, userId)).limit(1))[0];
+  // 지원자 프로필: 활동 이력 + 커리어 목표/헤드라인 (있으면).
+  // 이름은 넣지 않는다 — 판단에 필요 없고, AI 에 개인정보를 보낼 이유가 없다.
   const myActivities = await db
     .select({ name: activities.name, type: activities.type, status: activities.status })
     .from(activities)
@@ -233,7 +233,6 @@ async function buildContext(
     .where(eq(careerProfiles.userId, userId))
     .limit(1))[0];
   const userProfile = [
-    `이름: ${user?.name ?? "사용자"}.`,
     careerGoal ? `커리어 목표: ${careerGoal.name}.` : null,
     careerProfile?.headline ? `프로필: ${careerProfile.headline}.` : null,
     `등록된 활동 ${myActivities.length}개 (수상 ${wonCount}회).`,

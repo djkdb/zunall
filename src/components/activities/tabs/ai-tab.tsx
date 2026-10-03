@@ -16,7 +16,7 @@ import { CriteriaManager } from "@/components/ai/criteria-manager";
 import { ReviewResult } from "@/components/ai/review-result";
 import { parseReviewResult } from "@/services/ai/evaluator";
 import { getProviderName } from "@/services/ai/provider";
-import { AI_ACTIONS, type AIAction } from "@/lib/constants";
+import { AI_ACTIONS, analysisSourceLabel, type AIAction } from "@/lib/constants";
 import { cn, formatDateTime } from "@/lib/utils";
 
 export async function AITab({
@@ -90,11 +90,7 @@ export async function AITab({
               <Sparkles className="h-4 w-4 text-primary" /> AI로 분석하기
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              provider:{" "}
-              <Badge variant={provider === "claude" ? "default" : "secondary"}>
-                {provider}
-              </Badge>
-              {provider === "mock" && " (개발용 휴리스틱 분석)"}
+              <Badge variant={provider === "mock" ? "secondary" : "default"}>{analysisSourceLabel(provider)}</Badge>
             </p>
           </CardHeader>
           <CardContent className="space-y-2">

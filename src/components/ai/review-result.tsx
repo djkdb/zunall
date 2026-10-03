@@ -16,6 +16,7 @@ import { CreateTaskButton } from "@/components/ai/create-task-button";
 import type { AIReviewRow } from "@/lib/db";
 import type { AIResultData } from "@/services/ai/schemas";
 import { cn } from "@/lib/utils";
+import { analysisSourceLabel } from "@/lib/constants";
 
 const DISCLAIMER =
   "이 결과는 공식 평가 기준과 업로드된 자료를 기반으로 한 AI 추정치이며 실제 심사 결과와 다를 수 있습니다.";
@@ -133,7 +134,7 @@ function EvaluationView({
             </div>
             <div className="text-right text-xs text-muted-foreground">
               <p>신뢰도 {Math.round(data.confidence * 100)}%</p>
-              <p>provider: {review.provider}</p>
+              <p>{analysisSourceLabel(review.provider)}</p>
             </div>
           </div>
           <Progress value={pct} className="mt-3 h-3" />
@@ -317,7 +318,7 @@ function FinalCheckView({
       <Card>
         <CardContent className="p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Final Check
+            제출 전 최종 검토
           </p>
           <div className="mt-1 flex flex-wrap items-end justify-between gap-2">
             <p className="text-4xl font-bold tracking-tight">

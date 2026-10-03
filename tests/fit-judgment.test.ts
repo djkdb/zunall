@@ -1,6 +1,6 @@
 /** 지원 판단이 사람을 잘못 말리지 않는지. 실행: npx tsx tests/fit-judgment.test.ts */
 import assert from "node:assert/strict";
-import { computeOpportunityFit } from "@/services/score/opportunity-fit";
+import { computeOpportunityFit, isPaperwork } from "@/services/score/opportunity-fit";
 import { computeGaps } from "@/services/career/gap";
 import { computeSkillScores } from "@/services/score/skill";
 import { inferEvidenceFromActivities } from "@/services/career/activity-evidence";
@@ -124,6 +124,47 @@ test("목표와 무관하고 적합도도 낮으면 여전히 말린다 (기존 
   });
   assert.equal(fit.recommendation, "skip", fit.recommendationReason);
   assert.ok(/적합도가 낮고/.test(fit.recommendationReason), fit.recommendationReason);
+});
+
+test("신청서·동의서는 기획서만큼 시간이 들지 않는다 (실제 AI 가 뽑은 제출물 그대로)", () => {
+  const base = { ...adContest, requiredSkills: [] as string[], preferredSkills: [] as string[] };
+  const withForms = computeOpportunityFit({
+    requirements: { ...base, submissionItems: ["기획서(PDF, 15장 이내)", "참가신청서", "개인정보 수집 동의서"] },
+    skillScores: minjiSkills,
+    gaps: minjiGaps,
+    template: marketer,
+  });
+  const allWork = computeOpportunityFit({
+    requirements: { ...base, submissionItems: ["기획서(PDF, 15장 이내)", "포트폴리오", "영상"] },
+    skillScores: minjiSkills,
+    gaps: minjiGaps,
+    template: marketer,
+  });
+  assert.equal(withForms.prepHours, 9, `서류 2장은 1시간: ${withForms.prepHours}`);
+  assert.equal(allWork.prepHours, 16);
+  assert.ok(isPaperwork("참가신청서") && isPaperwork("재학증명서") && !isPaperwork("자기소개서"));
+});
+
+test("인턴 공고에는 '수상보다 결과물' 논리를 쓰지 않는다 (다은의 실제 결과)", () => {
+  // 공모전이면 떨어져도 결과물이 남지만, 채용 지원은 서류만으로 역량이 늘지 않는다
+  const contest = computeOpportunityFit({
+    requirements: adContest,
+    skillScores: minjiSkills,
+    gaps: minjiGaps,
+    template: marketer,
+    activityType: "contest",
+  });
+  const intern = computeOpportunityFit({
+    requirements: adContest,
+    skillScores: minjiSkills,
+    gaps: minjiGaps,
+    template: marketer,
+    activityType: "intern",
+  });
+  assert.equal(contest.recommendation, "apply", contest.recommendationReason);
+  assert.equal(intern.recommendation, "hold", intern.recommendationReason);
+  assert.ok(!/수상/.test(intern.recommendationReason), intern.recommendationReason);
+  assert.ok(/서류/.test(intern.recommendationReason), intern.recommendationReason);
 });
 
 console.log(`\n${passed}개 통과`);

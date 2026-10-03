@@ -9,6 +9,7 @@ import {
   saveProfileImport,
 } from "@/actions/profile-import";
 import { Button } from "@/components/ui/button";
+import { AIWaitHint } from "@/components/ai/ai-wait-hint";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,6 +100,7 @@ export function ProfileImport() {
               >
                 <Upload className="h-4 w-4" /> 이력서 파일에서 뽑기
               </Button>
+              <AIWaitHint active={pending && data === null} className="w-full" />
               <input
                 ref={fileRef}
                 type="file"

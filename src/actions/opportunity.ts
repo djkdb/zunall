@@ -46,10 +46,12 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
     safeJsonParse<unknown>(review?.resultJson, null),
   );
   if (!parsed.success) return { ok: false, error: "요구사항 추출 결과를 해석하지 못했습니다." };
+  const requiredSkills = normalizeSkillNames(parsed.data.requiredSkills);
   const requirements = {
     ...parsed.data,
-    requiredSkills: normalizeSkillNames(parsed.data.requiredSkills),
-    preferredSkills: normalizeSkillNames(parsed.data.preferredSkills),
+    requiredSkills,
+    // 요구 역량과 겹치는 우대 역량은 화면에 두 번 보이지 않게 뺀다
+    preferredSkills: normalizeSkillNames(parsed.data.preferredSkills).filter((s) => !requiredSkills.includes(s)),
   };
 
   // 2) 규칙 기반 Fit 계산
@@ -76,6 +78,7 @@ export async function analyzeOpportunityFit(activityId: string): Promise<ActionR
     // 마감이 코앞이면 적합도가 높아도 지금 시작할 일이 아니다
     daysUntilDeadline: daysUntil(activity.applyDeadline),
     noticeKnown,
+    activityType: activity.type,
   });
 
   // 3) 저장 (활동당 최신 1건 유지)

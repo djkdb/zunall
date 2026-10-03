@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Crosshair, Loader2 } from "lucide-react";
 import { analyzeOpportunityFit } from "@/actions/opportunity";
 import { Button } from "@/components/ui/button";
+import { AIWaitHint } from "@/components/ai/ai-wait-hint";
 
 /** 공고 요구 역량 AI 추출 + 규칙 기반 적합도 계산 실행 버튼 */
 export function AnalyzeFitButton({
@@ -42,6 +43,7 @@ export function AnalyzeFitButton({
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
         {pending ? "분석 중…" : rerun ? "적합도 다시 분석" : "지원 적합도 분석"}
       </Button>
+      <AIWaitHint active={pending} />
       {error && <span className="mt-1 text-xs text-destructive">{error}</span>}
     </span>
   );

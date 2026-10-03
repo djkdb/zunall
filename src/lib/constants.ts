@@ -130,6 +130,12 @@ export const NOTIFICATION_TYPES = {
 } as const;
 export type NotificationType = keyof typeof NOTIFICATION_TYPES;
 
+/** 분석을 누가 했는지 사용자 말로 (provider 이름은 내부 용어다) */
+export function analysisSourceLabel(provider: string | null | undefined): string {
+  if (provider === "claude" || provider === "anthropic") return "AI 분석";
+  return "간이 분석 (AI 대신 규칙으로 읽은 결과)";
+}
+
 export const AI_ACTIONS = {
   analyze_announcement: "공고문 분석",
   analyze_opportunity: "요구 역량 분석",

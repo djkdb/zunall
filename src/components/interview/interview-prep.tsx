@@ -11,6 +11,7 @@ import {
   deleteInterviewQuestion,
 } from "@/actions/interview";
 import { Button } from "@/components/ui/button";
+import { AIWaitHint } from "@/components/ai/ai-wait-hint";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -81,6 +82,7 @@ export function InterviewPrep({
           예상 질문 만들기
         </Button>
       </div>
+      <AIWaitHint active={pending === "generate"} className="text-right" />
 
       {questions.length > 0 && (
         <p className="text-xs text-muted-foreground">

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { runAI } from "@/actions/ai";
 import { Button } from "@/components/ui/button";
+import { AIWaitHint } from "@/components/ai/ai-wait-hint";
 import { cn } from "@/lib/utils";
 
 // 아이콘 컴포넌트는 서버→클라이언트로 직렬화할 수 없으므로 action 키로 내부에서 결정한다.
@@ -78,6 +79,7 @@ export function RunAIButton({
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ButtonIcon className="h-4 w-4" />}
         {pending ? "AI 분석 중…" : label}
       </Button>
+      <AIWaitHint active={pending} />
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
     </div>
   );
