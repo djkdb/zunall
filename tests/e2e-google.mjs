@@ -1,6 +1,6 @@
 /**
- * 구글 로그인 E2E — 가짜 구글 서버(/tmp/mock-google.mjs)로 전체 흐름을 검증한다.
- * 준비: 가짜 구글 서버 기동 + 앱을 GOOGLE_* 환경변수와 함께 기동
+ * 구글 로그인 E2E — 가짜 구글 서버(tests/mocks/google.mjs)로 전체 흐름을 검증한다.
+ * 준비: sh tests/mocks/start.sh + 앱을 GOOGLE_* 환경변수와 함께 기동
  * 실행: BASE=http://localhost:3000 node tests/e2e-google.mjs
  */
 import { launchBrowser } from "./browser.mjs";

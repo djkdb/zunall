@@ -49,6 +49,12 @@ jobs:
       ALLOW_PRIVATE_FETCH: "1"
       CRON_KEY: ci-cron-key
       BASE: http://localhost:3000
+      # 가짜 구글 서버(tests/mocks/google.mjs)를 가리킨다
+      GOOGLE_CLIENT_ID: test-client-id.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: test-secret
+      GOOGLE_AUTH_ENDPOINT: http://localhost:8790/auth
+      GOOGLE_TOKEN_ENDPOINT: http://localhost:8790/token
+      ADMIN_EMAILS: admin@cavero.test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,8 +62,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Chromium 경로 확인
-        run: echo "CHROMIUM_PATH=$(ls -d /ms-playwright/chromium-*/chrome-linux/chrome | head -1)" >> "$GITHUB_ENV"
       - run: npm run build
       - name: 앱 기동
         run: |
@@ -67,29 +71,10 @@ jobs:
             sleep 2
           done
           echo "앱이 뜨지 않았습니다"; exit 1
-      - name: 활동 E2E
-        run: node tests/e2e-smoke.mjs
-      - name: Career E2E
-        run: node tests/e2e-career.mjs
-      - name: 전체 기능 시뮬레이션
-        run: node tests/sim-full.mjs
-      - name: 캘린더 구독 E2E
-        run: node tests/e2e-calendar-ics.mjs
-      - name: 자소서 코칭 E2E
-        run: node tests/e2e-essay.mjs
-      - name: 회고·포트폴리오 E2E
-        run: node tests/e2e-retro-portfolio.mjs
-      - name: 검색·미리보기 E2E
-        run: node tests/e2e-search-preview.mjs
-      - name: 백업 E2E
-        run: node tests/e2e-backup.mjs
-      - name: 대시보드 위젯 E2E
-        run: node tests/e2e-widgets.mjs
-      - name: 빠른 등록 E2E
-        run: node tests/e2e-quick-create.mjs
-      - name: 이력 채우기 E2E
-        run: node tests/e2e-profile-import.mjs
-      - name: 시작 가이드 E2E
-        run: node tests/e2e-guide.mjs
-      - name: 계열별 커리어 E2E
-        run: node tests/e2e-fields.mjs
+      - name: 가짜 외부 서버 기동 (구글 OAuth · 공고 사이트 · 공고 목록)
+        run: sh tests/mocks/start.sh
+      # 묶음 목록은 package.json 의 test:e2e 하나에서만 관리한다.
+      # 여기에 따로 나열했더니 새 묶음이 추가될 때마다 빠져서 10개가 CI 밖에 있었다.
+      - name: 브라우저 E2E 전체
+        run: npm run test:e2e
+

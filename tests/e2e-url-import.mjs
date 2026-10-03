@@ -1,6 +1,6 @@
 /**
  * 공고 URL 가져오기 E2E.
- * 준비: 가짜 공고 사이트(8795) + 앱을 ALLOW_PRIVATE_FETCH=1 로 기동
+ * 준비: sh tests/mocks/start.sh (가짜 공고 사이트 8795) + 앱을 ALLOW_PRIVATE_FETCH=1 로 기동
  * 실행: node tests/e2e-url-import.mjs
  */
 import { launchBrowser } from "./browser.mjs";
