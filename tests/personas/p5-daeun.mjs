@@ -48,10 +48,17 @@ await see("지원 현황 보드", "8곳이 단계별로 한눈에 보이나");
 await act("활동 목록", () => page.goto(`${BASE}/activities`));
 await see("활동 목록");
 
-// 탈락한 곳 하나에 회고를 남겨 본다
-if (urls[0]) {
-  await act("탈락 활동 상세", () => page.goto(urls[0]));
-  await see("탈락 활동 상세", "탈락 뒤에 무엇을 하라고 하나");
+// 탈락한 곳마다 어느 단계였는지 적는다 (서류 4, 면접 1)
+const stages = ["서류", "서류", "서류", "서류", "면접"];
+for (let i = 0; i < stages.length; i++) {
+  if (!urls[i]) continue;
+  await act(`탈락 단계 기록: ${apps[i].organizer} → ${stages[i]}`, async () => {
+    await page.goto(urls[i]);
+    const group = page.getByRole("group", { name: "탈락 단계" });
+    await group.getByRole("button", { name: stages[i], exact: true }).click();
+    await group.getByRole("button", { name: stages[i], exact: true, pressed: true }).waitFor({ timeout: 10000 });
+  });
+  if (i === 0) await see("탈락 활동 상세", "탈락 뒤에 무엇을 하라고 하나");
 }
 
 await act("통계", () => page.goto(`${BASE}/stats`));

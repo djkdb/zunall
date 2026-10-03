@@ -16,6 +16,7 @@ import {
 import { requireUser } from "@/lib/auth/session";
 import { pushNotification } from "@/lib/history";
 import { newId } from "@/lib/utils";
+import { isExploringGoal } from "@/services/career/explore";
 import { getCareerContext, recordScoreSnapshot } from "@/lib/career-queries";
 import { importEvidenceFromActivities } from "@/services/career/evidence-import";
 import { normalizeSkillNames } from "@/services/career/skill-detect";
@@ -179,6 +180,21 @@ export async function chooseRole(roleKey: string): Promise<ActionResult> {
       .where(and(eq(careerProfiles.id, existing.id), eq(careerProfiles.userId, user.id)));
   } else {
     await db.insert(careerProfiles).values({ id: newId(), userId: user.id, roleKey, updatedAt: Date.now() });
+  }
+
+  // 목표 문장이 "아직 잘 모르겠어요…"인 채로 남으면 정한 뒤에도 화면이 망설이는 말로 시작한다.
+  // 망설이던 문장은 설명으로 옮겨 두고, 목표 이름을 고른 직무로 바꾼다.
+  const goal = (await db
+    .select({ id: careerGoals.id, name: careerGoals.name, description: careerGoals.description })
+    .from(careerGoals)
+    .where(and(eq(careerGoals.userId, user.id), eq(careerGoals.isActive, 1)))
+    .limit(1))[0];
+  if (goal && isExploringGoal(goal.name)) {
+    const label = ROLE_TEMPLATES.find((t) => t.key === roleKey)!.label;
+    await db
+      .update(careerGoals)
+      .set({ name: label, type: "ROLE", description: goal.description || goal.name, updatedAt: Date.now() })
+      .where(and(eq(careerGoals.id, goal.id), eq(careerGoals.userId, user.id)));
   }
 
   await snapshot(user.id);

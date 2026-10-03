@@ -107,7 +107,7 @@ function BucketTable({ title, buckets }: { title: string; buckets: OutcomeBucket
             <tr className="border-b text-xs text-muted-foreground">
               <th className="py-1.5 text-left font-medium">구간</th>
               <th className="py-1.5 text-right font-medium">지원</th>
-              <th className="py-1.5 text-right font-medium">수상</th>
+              <th className="py-1.5 text-right font-medium">합격·수상</th>
               <th className="py-1.5 text-right font-medium">탈락</th>
               <th className="py-1.5 text-right font-medium">대기</th>
               <th className="py-1.5 text-right font-medium">합격률</th>

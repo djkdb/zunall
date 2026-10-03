@@ -163,9 +163,9 @@ export default async function StatsPage() {
         <MetricCard label="완료" value={String(finished)} />
         <MetricCard label="지원" value={String(appliedCount)} />
         <MetricCard
-          label="수상"
+          label="합격·수상"
           value={String(won)}
-          sub={winRate !== null ? `수상률 ${winRate}%` : undefined}
+          sub={winRate !== null ? `합격·수상률 ${winRate}%` : undefined}
           highlight
         />
         <MetricCard

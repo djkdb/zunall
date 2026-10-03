@@ -53,6 +53,18 @@ await see("할 일 탭(모바일)");
 await act("대시보드(모바일)", () => page.goto(`${BASE}/`));
 await see("대시보드(모바일)", "사이드바가 화면을 얼마나 먹나");
 
+// 디자이너에게 포트폴리오의 핵심은 프로젝트다 — 커리어에 프로젝트 하나를 남긴다
+await act("프로젝트 근거 남기기", async () => {
+  await page.goto(`${BASE}/career`);
+  await page.getByRole("button", { name: "근거 추가" }).first().click();
+  await page.locator("#ev-title").fill("모바일 뱅킹 앱 송금 흐름 리디자인");
+  await page.locator("#ev-skills").fill("디자인, UX 리서치");
+  await page.locator("#ev-url").fill("https://www.behance.net/hyunwoo-demo");
+  await page.locator("#ev-desc").fill("송금 단계를 5단계에서 3단계로 줄이고 사용성 테스트 5명으로 검증");
+  await page.getByRole("button", { name: "추가", exact: true }).click();
+  await page.getByText("모바일 뱅킹 앱 송금 흐름 리디자인").filter({ visible: true }).first().waitFor({ timeout: 10000 });
+});
+
 await act("포트폴리오(모바일)", () => page.goto(`${BASE}/portfolio`));
 await see("포트폴리오(모바일)");
 
@@ -61,6 +73,27 @@ await act("포트폴리오 공유 링크 만들기", async () => {
   await page.waitForTimeout(1500);
 });
 await see("공유 링크 생성 후(모바일)", "링크를 복사해 카톡으로 보낼 수 있나");
+
+// 채용 담당자가 로그인 없이 링크를 열었을 때
+const shareUrl = await page.evaluate(() => {
+  const fromInput = [...document.querySelectorAll("input")].map((i) => i.value).find((v) => v.includes("/p/"));
+  return fromInput ?? document.body.innerText.match(/https?:\/\/\S+\/p\/[\w-]+/)?.[0] ?? null;
+});
+if (shareUrl) {
+  const viewer = await page.context().browser().newContext();
+  const recruiter = await viewer.newPage();
+  await act("공유 링크 열기(로그인 없이)", () => recruiter.goto(shareUrl));
+  const text = await recruiter.locator("body").innerText();
+  await act("공유 페이지에 프로젝트가 보임", async () => {
+    if (!text.includes("모바일 뱅킹 앱 송금 흐름 리디자인")) throw new Error("공유 페이지에 프로젝트가 없음");
+    if (!text.includes("behance.net")) throw new Error("공유 페이지에 링크가 없음");
+  });
+  await viewer.close();
+} else {
+  await act("공유 링크 주소 찾기", async () => {
+    throw new Error("공유 링크 주소를 화면에서 찾지 못함");
+  });
+}
 
 await act("설정(모바일)", () => page.goto(`${BASE}/settings`));
 await see("설정(모바일)");

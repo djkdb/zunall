@@ -58,4 +58,13 @@ await see("가이드");
 await act("성장 기록", () => page.goto(`${BASE}/career`));
 await see("커리어(재방문)", "점수가 낮을 때 기분이 어떤가");
 
+// 첫 실험을 해 본 뒤 마음이 가는 쪽을 고른다
+await act("후보 중 하나로 정하기", async () => {
+  await page.goto(`${BASE}/`);
+  const card = page.locator("li", { hasText: "언론 / 미디어 / PR" }).first();
+  await card.getByRole("button", { name: "이 직무로 정하기" }).click();
+  await page.getByText("목표 준비도").first().waitFor({ timeout: 15000 });
+});
+await see("직무를 정한 뒤 대시보드", "정하고 나면 그때부터 준비도를 보여주나");
+
 await finish();
