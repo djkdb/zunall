@@ -115,10 +115,14 @@ function matchActivityType(text: string): string | null {
     [/서포터즈|기자단|앰버서더|앰배서더|홍보대사/, "supporters"],
     [/인턴/, "intern"],
     [/신입\s*채용|경력\s*채용|채용\s*공고/, "recruit"],
+    [/자격증|자격\s*시험|능력\s*검정|검정\s*시험|필기\s*시험|실기\s*시험|시험\s*접수|토익|토플|지도사\s*\d\s*급/, "exam"],
     [/부트캠프|교육\s*과정|아카데미|캠프/, "education"],
     [/오픈소스|open ?source|컨트리뷰션/i, "opensource"],
     [/공모전|경진대회|아이디어\s*공모|대회/, "contest"],
-    [/대외활동|봉사|동아리/, "external"],
+    // 공모전 뒤에 둔다 — "공연 공모전"은 공모전이고, "가요제 본선 오디션"은 무대다
+    [/오디션|개인전|단체전|아트페어|전시|공연|연주회|리사이틀|가요제/, "performance"],
+    [/봉사|실습/, "volunteer"],
+    [/대외활동|동아리/, "external"],
     [/프로젝트/, "project"],
   ];
   for (const [pattern, type] of rules) {

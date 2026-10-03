@@ -154,7 +154,7 @@ export const profileExtractSchema = z.object({
         title: z.string(),
         description: z.string().default(""),
         skills: stringArray,
-        kind: z.enum(["activity", "project", "award", "certificate", "education", "work"]).default("activity"),
+        kind: z.enum(["activity", "project", "award", "certificate", "exhibition", "volunteer", "education", "work"]).catch("activity"),
       }),
     )
     .default([]),

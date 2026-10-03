@@ -38,10 +38,13 @@ export function templateHits(text: string): { template: RoleTemplate; hits: numb
     return haystack.includes(k);
   };
 
+  // 맞은 개수가 같으면 문장에서 먼저 나온 쪽 — "퍼스널 트레이너, 체육교사도 고민"의 주 목표는 트레이너다
+  const firstAt = (template: RoleTemplate) =>
+    Math.min(...template.keywords.filter(matches).map((k) => haystack.indexOf(k.toLowerCase())).filter((i) => i >= 0), Infinity);
   return ROLE_TEMPLATES.filter((t) => t.key !== "general")
     .map((template) => ({ template, hits: template.keywords.filter(matches).length }))
     .filter((m) => m.hits > 0)
-    .sort((a, b) => b.hits - a.hits);
+    .sort((a, b) => b.hits - a.hits || firstAt(a.template) - firstAt(b.template));
 }
 
 /** 계열에 해당하는 희망 직무 목록 (계열이 없으면 전체). general 은 항상 마지막. */

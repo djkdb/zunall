@@ -54,6 +54,11 @@ export default async function WelcomePage() {
           공고 링크만 붙여넣으면 마감일·자격·제출 서류·평가 기준이 자동으로 정리됩니다. 지원할지
           판단하고, 자기소개서를 쓰고, 마감을 놓치지 않게 챙겨드립니다.
         </p>
+        {/* IT 전공만의 서비스로 보이지 않게 — 계열마다 챙기는 일정이 다르다 */}
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          전시 출품·오디션, 자격증 시험, 봉사·실습 시간까지 함께 챙깁니다. 인문·사회·상경·공학·자연·의약·교육·예체능,
+          고른 계열에 맞는 직무와 활동을 기준으로 추천합니다.
+        </p>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Link href="/signup">

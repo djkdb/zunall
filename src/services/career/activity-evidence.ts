@@ -35,13 +35,23 @@ const PARTICIPATED: Record<string, string[]> = {
   // 공모전·해커톤은 결과물을 냈으면 떨어져도 만든 경험은 남는다
   contest: ["submitted", "waiting", "won", "lost", "done"],
   hackathon: ["submitted", "waiting", "won", "lost", "done", "active"],
+  // 자격증은 붙었을 때만 근거다. 시험을 봤다는 것만으로는 역량이 증명되지 않는다.
+  exam: ["won"],
+  // 전시에 걸거나 무대에 섰다면 선정되지 않았어도 작품·무대 경험은 남는다
+  performance: ["active", "submitted", "waiting", "won", "lost", "done"],
 };
 const DEFAULT_PARTICIPATED = ["active", "submitted", "waiting", "won", "done"];
 
 /** 활동 종류 → 근거 종류 (가중치가 다르다) */
 function evidenceKindOf(type: string, status: string): string {
+  // 시험 합격은 수상이 아니라 자격이다
+  if (type === "exam") return "certificate";
   if (status === "won") return "award";
   switch (type) {
+    case "performance":
+      return "exhibition";
+    case "volunteer":
+      return "volunteer";
     case "intern":
     case "recruit":
       return "work";
@@ -74,6 +84,9 @@ const TYPE_DEFAULT_SKILLS: Record<string, string[]> = {
   opensource: ["협업"],
   intern: ["협업", "커뮤니케이션"],
   recruit: ["협업", "커뮤니케이션"],
+  performance: ["창작 / 작품 활동"],
+  volunteer: ["협업", "커뮤니케이션"],
+  // exam 은 비워 둔다 — 시험 이름(생활스포츠지도사, 한국사…)에서 찾지 못하면 짐작하지 않는다
 };
 
 /** 종류를 "대외활동"으로 골랐어도 이름이 서포터즈류면 그 성격으로 본다 */

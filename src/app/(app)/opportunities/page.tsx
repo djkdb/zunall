@@ -28,6 +28,10 @@ const NOTICE_SITES = [
   { name: "위비티", url: "https://www.wevity.com", what: "공모전" },
   { name: "씽굿", url: "https://www.thinkcontest.com", what: "공모전" },
   { name: "캠퍼스픽", url: "https://www.campuspick.com", what: "대외활동·공모전" },
+  // 전공에 따라 공고가 모이는 곳이 다르다
+  { name: "Q-Net", url: "https://www.q-net.or.kr", what: "국가자격증 시험 일정" },
+  { name: "한국문화예술위원회", url: "https://www.arko.or.kr", what: "예술 지원사업·공모" },
+  { name: "1365 자원봉사", url: "https://www.1365.go.kr", what: "봉사활동" },
 ];
 
 export const metadata: Metadata = { title: "Opportunities" };

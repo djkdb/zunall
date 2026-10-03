@@ -9,6 +9,7 @@ import {
   ONGOING_STATUSES,
   EVENT_TYPES,
   type EventType,
+  deadlineLabels,
 } from "@/lib/constants";
 
 /**
@@ -59,9 +60,10 @@ export async function runDeadlineNotifications(userId: string): Promise<void> {
   };
 
   for (const act of acts) {
-    await checkDeadline(userId, act.id, act.name, "지원 마감", act.applyDeadline, `act:${act.id}:apply`, settings.thresholds);
-    await checkDeadline(userId, act.id, act.name, "결과물 제출", act.submitDeadline, `act:${act.id}:submit`, settings.thresholds);
-    await checkDeadline(userId, act.id, act.name, "결과 발표", act.announceDate, `act:${act.id}:announce`, settings.thresholds);
+    const labels = deadlineLabels(act.type);
+    await checkDeadline(userId, act.id, act.name, labels.apply, act.applyDeadline, `act:${act.id}:apply`, settings.thresholds);
+    await checkDeadline(userId, act.id, act.name, labels.submit, act.submitDeadline, `act:${act.id}:submit`, settings.thresholds);
+    await checkDeadline(userId, act.id, act.name, labels.announce, act.announceDate, `act:${act.id}:announce`, settings.thresholds);
     mark(act.id, act.applyDeadline);
     mark(act.id, act.submitDeadline);
     mark(act.id, act.announceDate);

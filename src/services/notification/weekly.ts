@@ -4,7 +4,7 @@ import { db, activities, tasks, events, userSettings, careerActions, notificatio
 import { pushNotification } from "@/lib/history";
 import { getCareerContext, getScoreTrend } from "@/lib/career-queries";
 import { toDateStr, todayStr } from "@/lib/utils";
-import { ONGOING_STATUSES } from "@/lib/constants";
+import { ONGOING_STATUSES, deadlineLabels } from "@/lib/constants";
 import { parseNotifySettings, weekKey } from "./settings";
 import { buildWeeklyReport, type WeeklyReport } from "./weekly-format";
 
@@ -77,10 +77,11 @@ async function composeReport(userId: string): Promise<WeeklyReport> {
 
   const upcoming: Array<{ name: string; what: string; date: string }> = [];
   for (const act of acts) {
+    const labels = deadlineLabels(act.type);
     for (const [date, what] of [
-      [act.applyDeadline, "지원 마감"],
-      [act.submitDeadline, "제출 마감"],
-      [act.announceDate, "결과 발표"],
+      [act.applyDeadline, labels.apply],
+      [act.submitDeadline, labels.submit === "결과물 제출" ? "제출 마감" : labels.submit],
+      [act.announceDate, labels.announce],
     ] as Array<[string | null, string]>) {
       if (date && date >= today && date <= weekEnd) upcoming.push({ name: act.name, what, date });
     }

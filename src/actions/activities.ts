@@ -29,6 +29,7 @@ import { LOST_STAGES, type LostStage } from "@/services/score/outcome";
 import {
   ACTIVITY_COLORS,
   ACTIVITY_STATUSES,
+  deadlineLabels,
   type ActivityStatus,
 } from "@/lib/constants";
 import { runDeadlineNotifications } from "@/services/notification/generator";
@@ -124,12 +125,19 @@ export async function createActivity(input: ActivityInput): Promise<ActionResult
 async function autoCreateDeadlineEvents(
   userId: string,
   activityId: string,
-  data: { name: string; applyDeadline: string | null; submitDeadline: string | null; announceDate: string | null },
+  data: {
+    name: string;
+    type?: string | null;
+    applyDeadline: string | null;
+    submitDeadline: string | null;
+    announceDate: string | null;
+  },
 ) {
+  const labels = deadlineLabels(data.type);
   const pairs: Array<[string | null, string, string]> = [
-    [data.applyDeadline, "apply_deadline", "지원 마감"],
-    [data.submitDeadline, "final_submit", "최종 제출"],
-    [data.announceDate, "result", "결과 발표"],
+    [data.applyDeadline, "apply_deadline", labels.apply],
+    [data.submitDeadline, "final_submit", labels.submitEvent],
+    [data.announceDate, "result", labels.announce],
   ];
   for (const [date, type, label] of pairs) {
     if (!date) continue;

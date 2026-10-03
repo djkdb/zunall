@@ -17,7 +17,7 @@ import {
   todayStr,
   safeJsonParse,
 } from "@/lib/utils";
-import { EVENT_TYPES, CRITERIA_SOURCES, type EventType, type CriteriaSource } from "@/lib/constants";
+import { CRITERIA_SOURCES, deadlineLabels, eventTypeLabel, type CriteriaSource } from "@/lib/constants";
 import { announcementSummarySchema, type AnnouncementSummary } from "@/services/ai/schemas";
 
 export async function OverviewTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
@@ -67,10 +67,11 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
     if (parsed.success) aiSummary = parsed.data;
   }
 
+  const labels = deadlineLabels(activity.type);
   const dateCards = [
-    { label: "지원 마감", date: activity.applyDeadline },
-    { label: "결과물 제출", date: activity.submitDeadline },
-    { label: "결과 발표", date: activity.announceDate },
+    { label: labels.apply, date: activity.applyDeadline },
+    { label: labels.submit, date: activity.submitDeadline },
+    { label: labels.announce, date: activity.announceDate },
   ].filter((d) => d.date);
 
   const latestEvalScore =
@@ -130,7 +131,7 @@ export async function OverviewTab({ activity, userId }: { activity: ActivityRow;
                     <li key={event.id} className="flex items-center justify-between gap-2 text-sm">
                       <div className="flex min-w-0 items-center gap-2">
                         <Badge variant="secondary" className="shrink-0">
-                          {EVENT_TYPES[event.type as EventType] ?? event.type}
+                          {eventTypeLabel(event.type, activity.type)}
                         </Badge>
                         <span className="truncate">{event.title}</span>
                       </div>

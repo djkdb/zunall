@@ -32,6 +32,8 @@ export async function startPersona(persona, { mobile = false } = {}) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message.slice(0, 200)}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text().slice(0, 200)}`));
+  // 콘솔의 "404" 만으로는 무엇이 없는지 모른다 — 주소를 함께 남긴다
+  page.on("response", (r) => r.status() >= 400 && errors.push(`http ${r.status()}: ${r.url().replace(BASE, "")}`));
   let n = 0;
 
   /** 지금 화면을 기록한다 */
@@ -135,8 +137,9 @@ export async function addActivity(page, a) {
   if (a.organizer) await page.getByLabel("주최기관").fill(a.organizer);
   if (a.type) await page.getByLabel("활동 종류").selectOption(a.type);
   if (a.status) await page.getByLabel("상태").selectOption(a.status);
-  if (a.applyDeadline) await page.getByLabel("접수(지원) 마감일").fill(a.applyDeadline);
-  if (a.submitDeadline) await page.getByLabel("결과물 제출 마감일").fill(a.submitDeadline);
+  // 날짜 칸 이름은 활동 종류에 따라 바뀐다(시험이면 '시험일') — id 로 찾는다
+  if (a.applyDeadline) await page.locator("#applyDeadline").fill(a.applyDeadline);
+  if (a.submitDeadline) await page.locator("#submitDeadline").fill(a.submitDeadline);
   await page.getByRole("button", { name: "활동 만들기", exact: true }).click();
   await page.waitForURL(/\/activities\/[a-z0-9]{20}$/, { timeout: 30000 });
   return page.url();

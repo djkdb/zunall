@@ -188,7 +188,7 @@ export function OnboardingWizard({ userName }: { userName: string }) {
 
             <div className="space-y-1.5">
               <Label htmlFor="ob-major">학과 / 학부 (선택)</Label>
-              <Input id="ob-major" name="major" maxLength={60} placeholder="예: 경영학과, 기계공학부" />
+              <Input id="ob-major" name="major" maxLength={60} placeholder="예: 서양화과, 사회복지학과, 경영학과" />
             </div>
 
             <div className="space-y-1.5">
@@ -232,7 +232,7 @@ export function OnboardingWizard({ userName }: { userName: string }) {
                 name="name"
                 required
                 maxLength={120}
-                placeholder="예: 마케터, 네이버 서비스 기획자, AI 엔지니어"
+                placeholder="예: 학예사, 퍼스널 트레이너, 마케터, 백엔드 개발자"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -253,11 +253,11 @@ export function OnboardingWizard({ userName }: { userName: string }) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ob-roles">희망 직무 (쉼표 구분)</Label>
-              <Input id="ob-roles" name="targetRolesText" placeholder="예: AI 엔지니어, 백엔드 개발자" />
+              <Input id="ob-roles" name="targetRolesText" placeholder="예: 큐레이터, 전시 기획자" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ob-companies">희망 기업 (쉼표 구분)</Label>
-              <Input id="ob-companies" name="targetCompaniesText" placeholder="예: 네이버, 토스" />
+              <Input id="ob-companies" name="targetCompaniesText" placeholder="예: 국립현대미술관, CJ ENM, 네이버" />
             </div>
             {error && <p className="text-xs text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={pending}>
@@ -271,7 +271,7 @@ export function OnboardingWizard({ userName }: { userName: string }) {
           <form onSubmit={submitProfile} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="ob-headline">나를 한 줄로 표현하면?</Label>
-              <Input id="ob-headline" name="headline" placeholder="예: Software × AI" maxLength={80} />
+              <Input id="ob-headline" name="headline" placeholder="예: 무대 위에서 이야기를 만드는 실용음악 전공자" maxLength={80} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ob-summary">간단한 소개</Label>

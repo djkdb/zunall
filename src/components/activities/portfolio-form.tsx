@@ -56,7 +56,7 @@ export function PortfolioForm({ activity }: { activity: ActivityRow }) {
             id="pf-skills"
             name="skills"
             defaultValue={activity.skills ?? ""}
-            placeholder="예: Figma, React, 데이터 분석"
+            placeholder="예: 회화, 공연 기획, 데이터 분석"
             maxLength={300}
           />
         </div>

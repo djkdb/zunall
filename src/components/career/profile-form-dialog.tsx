@@ -57,7 +57,7 @@ export function ProfileFormDialog({
               name="headline"
               maxLength={80}
               defaultValue={profile?.headline ?? ""}
-              placeholder="예: Software × AI"
+              placeholder="예: 색으로 기억을 그리는 서양화 전공자"
             />
           </div>
           <div className="space-y-1.5">

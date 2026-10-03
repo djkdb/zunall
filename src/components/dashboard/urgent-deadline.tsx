@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlarmClock, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { deadlineLabels } from "@/lib/constants";
 import { ddayLabel } from "@/lib/utils";
 
 const RECOMMENDATION = {
@@ -22,10 +23,14 @@ export function UrgentDeadlineCard({
   deadline,
   analysis,
 }: {
-  activity: { id: string; name: string };
+  activity: { id: string; name: string; type?: string | null };
   deadline: { days: number; label: string };
   analysis: { recommendation: string | null; recommendationReason: string | null } | null;
 }) {
+  // "지원할지 판단"은 지원 마감 앞에서만 말이 된다. 이미 접수한 시험의 시험일, 봉사 확인서 제출일에
+  // 적합도를 따지라고 하면 엉뚱하다.
+  const decidable =
+    !["exam", "volunteer"].includes(activity.type ?? "") && deadline.label === deadlineLabels(activity.type).apply;
   const rec = analysis?.recommendation
     ? RECOMMENDATION[analysis.recommendation as keyof typeof RECOMMENDATION]
     : null;
@@ -45,14 +50,18 @@ export function UrgentDeadlineCard({
               <Badge className={rec.className}>{rec.label}</Badge>
               <span className="min-w-0">{analysis.recommendationReason}</span>
             </p>
-          ) : (
+          ) : decidable ? (
             <p className="mt-1 text-xs text-muted-foreground">
               아직 지원할지 판단하지 않았습니다. 시간을 쓰기 전에 적합도부터 확인해 보세요.
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              얼마 남지 않았습니다. 오늘 할 일부터 정해 두세요.
             </p>
           )}
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          {!analysis && (
+          {!analysis && decidable && (
             <Link
               href={`/activities/${activity.id}?tab=fit`}
               className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent"

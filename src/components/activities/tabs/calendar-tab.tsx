@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { EventFormDialog } from "@/components/calendar/event-form-dialog";
 import { DeleteEventButton } from "@/components/calendar/delete-event-button";
 import { cn, daysUntil, ddayColorClass, ddayLabel, formatDate, todayStr } from "@/lib/utils";
-import { EVENT_TYPES, type EventType } from "@/lib/constants";
+import { eventTypeLabel } from "@/lib/constants";
 
 export async function CalendarTab({ activity, userId }: { activity: ActivityRow; userId: string }) {
   const allEvents = await db
@@ -43,7 +43,7 @@ export async function CalendarTab({ activity, userId }: { activity: ActivityRow;
               </h3>
               <ul className="divide-y rounded-lg border bg-card">
                 {upcoming.map((event) => (
-                  <EventRowItem key={event.id} event={event} />
+                  <EventRowItem activityType={activity.type} key={event.id} event={event} />
                 ))}
               </ul>
             </section>
@@ -55,7 +55,7 @@ export async function CalendarTab({ activity, userId }: { activity: ActivityRow;
               </h3>
               <ul className="divide-y rounded-lg border bg-card opacity-70">
                 {past.map((event) => (
-                  <EventRowItem key={event.id} event={event} past />
+                  <EventRowItem activityType={activity.type} key={event.id} event={event} past />
                 ))}
               </ul>
             </section>
@@ -68,9 +68,11 @@ export async function CalendarTab({ activity, userId }: { activity: ActivityRow;
 
 function EventRowItem({
   event,
+  activityType,
   past,
 }: {
   event: typeof events.$inferSelect;
+  activityType: string;
   past?: boolean;
 }) {
   const days = daysUntil(event.date);
@@ -81,7 +83,7 @@ function EventRowItem({
         {event.time && <p className="text-xs text-muted-foreground">{event.time}</p>}
       </div>
       <Badge variant="secondary" className="shrink-0">
-        {EVENT_TYPES[event.type as EventType] ?? event.type}
+        {eventTypeLabel(event.type, activityType)}
       </Badge>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm">{event.title}</p>

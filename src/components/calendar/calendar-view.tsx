@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EventFormDialog } from "@/components/calendar/event-form-dialog";
 import { DeleteEventButton } from "@/components/calendar/delete-event-button";
-import { EVENT_TYPES, type EventType } from "@/lib/constants";
+import { eventTypeLabel } from "@/lib/constants";
 import {
   cn,
   daysUntil,
@@ -23,6 +23,8 @@ interface ActivityOption {
   id: string;
   name: string;
   color: string;
+  /** 활동 종류 — 마감 일정 이름(시험일 등)을 정한다 */
+  type?: string;
 }
 
 type ViewMode = "month" | "week" | "list";
@@ -452,7 +454,7 @@ function ListEventItem({
         {event.time && <p className="text-xs text-muted-foreground">{event.time}</p>}
       </div>
       <Badge variant="secondary" className="shrink-0">
-        {EVENT_TYPES[event.type as EventType] ?? event.type}
+        {eventTypeLabel(event.type, activities.find((a) => a.id === event.activityId)?.type)}
       </Badge>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm">{event.title}</p>

@@ -64,7 +64,7 @@ export function GoalFormDialog({
               required
               maxLength={120}
               defaultValue={goal?.name ?? ""}
-              placeholder="예: 마케터, AI 엔지니어"
+              placeholder="예: 학예사, 마케터, 백엔드 개발자"
             />
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -105,7 +105,7 @@ export function GoalFormDialog({
               id="goal-roles"
               name="targetRolesText"
               defaultValue={goalRoles.join(", ")}
-              placeholder="AI 엔지니어, 백엔드 개발자"
+              placeholder="예: 큐레이터, 전시 기획자"
             />
           </div>
           <div className="space-y-1.5">
@@ -114,7 +114,7 @@ export function GoalFormDialog({
               id="goal-companies"
               name="targetCompaniesText"
               defaultValue={goalCompanies.join(", ")}
-              placeholder="네이버, 토스"
+              placeholder="예: 국립현대미술관, CJ ENM"
             />
           </div>
           <div className="space-y-1.5">

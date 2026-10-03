@@ -115,20 +115,27 @@ export const SKILL_CATALOG: CatalogSkill[] = [
   { name: "콘텐츠 제작", category: "domain", fields: ["arts", "humanities", "business"], aliases: ["콘텐츠", "블로그", "카드뉴스", "에디터", "인스타", "숏폼", "썸네일"] },
   { name: "영상 / 사진", category: "domain", fields: ["arts"], aliases: ["영상", "편집", "프리미어", "premiere", "촬영", "사진", "유튜브", "모션", "final cut"] },
   { name: "공연 / 전시 기획", category: "domain", fields: ["arts", "humanities"], aliases: ["공연", "전시", "연출", "무대", "축제", "행사 기획", "큐레이션"] },
-  { name: "체육 / 코칭", category: "domain", fields: ["arts", "education"], aliases: ["체육", "코칭", "트레이너", "생활체육", "스포츠", "운동 지도"] },
+  { name: "체육 / 코칭", category: "domain", fields: ["arts", "education"], aliases: ["체육", "코칭", "트레이너", "생활체육", "스포츠", "운동 지도", "지도사", "퍼스널 트레이닝", "필라테스", "요가", "선수", "스포츠 지도"] },
+  // 작품이 곧 경력인 전공(미술·문예·웹툰)과 무대가 곧 경력인 전공(음악·연기·무용)
+  // ("연기"는 '일정 연기', "실기"는 '실기시험', "기타"는 '그 밖'과 겹쳐 별칭에서 뺐다)
+  { name: "창작 / 작품 활동", category: "domain", fields: ["arts", "humanities"], aliases: ["창작", "작품 활동", "회화", "드로잉", "조소", "조형", "판화", "개인전", "단체전", "작가노트", "일러스트", "웹툰", "소설", "시 창작", "출품"] },
+  { name: "음악 / 공연 실기", category: "domain", fields: ["arts"], aliases: ["작곡", "편곡", "보컬", "연주", "피아노", "바이올린", "밴드", "음원", "버스킹", "배우", "연극", "무용", "뮤지컬", "오디션", "리사이틀", "연주회"] },
   { name: "행사 운영", category: "domain", fields: ["arts", "social", "business", "education"], aliases: ["행사", "운영", "부스", "진행", "스태프", "서포터즈", "세미나 운영"] },
 ];
 
+/** 근거 종류 (선택 목록 순서 그대로 — 전공을 가리지 않는 것부터) */
 export const EVIDENCE_KINDS = {
   project: "프로젝트",
   activity: "대외활동",
   award: "수상",
   certificate: "자격증",
-  education: "교육",
-  github: "GitHub",
-  content: "콘텐츠",
-  portfolio: "포트폴리오",
+  exhibition: "전시·공연",
+  volunteer: "봉사·실습",
   work: "인턴/실무",
+  education: "교육",
+  portfolio: "포트폴리오",
+  content: "콘텐츠",
+  github: "GitHub",
   etc: "기타",
 } as const;
 export type EvidenceKind = keyof typeof EVIDENCE_KINDS;
@@ -140,6 +147,10 @@ export const EVIDENCE_WEIGHTS: Record<EvidenceKind, number> = {
   work: 18,
   activity: 10,
   certificate: 12,
+  // 작품을 걸거나 무대에 선 기록은 프로젝트만큼 무게가 있다
+  exhibition: 15,
+  // 현장 시간은 사회복지·교육·보건 진로의 핵심 근거
+  volunteer: 10,
   github: 10,
   education: 8,
   portfolio: 8,
@@ -229,7 +240,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     requirements: [
       { skill: "데이터 분석", target: 85, why: "직무 핵심 역량" },
       { skill: "AI 활용", target: 55, why: "ML 기반 분석 확장" },
-      { skill: "리서치", target: 60, why: "문제 정의·가설 수립" },
+      { skill: "자료 조사", target: 60, why: "문제 정의·가설 수립" },
       { skill: "커뮤니케이션", target: 65, why: "인사이트 전달" },
       { skill: "문제 해결", target: 70, why: "분석 문제 해결" },
       { skill: "면접 준비", target: 55, why: "케이스 면접 대응" },
@@ -242,7 +253,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     keywords: ["pm", "프로덕트 매니저", "서비스 기획", "product manager", "기획자"],
     requirements: [
       { skill: "기획", target: 85, why: "직무 핵심 역량" },
-      { skill: "리서치", target: 70, why: "사용자·시장 이해" },
+      { skill: "자료 조사", target: 70, why: "사용자·시장 이해" },
       { skill: "데이터 분석", target: 60, why: "데이터 기반 의사결정" },
       { skill: "커뮤니케이션", target: 75, why: "이해관계자 조율" },
       { skill: "리더십", target: 60, why: "제품 리딩" },
@@ -258,7 +269,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
       { skill: "마케팅", target: 85, why: "직무 핵심 역량" },
       { skill: "콘텐츠 제작", target: 70, why: "콘텐츠 기반 마케팅" },
       { skill: "데이터 분석", target: 60, why: "성과 측정" },
-      { skill: "리서치", target: 60, why: "타깃 분석" },
+      { skill: "자료 조사", target: 60, why: "타깃 분석" },
       { skill: "커뮤니케이션", target: 65, why: "메시지 전달력" },
     ],
   },
@@ -269,7 +280,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     keywords: ["디자이너", "designer", "ux", "ui 디자인"],
     requirements: [
       { skill: "디자인", target: 85, why: "직무 핵심 역량" },
-      { skill: "리서치", target: 65, why: "사용자 리서치" },
+      { skill: "자료 조사", target: 65, why: "사용자 리서치" },
       { skill: "기획", target: 60, why: "제품 사고" },
       { skill: "Frontend", target: 45, why: "구현 이해도" },
       { skill: "커뮤니케이션", target: 65, why: "디자인 설득" },
@@ -349,7 +360,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     key: "media",
     label: "언론 / 미디어 / PR",
     field: "humanities",
-    keywords: ["기자", "언론", "pr", "홍보", "방송", "미디어", "에디터", "출판"],
+    keywords: ["기자", "언론", "pr", "홍보", "방송", "미디어", "에디터"],
     requirements: [
       { skill: "글쓰기", target: 80, why: "직무의 핵심 산출물" },
       { skill: "자료 조사", target: 70, why: "취재·팩트 확인" },
@@ -457,6 +468,154 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
       { skill: "협업", target: 60, why: "부서 간 조율" },
     ],
   },
+  // ── 예술·체육 ─────────────────────────────────────────────
+  {
+    key: "fine_artist",
+    label: "작가 / 미술 (회화·조형)",
+    field: "arts",
+    // "작가"는 글 쓰는 작가와 겹쳐 넣지 않는다
+    keywords: ["화가", "회화", "미술", "조형", "조소", "판화", "전시하는", "아티스트", "일러스트레이터", "웹툰"],
+    requirements: [
+      { skill: "창작 / 작품 활동", target: 85, why: "작품 수와 완성도가 곧 경력" },
+      { skill: "공연 / 전시 기획", target: 55, why: "전시 이력을 스스로 만들어야 함" },
+      { skill: "글쓰기", target: 55, why: "작가노트·공모·레지던시 지원서" },
+      { skill: "콘텐츠 제작", target: 45, why: "작품 아카이빙과 발표 채널" },
+      { skill: "커뮤니케이션", target: 50, why: "갤러리·관객·의뢰인과의 소통" },
+    ],
+  },
+  {
+    key: "musician",
+    label: "음악 (작곡·보컬·연주)",
+    field: "arts",
+    keywords: ["음악", "작곡", "보컬", "싱어송라이터", "연주자", "실용음악", "밴드", "가수", "피아니스트", "뮤지션", "프로듀서"],
+    requirements: [
+      { skill: "음악 / 공연 실기", target: 85, why: "무대와 녹음에서 드러나는 실력" },
+      { skill: "창작 / 작품 활동", target: 70, why: "자작곡·편곡이 곧 포트폴리오" },
+      { skill: "콘텐츠 제작", target: 55, why: "음원·영상을 발표할 채널" },
+      { skill: "공연 / 전시 기획", target: 45, why: "공연을 직접 만들어 무대를 늘림" },
+      { skill: "협업", target: 55, why: "세션·엔지니어·팀과의 작업" },
+    ],
+  },
+  {
+    key: "performer",
+    label: "공연예술 (연기·무용·뮤지컬)",
+    field: "arts",
+    keywords: ["배우", "연기자", "연극", "무용", "댄서", "뮤지컬", "안무", "연기 전공"],
+    requirements: [
+      { skill: "음악 / 공연 실기", target: 85, why: "오디션은 실기로 결정됨" },
+      { skill: "협업", target: 65, why: "작품은 함께 만드는 것" },
+      { skill: "커뮤니케이션", target: 55, why: "연출·관객과의 소통" },
+      { skill: "콘텐츠 제작", target: 45, why: "프로필 영상·포트폴리오 영상" },
+    ],
+  },
+  {
+    key: "arts_manager",
+    label: "문화예술 기획 (공연·전시)",
+    field: "arts",
+    keywords: ["공연기획", "공연 기획", "전시기획", "전시 기획", "문화기획", "문화 기획", "아트매니지먼트", "예술경영", "축제 기획", "문화재단"],
+    requirements: [
+      { skill: "공연 / 전시 기획", target: 80, why: "직무의 핵심 산출물" },
+      { skill: "행사 운영", target: 70, why: "현장을 굴리는 힘" },
+      { skill: "기획", target: 65, why: "콘셉트와 예산·일정 설계" },
+      { skill: "글쓰기", target: 60, why: "지원사업 신청서·보도자료" },
+      { skill: "마케팅", target: 55, why: "관객을 모으는 일" },
+      { skill: "커뮤니케이션", target: 65, why: "작가·기관·관객 사이 조율" },
+    ],
+  },
+  {
+    key: "sports_coach",
+    label: "스포츠 지도자 / 트레이너",
+    field: "arts",
+    // "헬스"는 "헬스케어"와 겹쳐 넣지 않는다 (헬스 트레이너는 "트레이너"로 잡힌다)
+    keywords: ["트레이너", "코치", "지도자", "생활스포츠", "스포츠지도사", "퍼스널", "필라테스", "요가 강사", "선수 출신"],
+    requirements: [
+      { skill: "체육 / 코칭", target: 85, why: "지도 경력과 자격이 채용 기준" },
+      { skill: "커뮤니케이션", target: 70, why: "회원 상담과 동기부여" },
+      { skill: "안전 / 품질 관리", target: 50, why: "부상 예방·응급 처치" },
+      { skill: "영업 / 세일즈", target: 45, why: "상담·재등록이 곧 실적" },
+      { skill: "콘텐츠 제작", target: 45, why: "운동 콘텐츠로 회원 모으기" },
+    ],
+  },
+  {
+    key: "sports_industry",
+    label: "스포츠 마케팅 / 구단 운영",
+    field: "business",
+    keywords: ["스포츠 마케팅", "스포츠마케팅", "구단", "프런트", "스포츠 산업", "스포츠 에이전트", "e스포츠"],
+    requirements: [
+      { skill: "마케팅", target: 70, why: "팬과 스폰서를 모으는 일" },
+      { skill: "행사 운영", target: 65, why: "경기·이벤트 운영" },
+      { skill: "체육 / 코칭", target: 40, why: "종목과 선수에 대한 이해" },
+      { skill: "데이터 분석", target: 45, why: "관중·티켓·SNS 지표" },
+      { skill: "외국어 (영어)", target: 50, why: "해외 선수·리그 소통" },
+      { skill: "커뮤니케이션", target: 65, why: "구단·선수·팬 사이 조율" },
+    ],
+  },
+  // ── 인문·사회 ─────────────────────────────────────────────
+  {
+    key: "writer",
+    label: "작가 (소설·시나리오·웹소설)",
+    field: "humanities",
+    keywords: ["소설", "시나리오", "웹소설", "시인", "극작", "드라마 작가", "방송작가", "스토리 작가"],
+    requirements: [
+      { skill: "글쓰기", target: 85, why: "원고가 곧 실력의 증거" },
+      { skill: "창작 / 작품 활동", target: 80, why: "완성한 작품 수와 발표 이력" },
+      { skill: "편집 / 교정", target: 50, why: "퇴고와 원고 다듬기" },
+      { skill: "콘텐츠 제작", target: 45, why: "연재·발표 채널" },
+      { skill: "자료 조사", target: 50, why: "취재와 고증" },
+    ],
+  },
+  {
+    key: "curator",
+    label: "학예사 / 큐레이터",
+    field: "humanities",
+    keywords: ["학예사", "큐레이터", "박물관", "미술관", "학예", "아키비스트", "기록물"],
+    requirements: [
+      { skill: "자료 조사", target: 80, why: "유물·작품 연구가 업무의 바탕" },
+      { skill: "글쓰기", target: 70, why: "전시 해설·도록·보고서" },
+      { skill: "공연 / 전시 기획", target: 70, why: "전시를 기획하고 꾸리는 일" },
+      { skill: "외국어 (영어)", target: 55, why: "해외 자료·교류전" },
+      { skill: "교육 / 강의", target: 50, why: "교육 프로그램·해설 운영" },
+    ],
+  },
+  {
+    key: "editor",
+    label: "출판 편집자",
+    field: "humanities",
+    keywords: ["출판", "편집자", "북 에디터", "출판사", "단행본"],
+    requirements: [
+      { skill: "편집 / 교정", target: 85, why: "원고를 책으로 만드는 일" },
+      { skill: "글쓰기", target: 75, why: "보도자료·카피·소개글" },
+      { skill: "기획", target: 65, why: "어떤 책을 낼지 정하는 일" },
+      { skill: "콘텐츠 제작", target: 50, why: "책을 알리는 콘텐츠" },
+      { skill: "마케팅", target: 45, why: "독자에게 닿는 방법" },
+    ],
+  },
+  {
+    key: "translator",
+    label: "번역가 / 통역사",
+    field: "humanities",
+    keywords: ["번역", "통역", "번역가", "통역사", "로컬라이제이션"],
+    requirements: [
+      { skill: "번역 / 통역", target: 85, why: "직무의 핵심 산출물" },
+      { skill: "글쓰기", target: 70, why: "옮긴 글도 결국 한국어 글" },
+      { skill: "자료 조사", target: 60, why: "분야별 배경지식·용어" },
+      { skill: "커뮤니케이션", target: 55, why: "의뢰인·현장과의 소통" },
+      { skill: "편집 / 교정", target: 50, why: "납품 전 검수" },
+    ],
+  },
+  {
+    key: "counselor",
+    label: "상담사 (심리·청소년)",
+    field: "social",
+    keywords: ["상담사", "상담", "심리", "청소년상담", "임상심리", "치료사"],
+    requirements: [
+      { skill: "상담 / 사회복지", target: 85, why: "상담 실습·사례가 핵심 근거" },
+      { skill: "커뮤니케이션", target: 75, why: "경청과 관계 형성" },
+      { skill: "교육 / 강의", target: 50, why: "집단 프로그램 운영" },
+      { skill: "사회 조사", target: 45, why: "심리검사·사례 기록" },
+      { skill: "글쓰기", target: 45, why: "사례 보고서" },
+    ],
+  },
   {
     key: "general",
     label: "일반 커리어",
@@ -492,6 +651,49 @@ export const ROLE_GAP_ACTIONS: Record<string, Partial<Record<string, GapActionTe
       { title: "개발자에게 넘길 핸드오프 문서(간격·상태·인터랙션) 만들기", minutes: 120, effect: 2, reason: "구현 이해도를 가장 직접적으로 보여주는 산출물입니다." },
     ],
   },
+  // 예술·체육·인문 직무는 같은 '글쓰기'·'협업'이라도 하는 일이 다르다.
+  // 공통 행동("학교 행사 협찬 제안서", "1,000자 글")을 그대로 주면 엉뚱하게 들린다.
+  fine_artist: {
+    글쓰기: [{ title: "대표작 1점의 작가노트(300자) 쓰기", minutes: 60, effect: 3, reason: "공모·레지던시 지원서에 그대로 들어갑니다." }],
+    "콘텐츠 제작": [{ title: "작업 과정을 사진·짧은 영상으로 남겨 SNS에 올리기", minutes: 90, effect: 2, reason: "작업이 쌓이는 과정이 그대로 아카이브가 됩니다." }],
+    커뮤니케이션: [{ title: "작품 1점을 5분 동안 설명하는 크리틱 연습하기", minutes: 60, effect: 2, reason: "갤러리·심사 인터뷰에서 바로 쓰입니다." }],
+  },
+  musician: {
+    "창작 / 작품 활동": [{ title: "자작곡 1곡의 가사·코드·데모를 한 폴더로 정리하기", minutes: 120, effect: 3, reason: "완성한 곡 목록이 곧 음악 포트폴리오입니다." }],
+    협업: [{ title: "합주·세션 작업 1건을 곡명·내 역할과 함께 크레디트로 남기기", minutes: 60, effect: 2, reason: "누구와 무엇을 만들었는지가 음악 경력의 기록입니다." }],
+    "콘텐츠 제작": [{ title: "라이브 클립 1편을 찍어 공개 채널에 올리기", minutes: 180, effect: 4, reason: "들을 수 있고 볼 수 있는 결과물이 남습니다." }],
+    "공연 / 전시 기획": [{ title: "버스킹·합동 공연 1회를 직접 기획하기", minutes: 360, effect: 5, reason: "무대를 스스로 만드는 경험은 흔치 않은 강점입니다." }],
+  },
+  performer: {
+    협업: [{ title: "공연·워크숍 1건의 맡은 역할과 연습 과정을 기록하기", minutes: 60, effect: 2, reason: "작품 안에서의 역할이 곧 경력입니다." }],
+    커뮤니케이션: [{ title: "오디션용 1분 자기소개 영상 찍기", minutes: 90, effect: 3, reason: "대부분의 오디션 첫 관문입니다." }],
+    "콘텐츠 제작": [{ title: "프로필 사진·출연 영상을 한 페이지로 정리하기", minutes: 120, effect: 3, reason: "캐스팅 담당자가 가장 먼저 보는 자료입니다." }],
+  },
+  arts_manager: {
+    글쓰기: [{ title: "문화예술 지원사업 신청서 양식으로 가상 기획안 1편 쓰기", minutes: 180, effect: 4, reason: "기획 직무 지원서와 실무에서 그대로 쓰는 글입니다." }],
+    마케팅: [{ title: "공연·전시 1건의 홍보 계획(채널·일정·예산)을 한 장으로 짜기", minutes: 120, effect: 3, reason: "관객을 모으는 계획이 기획의 절반입니다." }],
+  },
+  sports_coach: {
+    "영업 / 세일즈": [{ title: "무료 체험 수업 1회를 진행하고 상담 내용·등록 여부 기록하기", minutes: 120, effect: 4, reason: "센터는 지도 실력과 함께 등록으로 이어지는지를 봅니다." }],
+    커뮤니케이션: [{ title: "첫 상담 롤플레이로 회원 상담 질문지 만들기", minutes: 60, effect: 2, reason: "목표·부상 이력을 묻는 상담이 지도의 시작입니다." }],
+    "안전 / 품질 관리": [{ title: "심폐소생술·응급처치 교육 이수하기", minutes: 240, effect: 4, reason: "채용 공고의 우대 조건이자 현장의 기본입니다." }],
+    "콘텐츠 제작": [{ title: "운동 동작 설명 숏폼 3편 만들기", minutes: 180, effect: 3, reason: "개인 회원을 모으는 가장 흔한 방법입니다." }],
+  },
+  curator: {
+    "교육 / 강의": [{ title: "전시 해설(도슨트) 원고 5분 분량 쓰고 소리 내어 연습하기", minutes: 90, effect: 3, reason: "교육·해설은 학예 업무의 큰 부분입니다." }],
+  },
+  editor: {
+    마케팅: [{ title: "좋아하는 책 1권의 보도자료와 SNS 카피 다시 써 보기", minutes: 90, effect: 3, reason: "책을 독자에게 소개하는 일도 편집자의 몫입니다." }],
+  },
+  writer: {
+    "창작 / 작품 활동": [{ title: "2,000자 단편 1편을 끝까지 완성하기", minutes: 180, effect: 4, reason: "완성한 원고 수가 작가의 가장 직접적인 근거입니다." }],
+    "콘텐츠 제작": [{ title: "단편 1편을 연재 플랫폼에 올리고 반응 기록하기", minutes: 120, effect: 3, reason: "독자 반응이 쌓이는 연재 이력이 근거가 됩니다." }],
+  },
+  counselor: {
+    글쓰기: [{ title: "익명 처리한 멘토링 사례 1건을 사례 기록 양식으로 정리하기", minutes: 90, effect: 3, reason: "사례 기록은 상담 실습·자격 과정의 기본 산출물입니다." }],
+    "사회 조사": [{ title: "진로·성격 검사 1종의 해석 방법을 공부해 한 장으로 요약하기", minutes: 120, effect: 3, reason: "심리검사 해석은 상담 현장에서 바로 쓰입니다." }],
+    "교육 / 강의": [{ title: "청소년 대상 40분 집단 프로그램안 1개 만들기", minutes: 180, effect: 4, reason: "기관 상담사는 집단 프로그램도 운영합니다." }],
+  },
 };
 
 export const GAP_ACTION_TEMPLATES: Record<string, GapActionTemplate[]> = {
@@ -499,9 +701,11 @@ export const GAP_ACTION_TEMPLATES: Record<string, GapActionTemplate[]> = {
     { title: "내 경험 하나를 1,000자 글로 정리해 공개하기", minutes: 90, effect: 4, reason: "글은 그 자체로 검증 가능한 근거가 됩니다." },
     { title: "지원서 문항 1개를 초안까지 작성해두기", minutes: 60, effect: 2, reason: "미리 써둔 문항은 다음 지원에서 그대로 재사용됩니다." },
   ],
+  // (예전 템플릿의 '리서치'는 카탈로그 이름 '자료 조사'로 합쳤다 — 근거가 이 이름으로 쌓인다)
   "자료 조사": [
     { title: "관심 분야 시장·기관 리포트 3건 요약하기", minutes: 120, effect: 3, reason: "조사 결과물은 면접에서 바로 인용할 수 있습니다." },
     { title: "현직자 1명 인터뷰하고 기록 남기기", minutes: 90, effect: 4, reason: "1차 자료는 지원 동기의 설득력을 크게 높입니다." },
+    { title: "타깃 사용자 인터뷰 3건 진행하고 요약 정리하기", minutes: 180, effect: 3, reason: "1차 리서치 경험은 흔치 않은 강점입니다." },
   ],
   "통계 분석": [
     { title: "공개 데이터로 분석 리포트 1편 만들기", minutes: 240, effect: 5, reason: "수치를 다뤘다는 증거가 남습니다." },
@@ -613,6 +817,15 @@ export const GAP_ACTION_TEMPLATES: Record<string, GapActionTemplate[]> = {
   ],
   "체육 / 코칭": [
     { title: "생활체육 지도 경험을 시간·인원과 함께 기록하기", minutes: 120, effect: 3, reason: "지도 경험이 수치로 남습니다." },
+    { title: "지인 1명을 4주간 지도하고 전후 기록(체력·체성분) 남기기", minutes: 480, effect: 5, reason: "지도 효과를 숫자로 보여줄 수 있습니다." },
+  ],
+  "창작 / 작품 활동": [
+    { title: "대표작 1점의 작가노트(300자) 쓰기", minutes: 60, effect: 2, reason: "공모·레지던시 지원서에 그대로 쓰입니다." },
+    { title: "이번 달 작업 3점을 날짜·재료·크기와 함께 기록하기", minutes: 600, effect: 5, reason: "꾸준히 쌓인 작품 기록이 포트폴리오의 뼈대입니다." },
+  ],
+  "음악 / 공연 실기": [
+    { title: "작은 무대(버스킹·교내 공연)에 서고 곡목·관객 수 기록하기", minutes: 240, effect: 4, reason: "무대 경험은 오디션·지원서에서 바로 쓰입니다." },
+    { title: "자작곡이나 커버 1곡을 녹음해 공개 채널에 올리기", minutes: 360, effect: 5, reason: "들을 수 있는 결과물이 가장 강한 근거입니다." },
   ],
   "AI 활용": [
     { title: "AI를 활용한 미니 프로젝트 1개 완성하기", minutes: 300, effect: 5, reason: "실제 산출물이 가장 강한 근거가 됩니다." },
@@ -638,9 +851,6 @@ export const GAP_ACTION_TEMPLATES: Record<string, GapActionTemplate[]> = {
   ],
   기획: [
     { title: "기존 서비스 역기획 문서 1편 작성하기", minutes: 180, effect: 4, reason: "기획 사고력을 보여주는 대표 산출물입니다." },
-  ],
-  리서치: [
-    { title: "타깃 사용자 인터뷰 3건 진행하고 요약 정리하기", minutes: 180, effect: 3, reason: "1차 리서치 경험은 흔치 않은 강점입니다." },
   ],
   "문제 해결": [
     { title: "프로젝트에서 겪은 문제와 해결 과정을 회고로 작성하기", minutes: 60, effect: 2, reason: "문제 해결은 서사로 증명됩니다." },
@@ -669,7 +879,7 @@ export const GAP_ACTION_TEMPLATES: Record<string, GapActionTemplate[]> = {
 /**
  * 계열별 추천 활동.
  * "무엇부터 해야 할지 모르겠다"는 신규 사용자에게 자기 전공에서 흔한
- * 공모전·대외활동·인턴 유형을 먼저 보여준다.
+ * 공모전·대외활동·인턴·자격증·전시·봉사 유형을 먼저 보여준다.
  */
 export interface FieldActivityHint {
   /** 활동 유형 (ACTIVITY_TYPES 키) */
@@ -681,6 +891,7 @@ export interface FieldActivityHint {
 export const FIELD_ACTIVITY_HINTS: Record<StudyField, FieldActivityHint[]> = {
   humanities: [
     { type: "contest", label: "글쓰기·번역·에세이 공모전", why: "언어 역량을 심사받은 기록이 남습니다" },
+    { type: "exam", label: "한국사·외국어 자격 시험", why: "공공기관·박물관·교직의 지원 조건으로 자주 쓰입니다" },
     { type: "external", label: "출판·문화재단 서포터즈", why: "콘텐츠 기획·편집 근거를 쌓을 수 있습니다" },
     { type: "intern", label: "출판·미디어·홍보 인턴", why: "직무 경험이 곧 자소서 소재가 됩니다" },
   ],
@@ -688,6 +899,7 @@ export const FIELD_ACTIVITY_HINTS: Record<StudyField, FieldActivityHint[]> = {
     { type: "contest", label: "정책 제안·사회문제 해결 공모전", why: "문제 정의와 대안 제시를 증명합니다" },
     { type: "external", label: "공공기관 대학생 기자단·서포터즈", why: "행정·공공 도메인 경험을 얻습니다" },
     { type: "external", label: "학회·사회조사 프로젝트", why: "설문 설계와 데이터 해석 근거가 됩니다" },
+    { type: "volunteer", label: "복지관·상담센터 봉사와 실습", why: "현장 시간이 자격과 지원 동기의 근거가 됩니다" },
   ],
   business: [
     { type: "contest", label: "마케팅·비즈니스 아이디어 공모전", why: "기획서와 수상 실적이 가장 흔한 평가 근거입니다" },
@@ -705,17 +917,19 @@ export const FIELD_ACTIVITY_HINTS: Record<StudyField, FieldActivityHint[]> = {
     { type: "project", label: "데이터 분석 프로젝트", why: "통계 도구 활용을 증명합니다" },
   ],
   medical: [
-    { type: "external", label: "병원·보건소 봉사 및 실습", why: "임상 현장 경험이 지원 동기를 뒷받침합니다" },
+    { type: "volunteer", label: "병원·보건소 봉사 및 실습", why: "임상 현장 경험이 지원 동기를 뒷받침합니다" },
     { type: "contest", label: "보건정책·헬스케어 아이디어 공모전", why: "전공 지식을 문제 해결로 연결합니다" },
     { type: "project", label: "건강 캠페인 기획·운영", why: "기획과 커뮤니케이션 근거" },
   ],
   education: [
-    { type: "external", label: "교육봉사·멘토링 프로그램", why: "지도 경험이 교직·교육기업의 핵심 근거입니다" },
+    { type: "volunteer", label: "교육봉사·멘토링 프로그램", why: "지도 경험이 교직·교육기업의 핵심 근거입니다" },
     { type: "contest", label: "수업 지도안·교육 콘텐츠 공모전", why: "교수 설계 역량을 보여줍니다" },
     { type: "intern", label: "에듀테크·학원 교육기획 인턴", why: "교육 산업 실무 경험" },
   ],
   arts: [
-    { type: "contest", label: "디자인·영상·공연 공모전", why: "포트폴리오에 바로 들어가는 결과물" },
+    { type: "contest", label: "미술·디자인·영상 공모전", why: "포트폴리오에 바로 들어가는 결과물" },
+    { type: "performance", label: "전시 출품·공연·오디션", why: "작품과 무대 이력이 그대로 경력이 됩니다" },
+    { type: "exam", label: "생활스포츠지도사 등 자격 시험", why: "체육 진로는 자격이 지원 조건인 경우가 많습니다" },
     { type: "project", label: "개인 포트폴리오 프로젝트", why: "작업물 자체가 평가 대상입니다" },
     { type: "external", label: "축제·전시 기획 스태프", why: "기획·운영 경험을 함께 쌓습니다" },
   ],

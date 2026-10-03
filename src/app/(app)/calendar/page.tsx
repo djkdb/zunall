@@ -13,7 +13,7 @@ export default async function CalendarPage() {
   const [allEvents, activityOptions] = await Promise.all([
     db.select().from(events).where(eq(events.userId, user.id)).orderBy(events.date),
     db
-      .select({ id: activities.id, name: activities.name, color: activities.color })
+      .select({ id: activities.id, name: activities.name, color: activities.color, type: activities.type })
       .from(activities)
       .where(eq(activities.userId, user.id)),
   ]);

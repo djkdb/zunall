@@ -12,7 +12,7 @@ import {
   type ActivityRow,
 } from "@/lib/db";
 import { daysUntil } from "@/lib/utils";
-import { FINISHED_STATUSES, type ActivityStatus } from "@/lib/constants";
+import { FINISHED_STATUSES, deadlineLabels, type ActivityStatus } from "@/lib/constants";
 
 export interface ActivityMeta extends ActivityRow {
   tagNames: string[];
@@ -77,13 +77,15 @@ export async function getActivitiesWithMeta(userId: string): Promise<ActivityMet
 }
 
 export function nearestDeadlineOf(
-  act: Pick<ActivityRow, "applyDeadline" | "submitDeadline" | "announceDate" | "status">,
+  act: Pick<ActivityRow, "applyDeadline" | "submitDeadline" | "announceDate" | "status"> &
+    Partial<Pick<ActivityRow, "type">>,
 ): { days: number; label: string; date: string } | null {
   if (FINISHED_STATUSES.includes(act.status as ActivityStatus)) return null;
+  const labels = deadlineLabels(act.type);
   const candidates: Array<{ date: string | null; label: string }> = [
-    { date: act.applyDeadline, label: "지원 마감" },
-    { date: act.submitDeadline, label: "결과물 제출" },
-    { date: act.announceDate, label: "결과 발표" },
+    { date: act.applyDeadline, label: labels.apply },
+    { date: act.submitDeadline, label: labels.submit },
+    { date: act.announceDate, label: labels.announce },
   ];
   let best: { days: number; label: string; date: string } | null = null;
   for (const c of candidates) {

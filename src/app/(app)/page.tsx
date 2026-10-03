@@ -52,9 +52,8 @@ import {
 } from "@/lib/utils";
 import {
   ONGOING_STATUSES,
-  EVENT_TYPES,
   NOTIFICATION_TYPES,
-  type EventType,
+  eventTypeLabel,
   type NotificationType,
 } from "@/lib/constants";
 
@@ -192,6 +191,7 @@ export default async function DashboardPage() {
     .slice(0, 3);
 
   const activityNameById = new Map(allActivities.map((a) => [a.id, a.name]));
+  const activityTypeById = new Map(allActivities.map((a) => [a.id, a.type]));
 
   // 추천 기회: 분석 완료 + 지원 추천/보강 상위 3개
   const urgentAnalysis = urgent ? (allOppAnalyses.find((a) => a.activityId === urgent.id) ?? null) : null;
@@ -249,7 +249,7 @@ export default async function DashboardPage() {
       {/* 3일 안에 내야 하는 것이 있으면 무엇보다 먼저 */}
       {urgent && (
         <UrgentDeadlineCard
-          activity={{ id: urgent.id, name: urgent.name }}
+          activity={{ id: urgent.id, name: urgent.name, type: urgent.type }}
           deadline={urgent.nearestDeadline!}
           analysis={
             urgentAnalysis
@@ -439,7 +439,7 @@ export default async function DashboardPage() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">{event.title}</p>
                           <p className="truncate text-xs text-muted-foreground">
-                            {EVENT_TYPES[event.type as EventType] ?? event.type}
+                            {eventTypeLabel(event.type, event.activityId ? activityTypeById.get(event.activityId) : null)}
                             {actName ? ` · ${actName}` : ""} · {formatDate(event.date)}
                           </p>
                         </div>

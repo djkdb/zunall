@@ -9,7 +9,7 @@ import { newId } from "@/lib/utils";
 import { runAIAction } from "@/services/ai/evaluator";
 import { announcementSummarySchema } from "@/services/ai/schemas";
 import { criteriaItemSchema } from "@/lib/validators";
-import { AI_ACTIONS, type AIAction } from "@/lib/constants";
+import { AI_ACTIONS, deadlineLabels, type AIAction } from "@/lib/constants";
 import type { ActionResult } from "@/actions/activities";
 
 export interface RunAIActionResult {
@@ -98,10 +98,11 @@ export async function applyAnnouncementResult(
         .where(eq(activities.id, activity.id));
 
       // 캘린더 일정 자동 등록
+      const labels = deadlineLabels(activity.type);
       const pairs: Array<[string | null | undefined, string, string]> = [
-        [updates.applyDeadline, "apply_deadline", "지원 마감"],
-        [updates.submitDeadline, "final_submit", "최종 제출"],
-        [updates.announceDate, "result", "결과 발표"],
+        [updates.applyDeadline, "apply_deadline", labels.apply],
+        [updates.submitDeadline, "final_submit", labels.submitEvent],
+        [updates.announceDate, "result", labels.announce],
       ];
       for (const [date, type, label] of pairs) {
         if (!date) continue;

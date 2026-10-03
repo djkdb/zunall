@@ -17,6 +17,7 @@ import {
   ACTIVITY_STATUSES,
   IMPORTANCE_LEVELS,
   ACTIVITY_COLORS,
+  deadlineLabels,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { ActivityRow } from "@/lib/db";
@@ -79,6 +80,8 @@ export function ActivityForm({
   });
 
   const selectedColor = watch("color");
+  // 시험이면 '시험일', 공연이면 '전시·공연일' — 종류에 맞춰 날짜 칸 이름을 바꾼다
+  const labels = deadlineLabels(watch("type"));
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
@@ -101,13 +104,13 @@ export function ActivityForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="name">활동명 *</Label>
-            <Input id="name" placeholder="예: 2026 네이버 AI 공모전" {...register("name")} />
+            <Input id="name" placeholder="예: 2026 청년작가 회화 공모전" {...register("name")} />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="organizer">주최기관</Label>
-            <Input id="organizer" placeholder="예: 네이버" {...register("organizer")} />
+            <Input id="organizer" placeholder="예: ○○문화재단" {...register("organizer")} />
           </div>
 
           <div className="space-y-1.5">
@@ -178,15 +181,15 @@ export function ActivityForm({
             <Input id="endDate" type="date" {...register("endDate")} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="applyDeadline">접수(지원) 마감일</Label>
+            <Label htmlFor="applyDeadline">{labels.applyField}</Label>
             <Input id="applyDeadline" type="date" {...register("applyDeadline")} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="submitDeadline">결과물 제출 마감일</Label>
+            <Label htmlFor="submitDeadline">{labels.submitField}</Label>
             <Input id="submitDeadline" type="date" {...register("submitDeadline")} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="announceDate">발표일</Label>
+            <Label htmlFor="announceDate">{labels.announceField}</Label>
             <Input id="announceDate" type="date" {...register("announceDate")} />
           </div>
         </div>

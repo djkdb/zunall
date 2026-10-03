@@ -182,7 +182,7 @@ export async function saveProfileImport(
     evidenceRows.push({
       id: newId(),
       userId: user.id,
-      kind: ["activity", "project", "award", "certificate", "education", "work"].includes(item.kind)
+      kind: ["activity", "project", "award", "certificate", "exhibition", "volunteer", "education", "work"].includes(item.kind)
         ? item.kind
         : "activity",
       title,

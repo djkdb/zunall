@@ -56,16 +56,16 @@ export function AddEvidenceDialog() {
             </div>
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="ev-title">제목 *</Label>
-              <Input id="ev-title" name="title" required maxLength={150} placeholder="예: Asteron — 3D 웹 프로젝트" />
+              <Input id="ev-title" name="title" required maxLength={150} placeholder="예: 단체전 '경계의 색' 출품 · 학보사 기사 연재 · 쇼핑몰 앱 개발" />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ev-skills">이 근거가 증명하는 스킬 (쉼표 구분) *</Label>
-            <Input id="ev-skills" name="skillsText" required placeholder="예: Frontend, AI 활용" />
+            <Input id="ev-skills" name="skillsText" required placeholder="예: 창작 / 작품 활동, 글쓰기, Backend" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ev-url">링크</Label>
-            <Input id="ev-url" name="url" type="url" placeholder="https://github.com/…" maxLength={500} />
+            <Input id="ev-url" name="url" type="url" placeholder="작품·영상·글·코드 링크 (https://…)" maxLength={500} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ev-desc">설명</Label>

@@ -8,7 +8,7 @@ import { cleanupDemoUsers } from "@/services/demo/seed";
 import { runWeeklyReport } from "@/services/notification/weekly";
 import { isQuietHour, isWeeklyReportDay, parseNotifySettings } from "@/services/notification/settings";
 import { daysUntil, ddayLabel } from "@/lib/utils";
-import { NOTIFY_THRESHOLDS, ONGOING_STATUSES } from "@/lib/constants";
+import { NOTIFY_THRESHOLDS, ONGOING_STATUSES, deadlineLabels } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -106,10 +106,11 @@ export async function GET(request: Request) {
 
     const items: Array<{ days: number; text: string }> = [];
     for (const act of acts) {
+      const labels = deadlineLabels(act.type);
       const checks: Array<[string | null, string]> = [
-        [act.applyDeadline, "지원 마감"],
-        [act.submitDeadline, "제출 마감"],
-        [act.announceDate, "결과 발표"],
+        [act.applyDeadline, labels.apply],
+        [act.submitDeadline, labels.submit === "결과물 제출" ? "제출 마감" : labels.submit],
+        [act.announceDate, labels.announce],
       ];
       for (const [date, label] of checks) {
         const days = daysUntil(date);

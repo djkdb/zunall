@@ -196,7 +196,7 @@ export async function PortfolioDocument({ userId }: { userId: string }) {
 }
 
 /** 포트폴리오에서 먼저 보여줄 근거 종류 */
-const KIND_ORDER = ["award", "project", "work", "portfolio", "github", "certificate", "activity", "content", "education", "etc"];
+const KIND_ORDER = ["award", "exhibition", "project", "work", "portfolio", "certificate", "volunteer", "github", "activity", "content", "education", "etc"];
 function kindRank(kind: string): number {
   const index = KIND_ORDER.indexOf(kind);
   return index === -1 ? KIND_ORDER.length : index;

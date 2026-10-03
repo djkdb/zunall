@@ -1,19 +1,92 @@
 // 도메인 전반에서 쓰는 enum 값과 한국어 라벨 / 색상 정의.
 // DB에는 key(영문)를 저장하고 UI에서 라벨로 변환한다.
 
+/**
+ * 활동 종류. 전공과 상관없이 대학생이 챙기는 일정을 담는다 —
+ * 미술·음악 전공의 전시·오디션, 체육·인문 전공의 자격증 시험, 사회복지·교육 전공의 봉사·실습까지.
+ * (화면의 선택 목록도 이 순서다. IT 에 치우친 종류는 뒤로 둔다)
+ */
 export const ACTIVITY_TYPES = {
-  contest: "공모전",
+  contest: "공모전·대회",
   external: "대외활동",
   supporters: "서포터즈",
-  hackathon: "해커톤",
+  exam: "자격증·시험",
+  performance: "전시·공연·오디션",
+  volunteer: "봉사·실습",
   project: "프로젝트",
   education: "교육",
   intern: "인턴",
   recruit: "채용",
+  hackathon: "해커톤",
   opensource: "오픈소스",
   etc: "기타",
 } as const;
 export type ActivityType = keyof typeof ACTIVITY_TYPES;
+
+/** 활동의 세 날짜(접수 마감·두 번째 날짜·발표)를 종류에 맞는 말로 */
+export interface DeadlineLabels {
+  /** 화면·알림에 쓰는 짧은 이름 */
+  apply: string;
+  submit: string;
+  announce: string;
+  /** 캘린더 일정 이름 */
+  submitEvent: string;
+  /** 입력 칸 이름 */
+  applyField: string;
+  submitField: string;
+  announceField: string;
+}
+
+const DEFAULT_LABELS: DeadlineLabels = {
+  apply: "지원 마감",
+  submit: "결과물 제출",
+  announce: "결과 발표",
+  submitEvent: "최종 제출",
+  applyField: "접수(지원) 마감일",
+  submitField: "결과물 제출 마감일",
+  announceField: "발표일",
+};
+
+/**
+ * 시험의 두 번째 날짜는 '결과물 제출'이 아니라 시험일이고, 공연·전시는 무대·전시가 열리는 날이다.
+ * 이 말이 어긋나면 사람들이 날짜를 엉뚱한 칸에 넣는다.
+ */
+export function deadlineLabels(type: string | null | undefined): DeadlineLabels {
+  switch (type) {
+    case "exam":
+      return {
+        apply: "접수 마감",
+        submit: "시험일",
+        announce: "합격 발표",
+        submitEvent: "시험일",
+        applyField: "접수 마감일",
+        submitField: "시험일",
+        announceField: "합격 발표일",
+      };
+    case "performance":
+      return {
+        apply: "접수(출품) 마감",
+        submit: "전시·공연일",
+        announce: "결과 발표",
+        submitEvent: "전시·공연",
+        applyField: "접수(출품) 마감일",
+        submitField: "전시·공연·오디션일",
+        announceField: "발표일",
+      };
+    case "volunteer":
+      return {
+        apply: "신청 마감",
+        submit: "확인서 제출",
+        announce: "선발 발표",
+        submitEvent: "확인서 제출",
+        applyField: "신청 마감일",
+        submitField: "활동 확인서·보고서 제출일",
+        announceField: "선발 발표일",
+      };
+    default:
+      return DEFAULT_LABELS;
+  }
+}
 
 export const ACTIVITY_STATUSES = {
   interested: "관심",
@@ -22,7 +95,8 @@ export const ACTIVITY_STATUSES = {
   active: "활동 중",
   submitted: "제출 완료",
   waiting: "결과 대기",
-  won: "수상",
+  // 공모전은 수상, 자격증·채용·오디션은 합격 — 둘 다 "좋은 결과"다
+  won: "합격·수상",
   lost: "탈락",
   done: "종료",
 } as const;
@@ -71,6 +145,20 @@ export const EVENT_TYPES = {
   result: "결과 발표",
   etc: "기타 일정",
 } as const;
+
+/**
+ * 일정 종류 이름. 활동에서 자동으로 생긴 마감 일정은 그 활동 종류의 말로 부른다 —
+ * 자격증 시험의 두 번째 날짜를 "최종 제출"이라고 부르면 안 된다.
+ */
+export function eventTypeLabel(eventType: string, activityType?: string | null): string {
+  if (activityType) {
+    const labels = deadlineLabels(activityType);
+    if (eventType === "apply_deadline") return labels.apply;
+    if (eventType === "final_submit") return labels.submitEvent;
+    if (eventType === "result") return labels.announce;
+  }
+  return EVENT_TYPES[eventType as keyof typeof EVENT_TYPES] ?? eventType;
+}
 export type EventType = keyof typeof EVENT_TYPES;
 
 /** 마감 성격의 일정 타입 (알림 생성 대상) */

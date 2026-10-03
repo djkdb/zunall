@@ -124,7 +124,7 @@ ${contextBlock(ctx)}
 {
   "title": "공고에 적힌 활동/공모전 이름 (없으면 null)",
   "organizer": "주최 기관 (없으면 null)",
-  "activityType": "contest|external|supporters|hackathon|project|education|intern|recruit|opensource|etc 중 하나",
+  "activityType": "contest|external|supporters|exam|performance|volunteer|project|education|intern|recruit|hackathon|opensource|etc 중 하나 (exam=자격증·시험, performance=전시·공연·오디션, volunteer=봉사·실습)",
   "summary": "문서 분석 요약 (2~3문장)",
   "schedule": [{"label": "지원 마감", "date": "YYYY-MM-DD 또는 null", "note": "부가설명 또는 null"}],
   "eligibility": ["지원 자격"],
@@ -290,7 +290,7 @@ ${clip(ctx.submissionText, "답변")}
 원칙:
 ${DATA_RULE}
 - 추상적인 칭찬 금지. 답변에서 근거 문장을 인용해 지적하라.
-- 숫자·역할·결과가 없는 경험 서술은 반드시 개선점으로 잡아라.
+- 역할과 결과를 보여줄 근거(숫자, 수상·전시·공연·자격 이력, 구체적인 장면)가 없는 경험 서술은 반드시 개선점으로 잡아라. 예술·체육·인문 분야는 숫자보다 작품·무대·현장 장면이 근거일 수 있다.
 - 글자수 제한이 있으면 초과/미달을 improvements 에 넣어라.
 - improvements 는 점수에 가장 큰 영향을 주는 것부터 최대 4개만 써라. 다 고치라고 하면 아무것도 못 고친다.
 - rewrites 는 실제 답변에 있는 문장만 대상으로 하고 3개 이하로 하라. 지원자가 쓰지 않은 사실(수치·경험·감상)은 ○○ 자리표시로 남겨라.`;
@@ -308,7 +308,7 @@ ${clip(ctx.submissionText, "이력")}
 
 다음 JSON 형식으로만 답하라.
 {
-  "headline": "한 줄 소개 (예: 데이터로 문제를 푸는 산업공학 3학년)",
+  "headline": "한 줄 소개 (예: 색으로 기억을 그리는 서양화과 3학년 / 데이터로 문제를 푸는 산업공학 3학년)",
   "summary": "2~3문장 요약",
   "skills": ["원문에서 확인되는 역량만"],
   "evidence": [
@@ -316,7 +316,7 @@ ${clip(ctx.submissionText, "이력")}
       "title": "활동/프로젝트/수상 이름",
       "description": "무엇을 했고 결과가 무엇인지 (원문 근거만)",
       "skills": ["이 경험이 증명하는 역량"],
-      "kind": "activity|project|award|certificate|education|work"
+      "kind": "activity|project|award|certificate|exhibition|volunteer|education|work"
     }
   ]
 }
@@ -324,7 +324,7 @@ ${clip(ctx.submissionText, "이력")}
 원칙:
 ${DATA_RULE}
 - 원문에 없는 경험·수치·기관을 만들어내지 마라. 확실하지 않으면 넣지 마라.
-- 한 줄짜리 나열도 실제로 한 일이면 evidence 로 만들어라. 단, 기술 이름만 늘어놓은 줄("기술: Java, Docker")과 단순 재학 사실은 evidence 가 아니다 — skills 에만 반영한다.
+- 한 줄짜리 나열도 실제로 한 일이면 evidence 로 만들어라. 전시·공연·오디션은 kind 를 "exhibition", 봉사·실습은 "volunteer" 로 한다. 단, 기술 이름만 늘어놓은 줄("기술: Java, Docker")과 단순 재학 사실은 evidence 가 아니다 — skills 에만 반영한다.
 - 연락처·주소·생년월일 같은 개인정보는 어떤 필드에도 옮겨 적지 마라.
 - skills 와 evidence.skills 는 일반적인 역량 이름으로 표준화하고 (예: "파이썬" → "Python"), 해당하면 다음 표준 역량명을 함께 넣어라: ${SKILL_CATALOG.map((c) => c.name).join(", ")}`;
 }
