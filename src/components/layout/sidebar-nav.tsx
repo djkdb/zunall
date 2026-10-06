@@ -17,6 +17,7 @@ import {
   Compass,
   Crosshair,
   ShieldCheck,
+  Mic,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ export function SidebarNav({
     { href: "/opportunities", label: "기회", icon: Crosshair },
     { href: "/activities", label: "활동", icon: FolderKanban },
     { href: "/essays", label: "자소서", icon: PenLine },
+    { href: "/interview", label: "모의 면접", icon: Mic },
     { href: "/calendar", label: "캘린더", icon: CalendarDays },
     { href: "/notifications", label: "알림", icon: Bell, badge: unreadCount },
     { href: "/search", label: "검색", icon: Search },

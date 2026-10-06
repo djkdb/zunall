@@ -12,20 +12,27 @@ export class AnthropicProvider implements AIProvider {
 
   async complete(request: AIRequest): Promise<string> {
     const client = new Anthropic(); // ANTHROPIC_API_KEY 환경변수 사용
-    const model = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
+    const model = request.model || process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
 
     try {
-      const response = await client.beta.messages.create({
-        model,
-        max_tokens: 16000,
-        // 공고 정리·첨삭·채점 모두 깊은 추론보다 꼼꼼한 읽기가 필요한 일이다.
-        // 기본값에 맡기지 않고 명시한다 (모델마다 기본값이 다르다).
-        output_config: { effort: "medium" },
-        // 안전 분류기가 요청을 거절하면 같은 요청을 권장 대체 모델로 서버에서 다시 실행한다.
-        betas: ["server-side-fallback-2026-07-01"],
-        fallbacks: "default",
-        messages: [{ role: "user", content: request.prompt }],
-      });
+      const response = await client.beta.messages.create(
+        {
+          model,
+          max_tokens: 16000,
+          // 공고 정리·첨삭·채점 모두 깊은 추론보다 꼼꼼한 읽기가 필요한 일이다.
+          // 기본값에 맡기지 않고 명시한다 (모델마다 기본값이 다르다).
+          output_config: { effort: request.effort ?? "medium" },
+          // 안전 분류기가 요청을 거절하면 같은 요청을 권장 대체 모델로 서버에서 다시 실행한다.
+          betas: ["server-side-fallback-2026-07-01"],
+          fallbacks: "default",
+          // 같은 면접 안에서는 지시문이 그대로라 캐시해 두고 다시 쓴다 (비용·지연 절감)
+          ...(request.system
+            ? { system: [{ type: "text" as const, text: request.system, cache_control: { type: "ephemeral" as const } }] }
+            : {}),
+          messages: [{ role: "user", content: request.prompt }],
+        },
+        request.timeoutMs ? { timeout: request.timeoutMs, maxRetries: 1 } : undefined,
+      );
 
       if (response.stop_reason === "refusal") {
         throw new Error("AI가 이 요청 처리를 거절했습니다. 문서 내용을 확인해주세요.");

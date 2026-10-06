@@ -92,6 +92,23 @@ CREATE TABLE IF NOT EXISTS interview_questions (
 CREATE INDEX IF NOT EXISTS idx_interview_activity ON interview_questions(activity_id);
 CREATE INDEX IF NOT EXISTS idx_interview_user ON interview_questions(user_id);
 
+CREATE TABLE IF NOT EXISTS mock_interviews (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_id TEXT,
+  position TEXT NOT NULL,
+  company_name TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  overall_score INTEGER,
+  data TEXT NOT NULL,
+  version INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL,
+  completed_at BIGINT
+);
+CREATE INDEX IF NOT EXISTS idx_mock_interviews_user ON mock_interviews(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_mock_interviews_activity ON mock_interviews(activity_id);
+
 CREATE TABLE IF NOT EXISTS notice_sources (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -510,6 +527,7 @@ export const REQUIRED_TABLES = [
   "notice_items",
   "interview_questions",
   "ai_usage",
+  "mock_interviews",
 ] as const;
 
 /** 밀리초 시간값이라 BIGINT 여야 하는 컬럼 (진단용) */

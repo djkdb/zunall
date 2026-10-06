@@ -19,6 +19,8 @@ import {
   notes,
   notifications,
   activityHistory,
+  interviewQuestions,
+  mockInterviews,
 } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { logHistory } from "@/lib/history";
@@ -413,6 +415,18 @@ export async function deleteActivity(activityId: string): Promise<void> {
   await db.delete(notes).where(eq(notes.activityId, activityId));
   await db.delete(notifications).where(eq(notifications.activityId, activityId));
   await db.delete(activityHistory).where(eq(activityHistory.activityId, activityId));
+  await db
+    .delete(interviewQuestions)
+    .where(and(eq(interviewQuestions.activityId, activityId), eq(interviewQuestions.userId, user.id)));
+  // 진행 중인 모의 면접에는 이 활동의 자소서 원문이 들어 있으니 함께 지운다.
+  // 끝난 면접은 원문 없이 기록만 남아 있으므로 활동 연결만 끊고 남긴다.
+  await db
+    .delete(mockInterviews)
+    .where(and(eq(mockInterviews.activityId, activityId), eq(mockInterviews.userId, user.id), eq(mockInterviews.status, "active")));
+  await db
+    .update(mockInterviews)
+    .set({ activityId: null })
+    .where(and(eq(mockInterviews.activityId, activityId), eq(mockInterviews.userId, user.id)));
   await db.delete(activities).where(eq(activities.id, activityId));
 
   revalidatePath("/activities");

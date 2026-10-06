@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { TrendingUp, Info } from "lucide-react";
+import { TrendingUp, Info, Mic } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { OutcomeBucket, OutcomeLearning } from "@/services/score/outcome";
@@ -77,6 +77,11 @@ function LostStages({ learning }: { learning: OutcomeLearning }) {
             </li>
           ))}
         </ul>
+      )}
+      {learning.lostByStage.some((s) => (s.stage === "interview" || s.stage === "final") && s.count > 0) && (
+        <Link href="/interview/new" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+          <Mic className="h-3.5 w-3.5" /> 면접에서 떨어졌다면 — 모의 면접으로 꼬리질문까지 연습하기
+        </Link>
       )}
       {learning.lostWithoutStage.length > 0 && (
         <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">

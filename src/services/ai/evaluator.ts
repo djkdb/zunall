@@ -259,7 +259,7 @@ async function buildContext(
 
 // ─── 실행 + JSON 검증/재시도 ─────────────────────────────────
 
-function schemaFor(action: AIAction) {
+function schemaFor(action: AIRequest["action"]) {
   switch (action) {
     case "analyze_announcement":
     case "extract_criteria":

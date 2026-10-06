@@ -31,7 +31,9 @@ export class ClaudeCliProvider implements AIProvider {
   async complete(request: AIRequest): Promise<string> {
     const command = process.env.CLAUDE_COMMAND || "claude";
     const args = buildCliArgs(process.env.CLAUDE_ARGS);
-    const timeoutMs = Number(process.env.CLAUDE_TIMEOUT) || 180_000;
+    const timeoutMs = request.timeoutMs ?? (Number(process.env.CLAUDE_TIMEOUT) || 180_000);
+    // CLI 에는 지시문을 따로 넘기지 않는다 (인자로 넘기면 프로세스 목록에 보인다). 앞에 붙여 stdin 으로.
+    const input = request.system ? `${request.system}\n\n${request.prompt}` : request.prompt;
 
     return new Promise<string>((resolve, reject) => {
       const child = spawn(command, args, {
@@ -96,7 +98,7 @@ export class ClaudeCliProvider implements AIProvider {
       });
 
       // 프롬프트는 stdin으로만 전달
-      child.stdin.write(request.prompt);
+      child.stdin.write(input);
       child.stdin.end();
     });
   }

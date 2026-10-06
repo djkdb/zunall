@@ -76,4 +76,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "017-lost-stage.sql",
     sql: "-- 탈락한 지원이 어느 단계에서 끝났는지 (document | test | interview | final).\n-- \"탈락\" 하나로만 기록하면 서류에서 막히는지 면접에서 막히는지 구분할 수 없다.\n-- 여러 번 실행해도 안전합니다.\n\nALTER TABLE activities ADD COLUMN IF NOT EXISTS lost_stage TEXT;\n",
   },
+  {
+    name: "018-mock-interview.sql",
+    sql: "-- 모의 면접: 질문 → 답변 → 분석 → 꼬리질문 → 종합 리포트.\n-- 진행 상태 전체(질문·답변·분석·리포트)를 data(JSON)에 담는다.\n-- version 은 같은 답변이 두 번 처리되지 않게 하는 낙관적 잠금이다.\n-- 여러 번 실행해도 안전합니다.\n\nCREATE TABLE IF NOT EXISTS mock_interviews (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  activity_id TEXT,\n  position TEXT NOT NULL,\n  company_name TEXT,\n  status TEXT NOT NULL DEFAULT 'active',\n  overall_score INTEGER,\n  data TEXT NOT NULL,\n  version INTEGER NOT NULL DEFAULT 0,\n  created_at BIGINT NOT NULL,\n  updated_at BIGINT NOT NULL,\n  completed_at BIGINT\n);\nCREATE INDEX IF NOT EXISTS idx_mock_interviews_user ON mock_interviews(user_id, created_at);\nCREATE INDEX IF NOT EXISTS idx_mock_interviews_activity ON mock_interviews(activity_id);\n",
+  },
 ];

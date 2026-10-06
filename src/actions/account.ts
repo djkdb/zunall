@@ -38,6 +38,7 @@ import {
   userSettings,
   aiUsage,
   interviewQuestions,
+  mockInterviews,
   noticeItems,
   noticeSources,
 } from "@/lib/db";
@@ -258,6 +259,7 @@ export async function deleteAccount(input: { confirmEmail: string }): Promise<ne
     db.delete(passwordResets).where(eq(passwordResets.userId, userId)),
     db.delete(aiUsage).where(eq(aiUsage.userId, userId)),
     db.delete(interviewQuestions).where(eq(interviewQuestions.userId, userId)),
+    db.delete(mockInterviews).where(eq(mockInterviews.userId, userId)),
     db.delete(noticeItems).where(eq(noticeItems.userId, userId)),
     db.delete(noticeSources).where(eq(noticeSources.userId, userId)),
     db.delete(sessions).where(eq(sessions.userId, userId)),

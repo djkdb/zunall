@@ -642,6 +642,37 @@ export const interviewQuestions = pgTable(
 
 export type InterviewQuestionRow = typeof interviewQuestions.$inferSelect;
 
+/**
+ * 모의 면접 한 번. 질문·답변·분석·리포트 전체를 data(JSON)에 담는다.
+ * 답변은 내 계정에만 남고, 지우면 함께 사라진다.
+ */
+export const mockInterviews = pgTable(
+  "mock_interviews",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    /** 이 공고(활동)로 본 면접이면 그 활동 */
+    activityId: text("activity_id"),
+    position: text("position").notNull(),
+    companyName: text("company_name"),
+    /** active | completed */
+    status: text("status").notNull().default("active"),
+    overallScore: integer("overall_score"),
+    data: text("data").notNull(),
+    /** 같은 답변이 두 번 처리되지 않게 하는 낙관적 잠금 */
+    version: integer("version").notNull().default(0),
+    createdAt: epochMs("created_at").notNull(),
+    updatedAt: epochMs("updated_at").notNull(),
+    completedAt: epochMs("completed_at"),
+  },
+  (t) => [
+    index("idx_mock_interviews_user").on(t.userId, t.createdAt),
+    index("idx_mock_interviews_activity").on(t.activityId),
+  ],
+);
+
+export type MockInterviewRow = typeof mockInterviews.$inferSelect;
+
 /** 하루 단위 AI 호출 횟수 (비용이 무제한으로 열리지 않게 막는 데 쓴다) */
 export const aiUsage = pgTable(
   "ai_usage",

@@ -12,6 +12,7 @@ import {
   Compass,
   Target,
   Crosshair,
+  Mic,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { parseWidgets, type WidgetKey } from "@/lib/dashboard-widgets";
@@ -130,6 +131,10 @@ export default async function DashboardPage() {
       .where(eq(submissions.userId, user.id)),
     db.select().from(opportunityAnalyses).where(eq(opportunityAnalyses.userId, user.id)),
   ]);
+  const nextInterview = weekEvents.find((e) => e.type === "interview") ?? null;
+  const nextInterviewName = nextInterview
+    ? (allActivities.find((a) => a.id === nextInterview.activityId)?.name ?? nextInterview.title)
+    : null;
   // 오늘의 점수를 기록해 둔다 (하루 한 점). 화면을 그리는 데 필요 없으므로 응답을 보낸 뒤에 한다.
   // 커리어 탭을 편집할 때만 기록하면 활동을 등록·완료해서 오른 점수가 그래프에
   // 남지 않는다. 앱의 첫 화면에서 남기면 어떤 경로로 바뀌었든 빠지지 않는다.
@@ -260,6 +265,32 @@ export default async function DashboardPage() {
               : null
           }
         />
+      )}
+
+      {/* 일주일 안에 면접이 있으면 연습으로 바로 */}
+      {nextInterview && (
+        <Card className="border-primary/40">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <Mic className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <p className="text-sm font-semibold">
+                  <span className="mr-1.5 text-primary">면접 {ddayLabel(daysUntil(nextInterview.date))}</span>
+                  {nextInterviewName}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  공고와 내 자소서를 읽은 면접관에게 꼬리질문까지 받아 보세요. 10분이면 어디서 막히는지 보입니다.
+                </p>
+              </div>
+            </div>
+            <Link
+              href={nextInterview.activityId ? `/interview/new?activity=${nextInterview.activityId}` : "/interview/new"}
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              모의 면접 보기 <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </CardContent>
+        </Card>
       )}
 
       {/* Career OS 영역 */}

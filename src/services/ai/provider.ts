@@ -4,10 +4,33 @@ import { isCloudflareWorkers } from "@/lib/runtime";
 
 /** AI 실행 요청. prompt는 실제 LLM용, context는 mock provider가 활용한다. */
 export interface AIRequest {
-  action: AIAction;
+  action: AIAction | "mock_interview";
   prompt: string;
   context: AIContext;
+  /**
+   * 바뀌지 않는 지시문 (모의 면접처럼 같은 지시로 여러 번 부를 때).
+   * API 에서는 캐시해 두고 재사용하고, CLI 에서는 prompt 앞에 붙인다.
+   */
+  system?: string;
+  /** 생각을 얼마나 깊게 할지. 면접 문답처럼 기다림이 중요한 호출은 low */
+  effort?: "low" | "medium";
+  /** 이 호출에만 쓸 모델 (없으면 기본 모델) */
+  model?: string;
+  /** 이 호출의 시간 제한 (ms) */
+  timeoutMs?: number;
 }
+
+/** context 가 필요 없는 호출(모의 면접 등)에 넘기는 빈 값 */
+export const EMPTY_AI_CONTEXT: AIContext = {
+  activityName: "",
+  activityType: "etc",
+  organizer: null,
+  criteria: [],
+  announcementText: "",
+  submissionText: "",
+  submissionTitle: null,
+  userProfile: "",
+};
 
 export interface AIContext {
   activityName: string;

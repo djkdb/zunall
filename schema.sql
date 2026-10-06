@@ -7,7 +7,35 @@ CREATE TABLE IF NOT EXISTS users (
   google_id TEXT,
   avatar_url TEXT,
   calendar_token TEXT,
+  terms_agreed_at BIGINT,
+  portfolio_token TEXT,
   created_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  user_agent TEXT,
+  created_at BIGINT NOT NULL,
+  last_success_at BIGINT,
+  failure_count INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
+
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id TEXT PRIMARY KEY,
+  dashboard_widgets TEXT,
+  notify_thresholds TEXT,
+  notify_types TEXT,
+  quiet_start INTEGER,
+  quiet_end INTEGER,
+  weekly_report INTEGER NOT NULL DEFAULT 1,
+  weekly_day INTEGER NOT NULL DEFAULT 0,
+  timezone_offset INTEGER NOT NULL DEFAULT 540,
+  updated_at BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -42,7 +70,88 @@ CREATE TABLE IF NOT EXISTS activities (
   updated_at BIGINT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
+CREATE TABLE IF NOT EXISTS interview_questions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_id TEXT NOT NULL,
+  question TEXT NOT NULL,
+  why TEXT,
+  hint TEXT,
+  answer TEXT,
+  ready INTEGER NOT NULL DEFAULT 0,
+  source TEXT NOT NULL DEFAULT 'ai',
+  position INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_interview_activity ON interview_questions(activity_id);
+CREATE INDEX IF NOT EXISTS idx_interview_user ON interview_questions(user_id);
+
+CREATE TABLE IF NOT EXISTS mock_interviews (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_id TEXT,
+  position TEXT NOT NULL,
+  company_name TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  overall_score INTEGER,
+  data TEXT NOT NULL,
+  version INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL,
+  completed_at BIGINT
+);
+CREATE INDEX IF NOT EXISTS idx_mock_interviews_user ON mock_interviews(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_mock_interviews_activity ON mock_interviews(activity_id);
+
+CREATE TABLE IF NOT EXISTS notice_sources (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  keywords TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  last_checked_at BIGINT,
+  last_error TEXT,
+  last_found INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_notice_sources_user ON notice_sources(user_id);
+
+CREATE TABLE IF NOT EXISTS notice_items (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  url TEXT NOT NULL,
+  title TEXT NOT NULL,
+  published_at TEXT,
+  status TEXT NOT NULL DEFAULT 'new',
+  activity_id TEXT,
+  found_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_notice_items_user ON notice_items(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notice_items_url ON notice_items(source_id, url);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  token TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  expires_at BIGINT NOT NULL,
+  used_at BIGINT,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_caltoken ON users(calendar_token);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_portfolio_token ON users(portfolio_token);
+
+CREATE TABLE IF NOT EXISTS ai_usage (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  day TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  updated_at BIGINT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_usage_user_day ON ai_usage(user_id, day);
 CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 
 CREATE TABLE IF NOT EXISTS tags (
@@ -135,6 +244,46 @@ CREATE TABLE IF NOT EXISTS submission_versions (
   created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_subver_submission ON submission_versions(submission_id);
+
+CREATE TABLE IF NOT EXISTS retrospectives (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_id TEXT NOT NULL UNIQUE,
+  situation TEXT,
+  task TEXT,
+  action TEXT,
+  result TEXT,
+  learned TEXT,
+  skills TEXT,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_retro_user ON retrospectives(user_id);
+
+CREATE TABLE IF NOT EXISTS essay_questions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_id TEXT NOT NULL,
+  question TEXT NOT NULL,
+  topic TEXT,
+  char_limit INTEGER,
+  guide TEXT,
+  position INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_essayq_activity ON essay_questions(activity_id);
+
+CREATE TABLE IF NOT EXISTS essay_drafts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  question_id TEXT NOT NULL,
+  version INTEGER NOT NULL DEFAULT 1,
+  content TEXT NOT NULL,
+  feedback_json TEXT,
+  score DOUBLE PRECISION,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_essayd_question ON essay_drafts(question_id);
 
 CREATE TABLE IF NOT EXISTS evaluation_criteria (
   id TEXT PRIMARY KEY,
@@ -253,6 +402,9 @@ CREATE TABLE IF NOT EXISTS career_profiles (
   desired_roles TEXT,
   desired_companies TEXT,
   github_username TEXT,
+  study_field TEXT,
+  major TEXT,
+  role_key TEXT,
   onboarded_at BIGINT,
   updated_at BIGINT NOT NULL
 );
