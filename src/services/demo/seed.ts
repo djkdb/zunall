@@ -22,9 +22,29 @@ import {
   aiReviews,
   aiReviewItems,
   sessions,
+  mockInterviews,
 } from "@/lib/db";
 import { newId, toDateStr } from "@/lib/utils";
 import { classifyQuestion } from "@/services/essay/topics";
+import type { Interview } from "@/services/mock-interview/types";
+import sampleInterview from "./sample-interview.json";
+
+/**
+ * 둘러보기에 넣는 "끝난 모의 면접" (scripts/gen-demo-interview.ts 가 같은 엔진으로 만든 결과).
+ * 시각만 지금 기준으로 옮긴다.
+ */
+const SAMPLE_INTERVIEW = sampleInterview as unknown as Interview;
+
+function demoInterview(id: string, startedAt: number): Interview {
+  const shift = startedAt - SAMPLE_INTERVIEW.createdAt;
+  return {
+    ...SAMPLE_INTERVIEW,
+    id,
+    createdAt: startedAt,
+    questions: SAMPLE_INTERVIEW.questions.map((q) => ({ ...q, askedAt: q.askedAt + shift })),
+    reanswers: (SAMPLE_INTERVIEW.reanswers ?? []).map((r) => ({ ...r, at: r.at + shift })),
+  };
+}
 
 /**
  * 둘러보기(데모) 계정.
@@ -508,19 +528,68 @@ async function seedActivities(userId: string, now: number): Promise<void> {
     updatedAt: now,
   });
 
-  // 3) 관심만 눌러둔 활동
+  // 3) 서류를 내고 면접을 앞둔 인턴 — 모의 면접을 한 번 본 상태.
+  //    "면접 D-5 → 이 공고로 모의 면접 → 리포트"가 둘러보기에서 바로 보여야 한다.
+  const internId = newId();
   const activitiesRows3 = db.insert(activities).values({
-    id: newId(),
+    id: internId,
     userId,
     name: "네이버 서비스 기획 인턴",
     organizer: "네이버",
     type: "intern",
-    status: "interested",
+    status: "applied",
     importance: "high",
     color: "#22C55E",
-    applyDeadline: day(21),
+    applyDeadline: day(-6),
     createdAt: now,
     updatedAt: now,
+  });
+  const internEvent = db.insert(events).values({
+    id: newId(),
+    userId,
+    activityId: internId,
+    title: "1차 면접 (실무진)",
+    type: "interview",
+    date: day(5),
+    time: "14:00",
+    createdAt: now,
+  });
+  const internEssayId = newId();
+  const internEssay = db.insert(essayQuestions).values({
+    id: internEssayId,
+    userId,
+    activityId: internId,
+    question: "협업 과정에서 의견 차이를 해결한 경험을 적어주세요.",
+    topic: classifyQuestion("협업 과정에서 의견 차이를 해결한 경험을 적어주세요.").topic,
+    charLimit: 700,
+    guide: null,
+    position: 0,
+    createdAt: now,
+  });
+  const internDraft = db.insert(essayDrafts).values({
+    id: newId(),
+    userId,
+    questionId: internEssayId,
+    version: 1,
+    content: SAMPLE_INTERVIEW.config.documents?.coverLetter ?? "",
+    score: null,
+    createdAt: now,
+  });
+  const mockId = newId();
+  const sample = demoInterview(mockId, now - 86400000);
+  const mockInterviewRow = db.insert(mockInterviews).values({
+    id: mockId,
+    userId,
+    activityId: internId,
+    position: sample.config.position,
+    companyName: "네이버",
+    status: "completed",
+    overallScore: sample.overallScore,
+    data: JSON.stringify(sample),
+    version: 1,
+    createdAt: sample.createdAt,
+    updatedAt: sample.createdAt + sample.duration * 1000,
+    completedAt: sample.createdAt + sample.duration * 1000,
   });
 
   // 4) 말려야 하는 기회 — CAVERO 가 "지원하지 마세요"라고 말하는 경우.
@@ -622,6 +691,10 @@ async function seedActivities(userId: string, now: number): Promise<void> {
     activitiesRows2,
     retrospectivesRows,
     activitiesRows3,
+    internEvent,
+    internEssay,
+    internDraft,
+    mockInterviewRow,
     activitiesRows4,
     opportunityAnalysesRows,
     notificationsRows,
@@ -687,6 +760,7 @@ async function deleteDemoUser(userId: string): Promise<void> {
   await Promise.all([
     db.delete(essayQuestions).where(eq(essayQuestions.userId, userId)),
     db.delete(interviewQuestions).where(eq(interviewQuestions.userId, userId)),
+    db.delete(mockInterviews).where(eq(mockInterviews.userId, userId)),
     db.delete(retrospectives).where(eq(retrospectives.userId, userId)),
     db.delete(tasks).where(eq(tasks.userId, userId)),
     db.delete(events).where(eq(events.userId, userId)),

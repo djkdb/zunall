@@ -109,6 +109,25 @@ CREATE TABLE IF NOT EXISTS mock_interviews (
 CREATE INDEX IF NOT EXISTS idx_mock_interviews_user ON mock_interviews(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_mock_interviews_activity ON mock_interviews(activity_id);
 
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT PRIMARY KEY,
+  count INTEGER NOT NULL DEFAULT 0,
+  window_start BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_window ON rate_limits(window_start);
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'idea',
+  message TEXT NOT NULL,
+  page TEXT,
+  reply_email TEXT,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id);
+
 CREATE TABLE IF NOT EXISTS notice_sources (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -528,6 +547,8 @@ export const REQUIRED_TABLES = [
   "interview_questions",
   "ai_usage",
   "mock_interviews",
+  "rate_limits",
+  "feedback",
 ] as const;
 
 /** 밀리초 시간값이라 BIGINT 여야 하는 컬럼 (진단용) */
@@ -567,4 +588,9 @@ export const BIGINT_COLUMNS: ReadonlyArray<readonly [string, string]> = [
   ["opportunity_analyses", "created_at"],
   ["document_blobs", "created_at"],
   ["activity_history", "created_at"],
+  ["mock_interviews", "created_at"],
+  ["mock_interviews", "updated_at"],
+  ["mock_interviews", "completed_at"],
+  ["rate_limits", "window_start"],
+  ["feedback", "created_at"],
 ] as const;

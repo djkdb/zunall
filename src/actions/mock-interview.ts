@@ -177,7 +177,7 @@ export async function startMockInterview(input: MockInterviewSetup): Promise<Res
     : undefined;
   if (s.activityId && !activity) return { ok: false, error: "활동을 찾을 수 없습니다." };
 
-  const company = resolveCompany(s.companyId, s.companyTrack, position);
+  const company = resolveCompany(s.companyId, s.companyTrack, position, role?.id);
   if (s.companyId && !company) return { ok: false, error: "기업을 다시 골라 주세요." };
 
   const [essays, profile, notice] = await Promise.all([

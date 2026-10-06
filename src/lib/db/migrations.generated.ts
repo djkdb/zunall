@@ -80,4 +80,8 @@ export const MIGRATIONS: BundledMigration[] = [
     name: "018-mock-interview.sql",
     sql: "-- 모의 면접: 질문 → 답변 → 분석 → 꼬리질문 → 종합 리포트.\n-- 진행 상태 전체(질문·답변·분석·리포트)를 data(JSON)에 담는다.\n-- version 은 같은 답변이 두 번 처리되지 않게 하는 낙관적 잠금이다.\n-- 여러 번 실행해도 안전합니다.\n\nCREATE TABLE IF NOT EXISTS mock_interviews (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  activity_id TEXT,\n  position TEXT NOT NULL,\n  company_name TEXT,\n  status TEXT NOT NULL DEFAULT 'active',\n  overall_score INTEGER,\n  data TEXT NOT NULL,\n  version INTEGER NOT NULL DEFAULT 0,\n  created_at BIGINT NOT NULL,\n  updated_at BIGINT NOT NULL,\n  completed_at BIGINT\n);\nCREATE INDEX IF NOT EXISTS idx_mock_interviews_user ON mock_interviews(user_id, created_at);\nCREATE INDEX IF NOT EXISTS idx_mock_interviews_activity ON mock_interviews(activity_id);\n",
   },
+  {
+    name: "019-launch.sql",
+    sql: "-- 출시 준비: 남용 방지 카운터 + 사용자 의견함.\n-- 여러 번 실행해도 안전합니다.\n\n-- 로그인 실패·비밀번호 재설정 메일·둘러보기 계정 만들기 횟수.\n-- key 마다 창(window) 하나를 두고 그 안의 횟수만 센다.\nCREATE TABLE IF NOT EXISTS rate_limits (\n  key TEXT PRIMARY KEY,\n  count INTEGER NOT NULL DEFAULT 0,\n  window_start BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_rate_limits_window ON rate_limits(window_start);\n\n-- 앱 안에서 보낸 의견. 답장 받기를 고른 경우에만 이메일을 남긴다.\nCREATE TABLE IF NOT EXISTS feedback (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  kind TEXT NOT NULL DEFAULT 'idea',\n  message TEXT NOT NULL,\n  page TEXT,\n  reply_email TEXT,\n  created_at BIGINT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);\nCREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id);\n",
+  },
 ];

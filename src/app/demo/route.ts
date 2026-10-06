@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createDemoUser } from "@/services/demo/seed";
 import { issueSession } from "@/lib/auth/session";
+import { LIMITS, consume, ipFromRequest } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,11 @@ export async function GET(request: Request) {
   }
 
   try {
+    // 봇이 링크를 따라오며 계정을 계속 만들지 않게 (robots.txt 에서도 막는다)
+    const ip = ipFromRequest(request);
+    if (ip && !(await consume(`demo-ip:${ip}`, LIMITS.demoIp))) {
+      return NextResponse.redirect(new URL("/welcome?error=demo-limit", request.url));
+    }
     const userId = await createDemoUser();
     const cookie = await issueSession(userId);
 

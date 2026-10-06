@@ -19,6 +19,9 @@ export type AdminMetrics = {
   noticeSources: number;
   noticeItems: number;
   pushDevices: number;
+  mockInterviews: number;
+  mockInterviewUsers: number;
+  feedbackCount: number;
   fields: Array<{ key: string; count: number }>;
   types: Array<{ key: string; count: number }>;
 };
@@ -56,7 +59,10 @@ export async function getAdminMetrics(now = Date.now()): Promise<AdminMetrics> {
         (SELECT count(*) FROM retrospectives r JOIN users u ON u.id = r.user_id WHERE u.email NOT LIKE ${demo}) AS retrospectives,
         (SELECT count(*) FROM notice_sources s JOIN users u ON u.id = s.user_id WHERE u.email NOT LIKE ${demo}) AS notice_sources,
         (SELECT count(*) FROM notice_items n JOIN users u ON u.id = n.user_id WHERE u.email NOT LIKE ${demo}) AS notice_items,
-        (SELECT count(*) FROM push_subscriptions p JOIN users u ON u.id = p.user_id WHERE u.email NOT LIKE ${demo}) AS push_devices
+        (SELECT count(*) FROM push_subscriptions p JOIN users u ON u.id = p.user_id WHERE u.email NOT LIKE ${demo}) AS push_devices,
+        (SELECT count(*) FROM mock_interviews m JOIN users u ON u.id = m.user_id WHERE m.status = 'completed' AND u.email NOT LIKE ${demo}) AS mock_interviews,
+        (SELECT count(DISTINCT m.user_id) FROM mock_interviews m JOIN users u ON u.id = m.user_id WHERE m.status = 'completed' AND u.email NOT LIKE ${demo}) AS mock_interview_users,
+        (SELECT count(*) FROM feedback) AS feedback_count
     `) as Promise<Raw>,
     db.execute(sql`
       SELECT c.study_field AS key, count(*) AS count
@@ -93,6 +99,9 @@ export async function getAdminMetrics(now = Date.now()): Promise<AdminMetrics> {
     noticeSources: num(m.notice_sources),
     noticeItems: num(m.notice_items),
     pushDevices: num(m.push_devices),
+    mockInterviews: num(m.mock_interviews),
+    mockInterviewUsers: num(m.mock_interview_users),
+    feedbackCount: num(m.feedback_count),
     fields: toPairs(fieldRows),
     types: toPairs(typeRows),
   };

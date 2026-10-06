@@ -673,6 +673,35 @@ export const mockInterviews = pgTable(
 
 export type MockInterviewRow = typeof mockInterviews.$inferSelect;
 
+/** 남용 방지 카운터 (로그인 실패, 재설정 메일, 둘러보기 계정) */
+export const rateLimits = pgTable(
+  "rate_limits",
+  {
+    key: text("key").primaryKey(),
+    count: integer("count").notNull().default(0),
+    windowStart: epochMs("window_start").notNull(),
+  },
+  (t) => [index("idx_rate_limits_window").on(t.windowStart)],
+);
+
+/** 앱 안에서 보낸 의견 (운영 지표 화면에서 본다) */
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    /** bug | idea | praise | other */
+    kind: text("kind").notNull().default("idea"),
+    message: text("message").notNull(),
+    /** 어느 화면에서 보냈는지 (경로만) */
+    page: text("page"),
+    /** 답장 받기를 고른 경우에만 */
+    replyEmail: text("reply_email"),
+    createdAt: epochMs("created_at").notNull(),
+  },
+  (t) => [index("idx_feedback_created").on(t.createdAt), index("idx_feedback_user").on(t.userId)],
+);
+
 /** 하루 단위 AI 호출 횟수 (비용이 무제한으로 열리지 않게 막는 데 쓴다) */
 export const aiUsage = pgTable(
   "ai_usage",

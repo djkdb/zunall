@@ -6,6 +6,8 @@ import { setDataLoader } from "@/services/mock-interview/shared/dataLoader";
 import { MockAIProvider } from "@/services/mock-interview/mock/MockAIProvider";
 import { answerQuestion, currentQuestion, endInterview, reanswerQuestion, startInterview, withoutGreeting, type EngineDeps } from "@/services/mock-interview/engine";
 import type { Interview, InterviewConfig } from "@/services/mock-interview/types";
+import { COMMON_ONLY_TRACK, resolveCompany, trackFor } from "@/services/mock-interview/catalog";
+import { getCompany, loadCompanyQuestions, questionsForTrack } from "@/services/mock-interview/shared/companies";
 
 setDataLoader(async (p) => JSON.parse(fs.readFileSync(path.join(process.cwd(), "public", "interview-data", p), "utf8")));
 
@@ -59,6 +61,19 @@ test("AI 가 첫 질문 앞에 붙인 인사는 뗀다 (면접위원장이 이�
   assert.equal(withoutGreeting("안녕하세요, 면접을 시작하겠습니다. 먼저 1분 정도로 자기소개를 부탁드립니다."), "먼저 1분 정도로 자기소개를 부탁드립니다.");
   assert.equal(withoutGreeting("면접을 시작하겠습니다. 1분 정도로 간단히 자기소개를 해 주시겠어요?"), "1분 정도로 간단히 자기소개를 해 주시겠어요?");
   assert.equal(withoutGreeting("먼저 자기소개 부탁드립니다."), "먼저 자기소개 부탁드립니다.");
+});
+
+test("기업 면접: 직군을 직무에 맞춰 고르고, 못 고르면 공통 질문만 쓴다 (기획자에게 정렬 알고리즘 X)", async () => {
+  const naver = getCompany("naver")!;
+  assert.equal(trackFor(naver, "서비스기획", "service_planner"), "기획·PM");
+  assert.equal(trackFor(naver, "백엔드 개발자", "backend"), "개발");
+  const samsung = getCompany("samsung-electronics")!;
+  const nurseTrack = trackFor(samsung, "간호사", "nurse");
+  const qs = questionsForTrack(await loadCompanyQuestions(samsung.id), nurseTrack);
+  assert.ok(qs.every((q) => q.track === "공통" || q.track === nurseTrack), nurseTrack);
+  assert.ok(!qs.some((q) => /알고리즘|시간복잡도|자료구조/.test(q.text)), qs.map((q) => q.text).join(" / "));
+  assert.equal(resolveCompany("naver", "공통", "서비스기획")?.track, COMMON_ONLY_TRACK, "'공통'을 고르면 공통 질문만");
+  assert.equal(resolveCompany("naver", "없는 직군", "서비스기획", "service_planner")?.track, "기획·PM", "목록에 없는 값은 믿지 않는다");
 });
 
 test("끝까지 답하면 리포트와 점수가 나온다", async () => {

@@ -7,8 +7,15 @@ import { db, users } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { newId } from "@/lib/utils";
+import { BLOCKED_MESSAGE, LIMITS, clientIp, consume, isBlocked, reset } from "@/lib/rate-limit";
 
 export type AuthFormState = { error?: string } | undefined;
+
+/**
+ * 없는 계정에도 비밀번호 확인을 한 번 돌리기 위한 해시. 버린 무작위 문자열의 해시라 어떤 비밀번호와도 맞지 않는다.
+ * (서버가 뜰 때마다 계산하면 Workers 첫 요청이 그만큼 느려져서 미리 만들어 둔 값을 쓴다)
+ */
+const DUMMY_HASH = "scrypt$3576a73093bc0bbf40b8c240068d135d$a65e76ad00e478fa254b270514c4c53f6cb18edbd4764bffc56a8909311631165d89658a1383d539a101ce0e3a772d3ffa0d67d437f5b0a54b65a868c49cccbf";
 
 /**
  * 로그인 뒤 돌아갈 주소.
@@ -56,6 +63,8 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
 
   const id = newId();
   try {
+    const ip = await clientIp();
+    if (ip && !(await consume(`signup-ip:${ip}`, LIMITS.signupIp))) return { error: BLOCKED_MESSAGE.signup };
     const existing = (await db.select().from(users).where(eq(users.email, email)).limit(1))[0];
     if (existing) {
       return { error: "이미 가입된 이메일입니다." };
@@ -91,19 +100,31 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
     return { error: parsed.error.issues[0].message };
   }
   const { email, password } = parsed.data;
+  const WRONG = "이메일 또는 비밀번호가 올바르지 않습니다.";
 
   try {
+    const ip = await clientIp();
+    const emailKey = `login:${email}`;
+    const ipKey = ip ? `login-ip:${ip}` : null;
+    // 막혔으면 비밀번호를 확인하지도 않는다 (맞는 비밀번호로 풀리면 대입을 막을 수 없다)
+    const [emailBlocked, ipBlocked] = await Promise.all([
+      isBlocked(emailKey, LIMITS.loginEmail),
+      ipKey ? isBlocked(ipKey, LIMITS.loginIp) : Promise.resolve(false),
+    ]);
+    if (emailBlocked || ipBlocked) return { error: BLOCKED_MESSAGE.login };
+
     const user = (await db.select().from(users).where(eq(users.email, email)).limit(1))[0];
-    if (!user || !user.passwordHash) {
+    // 없는 계정이어도 같은 시간이 걸리게 한다 (응답 시간으로 가입 여부를 알아낼 수 없게)
+    const ok = verifyPassword(password, user?.passwordHash ?? DUMMY_HASH) && Boolean(user?.passwordHash);
+    if (!user || !ok) {
+      await Promise.all([consume(emailKey, LIMITS.loginEmail), ipKey ? consume(ipKey, LIMITS.loginIp) : null]);
       // 구글로만 가입한 계정은 비밀번호가 없다
-      if (user?.googleId) {
+      if (user?.googleId && !user.passwordHash) {
         return { error: "구글로 가입한 계정입니다. 아래 '구글로 계속하기'를 눌러주세요." };
       }
-      return { error: "이메일 또는 비밀번호가 올바르지 않습니다." };
+      return { error: WRONG };
     }
-    if (!verifyPassword(password, user.passwordHash)) {
-      return { error: "이메일 또는 비밀번호가 올바르지 않습니다." };
-    }
+    await reset(emailKey);
     await createSession(user.id);
   } catch (error) {
     return { error: dbErrorMessage(error) };

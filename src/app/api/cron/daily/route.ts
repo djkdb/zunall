@@ -5,6 +5,7 @@ import { sendPush, pushConfigured } from "@/services/push/webpush";
 import { runDeadlineNotifications } from "@/services/notification/generator";
 import { collectForUser } from "@/services/notice/collect";
 import { cleanupDemoUsers } from "@/services/demo/seed";
+import { pruneRateLimits } from "@/lib/rate-limit";
 import { runWeeklyReport } from "@/services/notification/weekly";
 import { isQuietHour, isWeeklyReportDay, parseNotifySettings } from "@/services/notification/settings";
 import { daysUntil, ddayLabel } from "@/lib/utils";
@@ -34,6 +35,7 @@ export async function GET(request: Request) {
 
   // 오래된 둘러보기 계정 정리 (임시 계정이 쌓이면 통계가 흐려진다)
   const demoRemoved = await cleanupDemoUsers();
+  await pruneRateLimits();
 
   // ── 공고 수집: 사이트를 등록한 사용자만 대상으로 한다 ──────────
   // (푸시 구독 여부와 무관하게, 등록해둔 사람은 모두 받아야 한다)

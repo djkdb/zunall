@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
   activities,
@@ -14,6 +14,8 @@ import {
   notes,
   essayQuestions,
   essayDrafts,
+  interviewQuestions,
+  mockInterviews,
   retrospectives,
   careerGoals,
   careerProfiles,
@@ -96,6 +98,12 @@ export async function exportUserData(userId: string): Promise<BackupFile> {
         .select()
         .from(opportunityAnalyses)
         .where(eq(opportunityAnalyses.userId, userId)),
+      interviewQuestions: await db.select().from(interviewQuestions).where(eq(interviewQuestions.userId, userId)),
+      // 진행 중인 면접은 자소서 원문을 담고 있을 수 있어 끝난 면접만 내보낸다
+      mockInterviews: await db
+        .select()
+        .from(mockInterviews)
+        .where(and(eq(mockInterviews.userId, userId), eq(mockInterviews.status, "completed"))),
     },
   };
 }

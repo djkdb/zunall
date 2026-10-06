@@ -3,11 +3,16 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/admin";
 import { getAdminMetrics } from "@/services/admin/metrics";
+import { desc } from "drizzle-orm";
+import { db, feedback } from "@/lib/db";
+import { formatDateTime } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { STUDY_FIELDS, type StudyField } from "@/lib/career-constants";
 import { ACTIVITY_TYPES, type ActivityType } from "@/lib/constants";
 
 export const metadata: Metadata = { title: "운영 지표" };
+
+const FEEDBACK_KIND: Record<string, string> = { bug: "불편·오류", idea: "바라는 기능", praise: "좋았던 점", other: "기타" };
 
 /**
  * 운영자용 지표.
@@ -19,7 +24,10 @@ export default async function AdminPage() {
   // 권한이 없으면 이런 화면이 있다는 사실도 알리지 않는다
   if (!isAdmin(user.email)) notFound();
 
-  const m = await getAdminMetrics();
+  const [m, inbox] = await Promise.all([
+    getAdminMetrics(),
+    db.select().from(feedback).orderBy(desc(feedback.createdAt)).limit(50),
+  ]);
   const percent = (part: number) =>
     m.usersTotal > 0 ? `가입자의 ${Math.round((part / m.usersTotal) * 100)}%` : undefined;
 
@@ -28,8 +36,8 @@ export default async function AdminPage() {
       <div>
         <h1 className="text-xl font-bold tracking-tight">운영 지표</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          합계만 봅니다. 개인이 쓴 내용은 표시하지 않습니다. 둘러보기 계정 {m.demoUsers}개는 빼고
-          셌습니다.
+          합계만 봅니다. 사용자가 운영자에게 직접 보낸 의견 말고는 개인이 쓴 내용을 표시하지 않습니다.
+          둘러보기 계정 {m.demoUsers}개는 빼고 셌습니다.
         </p>
       </div>
 
@@ -67,7 +75,29 @@ export default async function AdminPage() {
           <Metric label="공고 수집 사이트" value={m.noticeSources} />
           <Metric label="수집된 공고" value={m.noticeItems} />
           <Metric label="알림 받는 기기" value={m.pushDevices} />
+          <Metric label="끝낸 모의 면접" value={m.mockInterviews} sub={m.mockInterviewUsers ? `${m.mockInterviewUsers}명이 봄` : undefined} />
         </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">의견함 ({m.feedbackCount})</h2>
+        {inbox.length === 0 ? (
+          <p className="rounded-lg border px-4 py-6 text-center text-sm text-muted-foreground">아직 받은 의견이 없습니다.</p>
+        ) : (
+          <ul className="divide-y rounded-lg border">
+            {inbox.map((f) => (
+              <li key={f.id} className="space-y-1 px-4 py-3 text-sm">
+                <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="rounded bg-secondary px-1.5 py-0.5 font-medium text-foreground">{FEEDBACK_KIND[f.kind] ?? f.kind}</span>
+                  {formatDateTime(f.createdAt)}
+                  {f.page && <span>· {f.page}</span>}
+                  {f.replyEmail && <span>· 답장: {f.replyEmail}</span>}
+                </p>
+                <p className="whitespace-pre-wrap leading-relaxed">{f.message}</p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">

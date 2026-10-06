@@ -17,6 +17,8 @@ import {
   retrospectives,
   careerEvidence,
   roadmapItems,
+  interviewQuestions,
+  mockInterviews,
 } from "@/lib/db";
 import { newId } from "@/lib/utils";
 import { BACKUP_VERSION, type BackupFile } from "./export";
@@ -214,6 +216,37 @@ export async function importUserData(userId: string, file: unknown): Promise<Imp
   if (roadmapRows.length > 0) {
     await db.insert(roadmapItems).values(roadmapRows as never);
     counts.roadmapItems = roadmapRows.length;
+  }
+
+  // 9) 면접 준비 질문과 끝난 모의 면접
+  const prepRows = rowsOf("interviewQuestions")
+    .map((row) => {
+      const activityId = remap(row.activityId);
+      if (!activityId) return null;
+      return { ...row, id: newId(), userId, activityId, updatedAt: now };
+    })
+    .filter(Boolean) as Row[];
+  if (prepRows.length > 0) {
+    await db.insert(interviewQuestions).values(prepRows as never);
+    counts.interviewQuestions = prepRows.length;
+  }
+  const mockRows = rowsOf("mockInterviews")
+    .filter((row) => row.status === "completed" && typeof row.data === "string")
+    .map((row) => {
+      const id = newId();
+      let data = String(row.data);
+      try {
+        // 면접 기록 안의 id 도 새 id 로 (기록과 행이 같은 면접을 가리키게)
+        data = JSON.stringify({ ...JSON.parse(data), id });
+      } catch {
+        return null;
+      }
+      return { ...row, id, userId, activityId: remap(row.activityId), data, version: 0 };
+    })
+    .filter(Boolean) as Row[];
+  if (mockRows.length > 0) {
+    await db.insert(mockInterviews).values(mockRows as never);
+    counts.mockInterviews = mockRows.length;
   }
 
   return { ok: true, counts };

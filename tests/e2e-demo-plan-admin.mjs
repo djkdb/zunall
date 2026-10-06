@@ -19,7 +19,7 @@ try {
   step("요금 안내가 있다", landing.includes("요금"));
   step("지금은 무료임을 밝힘", landing.includes("무료"));
   step("유료 계획도 함께 밝힘", landing.includes("나중") || landing.includes("유료"));
-  step("기능별 비교표", landing.includes("활동 관리") && landing.includes("AI"));
+  step("기능별 비교표", landing.includes("활동·마감 관리") && landing.includes("AI 분석"));
   step("둘러보기 버튼", (await p.getByRole("link", { name: /가입 없이 둘러보기/ }).count()) >= 1);
 
   // ── 2. 둘러보기 ────────────────────────────────────────────

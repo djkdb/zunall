@@ -38,6 +38,15 @@
 - 면접 문답은 기본 모델에 낮은 생각 깊이(effort low)로 부른다. 더 빠르게 하려면 `ANTHROPIC_INTERVIEW_MODEL` 로 면접용 모델을 따로 지정
 - **zunterview 와 동기화** — 면접 로직·프롬프트·질문 은행은 zunterview 저장소의 복사본이다(`src/services/mock-interview/UPSTREAM` 에 커밋 기록). zunterview 를 고도화한 뒤 `npm run sync:zunterview -- <zunterview 경로>` 로 가져온다. 복사본 파일은 직접 고치지 않고, Cavero 쪽 차이는 `engine.ts`·`ai-interviewer.ts`·`server-data.ts`·`catalog.ts`·`view.ts` 에만 둔다
 
+## 출시 준비 (운영)
+
+- **남용 방지** — 같은 이메일로 로그인 5번 실패 시 15분 잠금(맞는 비밀번호도), 없는 계정도 같은 시간 소요, 재설정 메일 시간당 3번, 둘러보기 계정·가입은 IP(Cloudflare `cf-connecting-ip`)당 제한. 카운터는 `rate_limits`, 하루 지나면 크론이 정리
+- **보안 헤더** — CSP(자기 출처만, 포트폴리오 공유 화면만 다른 사이트에 끼워 넣기 허용), nosniff, Referrer-Policy, Permissions-Policy(마이크는 모의 면접 말로 답하기에만), HSTS
+- **링크 미리보기·검색** — 카카오톡·슬랙 공유 시 `og.png`, `robots.txt`(둘러보기·API 제외), `sitemap.xml`, 안내가 있는 404
+- **의견 보내기** — 앱 어디서든 의견을 남기면 운영 지표 화면의 의견함에 쌓인다 (답장을 고른 경우에만 이메일 포함)
+- **휴대폰** — 하단 탭(홈·커리어·활동·면접·전체), 상단에 알림
+- `CONTACT_EMAIL` 을 넣으면 소개 화면 아래와 개인정보처리방침에 문의 주소가 나온다
+
 ## 기존 활동 관리 기능 (전부 유지)
 
 활동 CRUD·8탭 상세, D-day 대시보드, 월/주/목록 캘린더, 칸반 Task, 문서 분류·버전 관리(PDF/DOCX/PPTX/TXT 텍스트 추출), 제출물 v1~Final, D-7/3/1/당일 알림, AI 공고 분석(사용자 확인 후 반영)·평가 기준 추출·제출물 평가·Final Check·첨삭·예상 질문, 포트폴리오 기록, 통계, 다크 모드, 반응형.

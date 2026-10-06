@@ -1,15 +1,36 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { appOrigin } from "@/lib/app-url";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: "Cavero — AI Career OS",
-    template: "%s · Cavero",
-  },
-  description:
-    "공모전·대외활동·인턴을 한 흐름으로 관리하고, 목표 직무 기준으로 다음에 무엇을 할지 설계해주는 AI Career OS",
-};
+const DESCRIPTION =
+  "공모전·대외활동·인턴·채용 공고 정리부터 지원 판단, 자기소개서 첨삭, AI 모의 면접까지. 대학생 취업 준비를 한 곳에서.";
+
+/**
+ * 카카오톡·슬랙·검색 결과에 링크를 붙였을 때 보이는 미리보기.
+ * 이미지 주소가 절대 주소여야 해서, 지금 열려 있는 주소를 기준으로 만든다.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const origin = await appOrigin();
+  return {
+    metadataBase: new URL(origin),
+    title: {
+      default: "Cavero — 지원할 곳 고르기부터 모의 면접까지",
+      template: "%s · Cavero",
+    },
+    description: DESCRIPTION,
+    applicationName: "Cavero",
+    openGraph: {
+      type: "website",
+      locale: "ko_KR",
+      siteName: "Cavero",
+      title: "Cavero — 지원할 곳 고르기부터 모의 면접까지",
+      description: DESCRIPTION,
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: "Cavero — 대학생 취업 준비, 공고 정리부터 AI 모의 면접까지" }],
+    },
+    twitter: { card: "summary_large_image", images: ["/og.png"] },
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

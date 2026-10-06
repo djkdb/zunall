@@ -39,11 +39,13 @@ import {
   aiUsage,
   interviewQuestions,
   mockInterviews,
+  feedback,
   noticeItems,
   noticeSources,
 } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { deleteStoredFile } from "@/lib/storage";
+import { BLOCKED_MESSAGE, LIMITS, consume } from "@/lib/rate-limit";
 import { requireUser, destroySession, getCurrentUser } from "@/lib/auth/session";
 import { mailConfigured, sendEmail } from "@/lib/email";
 import { appOrigin } from "@/lib/app-url";
@@ -127,6 +129,9 @@ export async function requestPasswordReset(input: { email: string }): Promise<Ac
     ok: true,
     message: "가입된 이메일이라면 재설정 링크를 보냈습니다. 메일함을 확인해주세요.",
   };
+
+  // 같은 주소로 메일을 계속 보내게 하지 않는다 (가입 여부와 상관없이 같은 기준)
+  if (!(await consume(`reset:${parsed.data.email}`, LIMITS.resetEmail))) return { ok: false, error: BLOCKED_MESSAGE.reset };
 
   const user = (await db.select().from(users).where(eq(users.email, parsed.data.email)).limit(1))[0];
   if (!user) return sameAnswer;
@@ -260,6 +265,7 @@ export async function deleteAccount(input: { confirmEmail: string }): Promise<ne
     db.delete(aiUsage).where(eq(aiUsage.userId, userId)),
     db.delete(interviewQuestions).where(eq(interviewQuestions.userId, userId)),
     db.delete(mockInterviews).where(eq(mockInterviews.userId, userId)),
+    db.delete(feedback).where(eq(feedback.userId, userId)),
     db.delete(noticeItems).where(eq(noticeItems.userId, userId)),
     db.delete(noticeSources).where(eq(noticeSources.userId, userId)),
     db.delete(sessions).where(eq(sessions.userId, userId)),

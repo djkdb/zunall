@@ -300,7 +300,12 @@ async function CareerStatsSection({ data }: { data: ReturnType<typeof loadCareer
           }
           highlight
         />
-        <MetricCard label="가장 부족한 부분" value={ctx.gaps[0] ? `-${ctx.gaps[0].gap}` : "-"} sub={ctx.gaps[0]?.skill} />
+        <MetricCard
+          label="가장 부족한 부분"
+          value={ctx.gaps[0]?.skill ?? "-"}
+          sub={ctx.gaps[0] ? `목표 수준까지 ${ctx.gaps[0].gap}점` : undefined}
+          small
+        />
         <MetricCard label="근거가 되는 경험" value={String(ctx.evidence.length)} sub={`스킬 ${ctx.skillScores.length}개 뒷받침`} />
         <MetricCard
           label="추천 행동 완료율"
@@ -322,17 +327,20 @@ function MetricCard({
   value,
   sub,
   highlight,
+  small,
 }: {
   label: string;
   value: string;
   sub?: string;
   highlight?: boolean;
+  /** 숫자가 아닌 말(역량 이름)일 때 */
+  small?: boolean;
 }) {
   return (
     <Card className={highlight ? "border-primary/40" : undefined}>
       <CardContent className="p-4">
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <p className="mt-1 text-2xl font-bold tracking-tight">{value}</p>
+        <p className={small ? "mt-1.5 truncate text-lg font-bold tracking-tight" : "mt-1 text-2xl font-bold tracking-tight"}>{value}</p>
         {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
       </CardContent>
     </Card>

@@ -22,22 +22,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface NavItem {
+export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
   badge?: number;
 }
 
-export function SidebarNav({
-  unreadCount,
-  showAdmin = false,
-}: {
-  unreadCount: number;
-  showAdmin?: boolean;
-}) {
-  const pathname = usePathname();
-
+/** 앱 메뉴 (사이드바와 모바일 하단 탭이 같은 목록을 쓴다) */
+export function navItems(unreadCount: number, showAdmin: boolean): NavItem[] {
   const items: NavItem[] = [
     { href: "/", label: "대시보드", icon: LayoutDashboard },
     { href: "/career", label: "커리어", icon: Compass },
@@ -53,15 +46,29 @@ export function SidebarNav({
     { href: "/stats", label: "통계", icon: BarChart3 },
     { href: "/settings", label: "설정", icon: Settings },
   ];
-
   // 운영자에게만 보이는 지표 화면
   if (showAdmin) items.push({ href: "/admin", label: "운영 지표", icon: ShieldCheck });
+  return items;
+}
+
+export function isActivePath(pathname: string, href: string): boolean {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+export function SidebarNav({
+  unreadCount,
+  showAdmin = false,
+}: {
+  unreadCount: number;
+  showAdmin?: boolean;
+}) {
+  const pathname = usePathname();
+  const items = navItems(unreadCount, showAdmin);
 
   return (
     <nav className="flex flex-1 flex-col gap-0.5 md:mt-4">
       {items.map((item) => {
-        const active =
-          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const active = isActivePath(pathname, item.href);
         return (
           <Link
             key={item.href}
